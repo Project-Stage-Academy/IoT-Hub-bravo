@@ -29,24 +29,24 @@ cd IoT-Hub-bravo
 
 2. Edit the `.env` file and configure the following variables:
    ```env
-  # Django Settings
-# Generate a new secret key: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-SECRET_KEY=django-insecure-change-this-in-production-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+   # Django Settings
+   # Generate a new secret key: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+   SECRET_KEY=django-insecure-change-this-in-production-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   DEBUG=True
+   ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
 
-# Database Configuration
-DB_NAME=db_name
-DB_USER=db_user
-DB_PASSWORD=db_password
-DB_HOST=localhost
-DB_PORT=5432
+   # Database Configuration
+   DB_NAME=db_name
+   DB_USER=db_user
+   DB_PASSWORD=db_password
+   DB_HOST=localhost
+   DB_PORT=5432
 
-# CORS Configuration
-# Set to True only for development (allows all origins)
-CORS_ALLOW_ALL_ORIGINS=False
-# Comma-separated list of allowed origins (used when CORS_ALLOW_ALL_ORIGINS=False)
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000
+   # CORS Configuration
+   # Set to True only for development (allows all origins)
+   CORS_ALLOW_ALL_ORIGINS=False
+   # Comma-separated list of allowed origins (used when CORS_ALLOW_ALL_ORIGINS=False)
+   CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000
    ```
 
    **Important:** 
