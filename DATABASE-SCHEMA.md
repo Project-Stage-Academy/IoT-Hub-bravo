@@ -1,189 +1,210 @@
-Table "users" {
+# Database Schema Documentation
 
-  "id" SERIAL [pk, increment]
+This document describes the database schema for the IoT Catalog Hub application.
 
-  "username" VARCHAR(150) [unique, not null]
+## Overview
 
-  "email" VARCHAR(255) [unique, not null]
+The database consists of core tables for user management, device registration, telemetry collection, rule evaluation, and event tracking.
 
-  "password" VARCHAR(255) [not null]
+## Tables
 
-  "role" ENUM('admin', 'client') [default: 'client']
+### users
 
-  "created_at" TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+Stores user account information and authentication data.
 
-  "updated_at" TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | SERIAL | PRIMARY KEY, AUTO INCREMENT | Unique user identifier |
+| username | VARCHAR(150) | UNIQUE, NOT NULL | User login name |
+| email | VARCHAR(255) | UNIQUE, NOT NULL | User email address |
+| password | VARCHAR(255) | NOT NULL | Hashed password |
+| role | ENUM('admin', 'client') | DEFAULT 'client' | User role in the system |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Account creation timestamp |
+| updated_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Last update timestamp |
 
-  Indexes {
+**Indexes:**
+- Primary key on `id`
+- Unique index on `username`
+- Unique index on `email`
+- Index on `role` (idx_users_role)
 
-    (role) [name: "idx_users_role"]
+---
 
-  }
+### devices
 
-}
+Stores registered IoT devices and their metadata.
 
-Table "devices" {
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | SERIAL | PRIMARY KEY, AUTO INCREMENT | Unique device identifier |
+| serial_id | VARCHAR(255) | UNIQUE, NOT NULL | Device serial number |
+| name | VARCHAR(255) | NOT NULL | Device display name |
+| description | TEXT | NULL | Device description |
+| user_id | INTEGER | NULL, FOREIGN KEY | Owner of the device (references users.id) |
+| is_active | BOOLEAN | DEFAULT TRUE | Device active status |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Device registration timestamp |
 
-  "id" SERIAL [pk, increment]
+**Indexes:**
+- Primary key on `id`
+- Unique index on `serial_id`
+- Index on `user_id` (idx_devices_user_id)
+- Index on `is_active` (idx_devices_is_active)
 
-  "serial_id" VARCHAR(255) [unique, not null]
+**Relationships:**
+- `user_id` → `users.id` (ON DELETE CASCADE)
 
-  "name" VARCHAR(255) [not null]
+---
 
-  "description" TEXT
+### metrics
 
-  "user_id" INTEGER
+Defines available metric types that can be collected from devices.
 
-  "is_active" BOOLEAN [default: TRUE]
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | SERIAL | PRIMARY KEY, AUTO INCREMENT | Unique metric identifier |
+| metric_type | CITEXT | UNIQUE, NOT NULL | Type name (e.g., 'temperature', 'humidity', 'pressure') - case-insensitive |
+| data_type | ENUM('numeric', 'str', 'bool') | NOT NULL | Data type of the metric value |
 
-  "created_at" TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+**Indexes:**
+- Primary key on `id`
+- Unique index on `metric_type` (case-insensitive due to CITEXT)
 
-  Indexes {
+---
 
-    (user_id) [name: "idx_devices_user_id"]
+### device_metrics
 
-    (is_active) [name: "idx_devices_is_active"]
+Junction table linking devices to their available metrics (many-to-many relationship).
 
-  }
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | SERIAL | PRIMARY KEY, AUTO INCREMENT | Unique junction identifier |
+| device_id | INTEGER | NOT NULL, FOREIGN KEY | Device reference (references devices.id) |
+| metric_id | INTEGER | NOT NULL, FOREIGN KEY | Metric reference (references metrics.id) |
 
-}
+**Indexes:**
+- Primary key on `id`
+- Unique composite index on `(device_id, metric_id)` (uq_device_metric)
+- Index on `device_id` (idx_device_metrics_device)
+- Index on `metric_id` (idx_device_metrics_metric)
 
-Table "rules" {
+**Relationships:**
+- `device_id` → `devices.id` (ON DELETE CASCADE)
+- `metric_id` → `metrics.id` (ON DELETE RESTRICT)
 
-  "id" SERIAL [pk, increment]
+---
 
-  "name" VARCHAR(255) [not null]
+### telemetries
 
-  "description" TEXT
+Stores time-series telemetry data collected from devices. Uses JSONB for flexible value storage with generated columns for type-specific access.
 
-  "condition" JSONB [not null]
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | BIGSERIAL | PRIMARY KEY, AUTO INCREMENT | Unique telemetry record identifier |
+| device_metric_id | INTEGER | NOT NULL, FOREIGN KEY | Reference to device-metric combination (references device_metrics.id) |
+| value_jsonb | JSONB | NOT NULL | Telemetry value stored as JSONB with structure: `{"t": "type", "v": "value"}` |
+| value_numeric | NUMERIC | GENERATED ALWAYS AS STORED | Generated column for numeric values (when value_jsonb->>'t' = 'numeric') |
+| value_bool | BOOLEAN | GENERATED ALWAYS AS STORED | Generated column for boolean values (when value_jsonb->>'t' = 'bool') |
+| value_str | TEXT | GENERATED ALWAYS AS STORED | Generated column for string values (when value_jsonb->>'t' = 'str') |
+| ts | TIMESTAMPTZ | NOT NULL, DEFAULT now() | When the measurement was taken |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Record creation timestamp |
 
-  "action" JSONB [not null]
+**Indexes:**
+- Primary key on `id`
+- Unique composite index on `(device_metric_id, ts)` (unique_telemetry_per_metric_time)
+- Composite index on `(device_metric_id, ts)` (idx_telemetries_metric_time)
+- Index on `ts` (idx_telemetries_timestamp)
 
-  "is_active" BOOLEAN [default: TRUE]
+**Relationships:**
+- `device_metric_id` → `device_metrics.id` (ON DELETE CASCADE)
 
-  "device_metric_id" INTEGER
+**Note:** The `value_jsonb` field stores values in the format `{"t": "numeric|str|bool", "v": <actual_value>}`. Generated columns provide type-safe access to values based on the type indicator.
 
-  Indexes {
+---
 
-    (device_metric_id) [name: "idx_rules_device_metric"]
+### rules
 
-    (is_active) [name: "idx_rules_is_active"]
+Defines business rules that react to telemetry conditions and trigger actions.
 
-  }
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | SERIAL | PRIMARY KEY, AUTO INCREMENT | Unique rule identifier |
+| name | VARCHAR(255) | NOT NULL | Rule display name |
+| description | TEXT | NULL | Rule description |
+| condition | JSONB | NOT NULL | Rule condition logic (e.g., {"operator": ">", "value": 30}) |
+| action | JSONB | NOT NULL | Action to execute when condition is met (e.g., {"type": "alert", "target": "email"}) |
+| device_metric_id | INTEGER | NULL, FOREIGN KEY | Specific device-metric combination this rule applies to (references device_metrics.id) |
+| is_active | BOOLEAN | DEFAULT TRUE | Rule active status |
 
-}
+**Indexes:**
+- Primary key on `id`
+- Index on `device_metric_id` (idx_rules_device_metric)
+- Index on `is_active` (idx_rules_is_active)
 
-Table "events" {
+**Relationships:**
+- `device_metric_id` → `device_metrics.id` (ON DELETE CASCADE)
 
-  "id" BIGSERIAL [pk, increment]
+---
 
-  "timestamp" TIMESTAMP [not null]
+### events
 
-  "rule_id" INTEGER
+Stores events generated when rules are triggered or other system events occur.
 
-  "created_at" TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | BIGSERIAL | PRIMARY KEY, AUTO INCREMENT | Unique event identifier |
+| timestamp | TIMESTAMP | NOT NULL | Event occurrence time |
+| rule_id | INTEGER | NULL, FOREIGN KEY | Rule that triggered this event (references rules.id) |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
 
-  Indexes {
+**Indexes:**
+- Primary key on `id`
+- Index on `timestamp` (idx_events_timestamp)
+- Index on `rule_id` (idx_events_rule)
 
-    (timestamp) [name: "idx_events_timestamp"]
+**Relationships:**
+- `rule_id` → `rules.id` (ON DELETE CASCADE)
 
-    (rule_id) [name: "idx_events_rule"]
+---
 
-  }
+## Entity Relationship Summary
 
-}
+```
+users (1) ──< (many) devices
+devices (1) ──< (many) device_metrics ──> (many) metrics
+device_metrics (1) ──< (many) telemetries
+device_metrics (1) ──< (many) rules
+rules (1) ──< (many) events
+```
 
-// Table "notifications" {
+## Foreign Key Relationships
 
-//   "id" SERIAL [pk, increment]
+| From Table | From Column | To Table | To Column | Delete Action |
+|-----------|-------------|----------|-----------|---------------|
+| devices | user_id | users | id | CASCADE |
+| device_metrics | device_id | devices | id | CASCADE |
+| device_metrics | metric_id | metrics | id | RESTRICT |
+| telemetries | device_metric_id | device_metrics | id | CASCADE |
+| rules | device_metric_id | device_metrics | id | CASCADE |
+| events | rule_id | rules | id | CASCADE |
 
-//   "event_id" BIGINT
+## Key Design Decisions
 
-//   "type" ENUM('email','webhook','sms') [not null]
+1. **Telemetry Value Storage**: Uses JSONB with generated columns to support multiple data types (numeric, string, boolean) while maintaining type safety and query performance.
 
-//   "target" TEXT [not null]
+2. **Case-Insensitive Metric Types**: The `metric_type` field uses CITEXT to prevent duplicate metric types with different cases (e.g., "Temperature" vs "temperature").
 
-//   "status" ENUM('pending','sent','failed') [default: 'pending']
+3. **Cascade Deletes**: Most relationships use CASCADE to maintain referential integrity and prevent orphaned records. The exception is `metrics` → `device_metrics` which uses RESTRICT to prevent accidental deletion of metrics that are in use.
 
-//   "message" TEXT
+4. **Time-Series Optimization**: The `telemetries` table uses BIGSERIAL for high-volume data and includes composite indexes on `(device_metric_id, ts)` for efficient time-range queries.
 
-//   "sent_at" TIMESTAMP
+5. **Rule Evaluation**: Rules are linked to specific `device_metric_id` combinations, allowing fine-grained control over which telemetry data triggers which rules.
 
-//   "created_at" TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+## Future Considerations
 
-// }
+The following table is planned but not yet implemented:
 
-Table "metrics" {
-
-  "id" SERIAL [pk, increment]
-
-  "metric_type" CITEXT [unique, not null]
-
-  "data_type" ENUM('numeric', 'str', 'boolean') [not null]
-
-}
-
-Table telemetries {
-
-  id bigserial [pk, increment]
-
-  device_metric_id int [not null]
-
-  value_jsonb jsonb [not null]
-
-  // Generated columns — заповнюються тільки для правильного типу
-
-  value_numeric NUMERIC [note: 'GENERATED ALWAYS AS (CASE WHEN value_jsonb->>\'t\' = \'numeric\' THEN (value_jsonb->>\'v\')::numeric ELSE NULL END) STORED']
-
-  value_bool BOOLEAN [note: 'GENERATED ALWAYS AS (CASE WHEN value_jsonb->>\'t\' = \'bool\' THEN (value_jsonb->>\'v\')::boolean ELSE NULL END) STORED']
-
-  value_str TEXT [note: 'GENERATED ALWAYS AS (CASE WHEN value_jsonb->>\'t\' = \'str\' THEN value_jsonb->>\'v\' ELSE NULL END) STORED']
-
-  ts timestamptz [not null, default: `now()`]
-
-  created_at timestamptz [default: `now()`]
-
-  Indexes {
-
-    (device_metric_id, ts) [unique, name: 'unique_telemetry_per_metric_time']
-
-    (device_metric_id, ts) [name: 'idx_telemetries_metric_time']
-
-    ts [name: 'idx_telemetries_timestamp']
-
-  }
-
-}
-
-Table "device_metrics" {
-
-  "id" SERIAL [pk, increment]
-
-  "device_id" INTEGER [not null]
-
-  "metric_id" INTEGER [not null]
-
-  Indexes {
-
-    (device_id, metric_id) [unique, name: "uq_device_metric"]
-
-    (device_id) [name: "idx_device_metrics_device"]
-
-    (metric_id) [name: "idx_device_metrics_metric"]
-
-  }
-
-} 
-
-Ref: "users"."id" < "devices"."user_id" [delete: cascade]
-
-Ref:"devices"."id" < "device_metrics"."device_id" [delete: cascade]
-
-Ref:"metrics"."id" < "device_metrics"."metric_id" [delete: restrict]
-
-Ref:"device_metrics"."id" < "telemetries"."device_metric_id" [delete: cascade]
-
-Ref:"device_metrics"."id" < "rules"."device_metric_id" [delete: cascade]
-
-Ref:"rules"."id" < "events"."rule_id" [delete: cascade]
+### notifications
+- Stores notification records for events
+- Links to events table
+- Supports multiple notification types (email, webhook, SMS)
+- Tracks notification status and delivery timestamps
