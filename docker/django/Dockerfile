@@ -23,7 +23,7 @@ RUN python -m pip install --upgrade pip wheel \
     -r /app/requirements.txt
 
 
-FROM base AS staticfiles-stage
+FROM base AS runtime-deps-stage
 
 # install runtime dependencies
 RUN apt-get update && apt-get install --no-install-recommends -y \
@@ -36,6 +36,9 @@ COPY --from=build-stage /app/requirements.txt /app/requirements.txt
 RUN python -m pip install --no-index --find-links=/wheels \
     -r /app/requirements.txt \
     && rm -rf /wheels /app/requirements.txt
+
+
+FROM runtime-deps-stage AS staticfiles-stage
 
 # copy application files & collect static files
 COPY ./backend/ /app/
@@ -46,19 +49,7 @@ ENV DJANGO_SETTINGS_MODULE=conf.settings \
 RUN python manage.py collectstatic --noinput
 
 
-FROM base AS run-stage
-
-# install runtime dependencies
-RUN apt-get update && apt-get install --no-install-recommends -y \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY --from=build-stage /wheels /wheels
-COPY --from=build-stage /app/requirements.txt /app/requirements.txt
-
-RUN python -m pip install --no-index --find-links=/wheels \
-    -r /app/requirements.txt \
-    && rm -rf /wheels /app/requirements.txt
+FROM runtime-deps-stage AS run-stage
 
 # create user with limited permissions
 RUN addgroup --gid 10001 --system django && \
@@ -80,4 +71,4 @@ EXPOSE 8000
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["gunicorn", "conf.wsgi:application", "0.0.0.0:8000", "--workers=2", "--threads=4"]
+CMD ["gunicorn", "conf.wsgi:application", "--bind", "0.0.0.0:8000", "--workers=2", "--threads=4"]
