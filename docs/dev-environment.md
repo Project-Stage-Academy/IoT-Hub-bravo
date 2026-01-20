@@ -19,6 +19,10 @@ Two Compose files are used:
 
 Docker Compose automatically loads `docker-compose.override.yml` when you run `docker compose ...` without `-f`.
 
+**Security note**: `docker/django/Dockerfile` defines build-time `SECRET_KEY` environment variable,
+which is an intentionally unsafe placeholder used only for `collectstatic` command. 
+Runtime must supply a real secret key. Do not reuse the build placeholder in any environment.
+
 
 ### Base run
 `docker compose -f docker-compose.yml up -d --build`

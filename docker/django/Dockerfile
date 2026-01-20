@@ -44,7 +44,7 @@ FROM runtime-deps-stage AS staticfiles-stage
 COPY ./backend/ /app/
 
 ENV DJANGO_SETTINGS_MODULE=conf.settings \
-    SECRET_KEY=buildtime-placeholder
+    SECRET_KEY=unsafe-build-time-secret-do-not-use-in-production
 
 RUN python manage.py collectstatic --noinput
 
