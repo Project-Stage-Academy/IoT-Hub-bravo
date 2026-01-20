@@ -11,16 +11,94 @@ https://drive.google.com/file/d/1LE-NLDsWG7-AySHRq68_kEkrvKi0QT9n/view?usp=shari
 
 Django as API Gateway and admin UI. Python agents for telemetry ingestion via MQTT or HTTP. Java service for rule evaluation. Scala service for streaming processing and aggregation. PostgreSQL or TimescaleDB for metadata and time-series storage. Kafka or RabbitMQ as the messaging broker. Docker and Docker Compose for local development. CI/CD with GitHub Actions or GitLab CI. Observability via Prometheus and Grafana.
 
-## Quick start
+## Setup Instructions
 
-Clone the repository, set environment variables, and start the development monolith with Docker Compose. Example commands.
+### 1. Clone the Repository
 
 ```bash
-git clone <repo-url>
-cd iot-catalog-hub
-cp .env.example .env
+git clone <repository-url>
+cd IoT-Hub-bravo
+```
+
+### 2. Environment Variables Setup
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit the `.env` file and configure the following variables:
+   ```env
+   # Django Settings
+   # Generate a new secret key: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+   SECRET_KEY=django-insecure-change-this-in-production-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   DEBUG=True
+   ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+
+   # Database Configuration
+   DB_NAME=db_name
+   DB_USER=db_user
+   DB_PASSWORD=db_password
+   DB_HOST=localhost
+   DB_PORT=5432
+
+   # CORS Configuration
+   # Set to True only for development (allows all origins)
+   CORS_ALLOW_ALL_ORIGINS=False
+   # Comma-separated list of allowed origins (used when CORS_ALLOW_ALL_ORIGINS=False)
+   CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000
+   ```
+
+   **Important:** 
+   - Generate a secure `SECRET_KEY` for production. You can generate one using:
+     ```bash
+     python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+     ```
+   - Update database credentials to match your PostgreSQL setup
+   - Adjust `CORS_ALLOWED_ORIGINS` to match your frontend application URLs
+
+### 3. Start Services with Docker Compose
+
+Start the application and database services using Docker Compose:
+
+```bash
 docker compose up -d --build
-# open http://localhost:8000 for the API and admin
+```
+
+This command will:
+- Build the Docker images
+- Start PostgreSQL database
+- Start Django application
+- Run in detached mode (`-d`)
+
+To view logs:
+```bash
+docker compose logs -f
+```
+
+To stop the services:
+```bash
+docker compose down
+```
+
+### 4. Run Initial Database Migrations
+
+After starting the services, you need to run initial database migrations:
+
+```bash
+docker compose exec web python manage.py migrate
+```
+
+This will create all necessary database tables for the application.
+
+### 5. Access the Application
+
+- **API and Admin UI:** http://localhost:8000
+- **Django Admin:** http://localhost:8000/admin
+
+**Optional:** Create a superuser to access the Django admin interface:
+```bash
+docker compose exec web python manage.py createsuperuser
 ```
 
 ## Project workflow
