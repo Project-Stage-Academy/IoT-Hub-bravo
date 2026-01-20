@@ -43,6 +43,8 @@ FROM runtime-deps-stage AS staticfiles-stage
 # copy application files & collect static files
 COPY ./backend/ /app/
 
+ENV BUILD_TIME=1
+
 ENV DJANGO_SETTINGS_MODULE=conf.settings \
     SECRET_KEY=unsafe-build-time-secret-do-not-use-in-production
 
