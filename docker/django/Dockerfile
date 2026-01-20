@@ -62,7 +62,7 @@ COPY --from=staticfiles-stage --chown=django:django /app/staticfiles /app/static
 
 # copy entrypoint
 COPY --chown=django:django ./docker/django/entrypoint.sh /entrypoint.sh
-RUN chmod 755 /entrypoint.sh
+RUN chmod 555 /entrypoint.sh
 
 # switch to created user
 USER django
