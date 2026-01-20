@@ -1,0 +1,11 @@
+services:
+  web:
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+      - ./backend:/app
+
+volumes:
+  static_data:
+  media_data:

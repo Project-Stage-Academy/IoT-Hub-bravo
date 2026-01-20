@@ -13,6 +13,11 @@ Django as API Gateway and admin UI. Python agents for telemetry ingestion via MQ
 
 ## Setup Instructions
 
+**Prerequisites**
+- Docker Desktop (macOS/Windows) or Docker Engine (Linux)
+- Docker Compose
+- Git
+
 ### 1. Clone the Repository
 
 ```bash
@@ -59,7 +64,7 @@ cd IoT-Hub-bravo
 
 ### 3. Start Services with Docker Compose
 
-Start the application and database services using Docker Compose:
+Start the application and database development services using Docker Compose:
 
 ```bash
 docker compose up -d --build
@@ -68,6 +73,7 @@ docker compose up -d --build
 This command will:
 - Build the Docker images
 - Start PostgreSQL database
+- Run Django migrations
 - Start Django application
 - Run in detached mode (`-d`)
 
@@ -81,17 +87,7 @@ To stop the services:
 docker compose down
 ```
 
-### 4. Run Initial Database Migrations
-
-After starting the services, you need to run initial database migrations:
-
-```bash
-docker compose exec web python manage.py migrate
-```
-
-This will create all necessary database tables for the application.
-
-### 5. Access the Application
+### 4. Access the Application
 
 - **API and Admin UI:** http://localhost:8000
 - **Django Admin:** http://localhost:8000/admin
@@ -100,6 +96,8 @@ This will create all necessary database tables for the application.
 ```bash
 docker compose exec web python manage.py createsuperuser
 ```
+
+For more details, see [docs/dev-environment.md](./docs/dev-environment.md).
 
 ## Project workflow
 
