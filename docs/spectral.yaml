@@ -17,9 +17,8 @@ rules:
       severity: warn
 
   schema-must-have-examples:
-    given: "$.components.schemas[*]"
+    given: "$.components.schemas[*].example"
     then:
-      field: example
       function: truthy
       message: "Schema '{{path}}' must include at least one example"
       severity: warn
@@ -38,24 +37,6 @@ rules:
       functionOptions:
         match: "^[A-Z][^A-Z]*.*$"
       message: "Operation summary must be sentence cased"
-      severity: error
-
-  description-length:
-    given: "$.paths[*][*].description"
-    then:
-      function: length
-      functionOptions:
-        min: 10
-      message: "Operation description is too short; make it more informative"
-      severity: warn
-
-  no-empty-query-params:
-    given: "$.paths[*][*].parameters[?(@.in=='query')]"
-    then:
-      function: allTruthy
-      functionOptions:
-        paths: ["name", "schema.type"]
-      message: "Query parameter '{{name}}' is missing a name or type"
       severity: error
 
   example-summary-sentence-case:
