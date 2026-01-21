@@ -1,55 +1,75 @@
-extends: "spectral:oas"
+extends: ["spectral:oas"]
+
 rules:
-  no-unused-components: error
-  no-empty-servers: warn
-  operation-description: error
-  info-contact: warn
+
+  no-unused-components:
+    given: "$.components.schemas[*]"
+    then:
+      function: truthy
+      message: "Component '{{path}}' is defined but never used"
+      severity: error
+
+  no-empty-servers:
+    given: "$.servers[*]"
+    then:
+      function: truthy
+      message: "Server entry must not be empty"
+      severity: warn
+
+  schema-must-have-examples:
+    given: "$.components.schemas[*]"
+    then:
+      field: example
+      function: truthy
+      message: "Schema '{{path}}' must include at least one example"
+      severity: warn
+
+  operation-description:
+    given: "$.paths[*][*].description"
+    then:
+      function: truthy
+      message: "Operation must have a description"
+      severity: error
 
   operation-summary-sentence-case:
-    description: "Operation summary should start with a capital letter (sentence case)"
-    message: "Operation summary must be in sentence case"
-    severity: error
     given: "$.paths[*][*].summary"
     then:
       function: pattern
       functionOptions:
         match: "^[A-Z][^A-Z]*.*$"
-
-  example-summary-sentence-case:
-    description: "Example summaries should start with a capital letter"
-    message: "Example summary must be sentence cased"
-    severity: error
-    given: "$..examples[*].summary"
-    then:
-      function: pattern
-      functionOptions:
-        match: "^[A-Z][^A-Z]*.*$"
-
-  schema-must-have-examples:
-  description: "Every schema should have at least one example"
-  message: "Schema '{{path}}' must include an example"
-  severity: warn
-  given: "$.components.schemas[*]"
-  then:
-    field: example
-    function: truthy
+      message: "Operation summary must be sentence cased"
+      severity: error
 
   description-length:
-    description: "Operation descriptions should be at least 10 characters"
-    message: "Description is too short; make it more informative"
-    severity: warn
     given: "$.paths[*][*].description"
     then:
       function: length
       functionOptions:
         min: 10
+      message: "Operation description is too short; make it more informative"
+      severity: warn
 
   no-empty-query-params:
-    description: "Query parameters should have a name and type"
-    message: "Query parameter '{{name}}' is missing name or type"
-    severity: error
     given: "$.paths[*][*].parameters[?(@.in=='query')]"
     then:
       function: allTruthy
       functionOptions:
         paths: ["name", "schema.type"]
+      message: "Query parameter '{{name}}' is missing a name or type"
+      severity: error
+
+  example-summary-sentence-case:
+    given: "$..examples[*].summary"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[A-Z][^A-Z]*.*$"
+      message: "Example summary must be sentence cased"
+      severity: error
+
+  info-contact:
+    given: "$.info.contact"
+    then:
+      function: truthy
+      message: "API info must include a contact"
+      severity: warn
