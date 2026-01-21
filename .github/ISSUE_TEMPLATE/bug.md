@@ -1,4 +1,15 @@
-## Bug [№]: <Full name of the bug.>
+---
+name: Bug Report
+about: Template for reporting a Bug in the project
+title: "BUG[№] <short description>"
+labels: bug
+type: Bug
+projects: IoT Hub bravo
+assignees:
+
+---
+
+# Bug [№]: <Full name of the bug.>
 
 ## Description
 <Provide a detailed description of the bug, including context, observed behavior, expected behavior, and any relevant references. Include steps to reproduce if known.>

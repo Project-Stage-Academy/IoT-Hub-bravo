@@ -1,3 +1,14 @@
+---
+name: Feature Request
+about: Template for requesting a new Feature
+title: "FTR[№] <short description>"
+labels: enhancement
+type: Feature
+projects: IoT Hub bravo
+assignees:
+
+---
+
 # Feature [№]: <Full name of the feature>
 
 ## Description

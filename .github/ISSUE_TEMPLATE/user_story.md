@@ -1,3 +1,14 @@
+---
+name: User Story
+about: Template for creating a new User Story issue
+title: "US[№] <short description>"
+labels: user story
+type: Task
+projects: IoT Hub bravo
+assignees:
+
+---
+
 # User Story [№]: <Full name of user story>
 
 ## Description
