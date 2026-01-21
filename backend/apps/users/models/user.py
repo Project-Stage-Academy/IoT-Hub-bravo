@@ -1,10 +1,11 @@
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser
 
 class UserRole(models.TextChoices):
     ADMIN = 'admin', 'Admin'
     CLIENT = 'client', 'Client'
 
-class User(models.Model):
+class User(AbstractBaseUser):
     id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=150, unique=True, null=False)
     email = models.EmailField(max_length=255, unique=True, null=False)
@@ -18,6 +19,11 @@ class User(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True, null=False)
     updated_at = models.DateTimeField(auto_now=True, null=False)
+
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['email']
+
+    last_login = None
 
     class Meta:
         db_table = 'users'

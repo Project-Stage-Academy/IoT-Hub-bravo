@@ -1,6 +1,7 @@
 from django.db import models
-from django.db.models import Case, When, Value
-from django.db.models.functions import Cast, KeyTextTransform
+from django.db.models import Case, When, Value, DecimalField
+from django.db.models.functions import Cast
+from django.db.models.fields.json import KeyTextTransform
 
 class Telemetry(models.Model):
     id = models.BigAutoField(primary_key=True)  
@@ -10,19 +11,22 @@ class Telemetry(models.Model):
     value_numeric = models.GeneratedField(
         expression=Case(
             When(
-                KeyTextTransform('t', 'value_jsonb') == Value('numeric'),
-                then=Cast(KeyTextTransform('v', 'value_jsonb'), output_field=models.DecimalField())
+                value_jsonb__t='numeric',
+                then=Cast(
+                    KeyTextTransform('v', 'value_jsonb'), 
+                    output_field=DecimalField(max_digits=20, decimal_places=10)
+                )
             ),
-            default=None
+            default=Value(None, output_field=DecimalField(max_digits=20, decimal_places=10))
         ),
-        output_field=models.DecimalField(max_digits=20, decimal_places=10, null=True),
+        output_field=DecimalField(max_digits=20, decimal_places=10),
         db_persist=True,
     )
 
     value_bool = models.GeneratedField(
         expression=Case(
             When(
-                KeyTextTransform('t', 'value_jsonb') == Value('bool'),
+                value_jsonb__t='bool',
                 then=Cast(KeyTextTransform('v', 'value_jsonb'), output_field=models.BooleanField())
             ),
             default=None
@@ -34,7 +38,7 @@ class Telemetry(models.Model):
     value_str = models.GeneratedField(
         expression=Case(
             When(
-                KeyTextTransform('t', 'value_jsonb') == Value('str'),
+                value_jsonb__t='str',
                 then=KeyTextTransform('v', 'value_jsonb')
             ),
             default=None
@@ -51,5 +55,10 @@ class Telemetry(models.Model):
         indexes = [
             models.Index(fields=['device_metric', 'ts'], name='idx_telemetries_metric_time'),
             models.Index(fields=['ts'], name='idx_telemetries_timestamp'),
-            models.UniqueConstraint(fields=['device_metric', 'ts'], name='unique_telemetry_per_metric_time')
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['device_metric', 'ts'],
+                name='unique_telemetry_per_metric_time'
+            ),
+    ]

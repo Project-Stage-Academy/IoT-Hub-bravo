@@ -66,6 +66,9 @@ COPY --from=staticfiles-stage --chown=django:django /app/staticfiles /app/static
 COPY --chown=django:django ./docker/django/entrypoint.sh /entrypoint.sh
 RUN chmod 555 /entrypoint.sh
 
+# Install PostgreSQL client for health checks
+RUN apt-get update && apt-get install -y postgresql-client
+
 # switch to created user
 USER django
 
