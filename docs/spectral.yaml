@@ -26,14 +26,13 @@ rules:
         match: "^[A-Z][^A-Z]*.*$"
 
   schema-must-have-examples:
-    description: "Every schema should have at least one example"
-    message: "Schema '{{path}}' must include an example"
-    severity: warn
-    given: "$.components.schemas[*]"
-    then:
-      function: truthy
-      functionOptions:
-        path: "example"
+  description: "Every schema should have at least one example"
+  message: "Schema '{{path}}' must include an example"
+  severity: warn
+  given: "$.components.schemas[*]"
+  then:
+    field: example
+    function: truthy
 
   description-length:
     description: "Operation descriptions should be at least 10 characters"
