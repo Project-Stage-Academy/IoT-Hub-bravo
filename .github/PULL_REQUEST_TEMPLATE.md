@@ -7,11 +7,11 @@ assignees:
 ---
 
 ## Description
-- Provide a concise description of what this PR does, including context and purpose.
+- <Provide a concise description of what this PR does, including context and purpose.>
 
-## Related User Story / Feature
-- Link to the related User Story or Feature issue: #
+## Related Issue
+- <Link to the related issue: #>
 
 ## Additional Notes (optional)
-- Any extra context, screenshots, or references
+- <Any extra context, screenshots, or references>
 

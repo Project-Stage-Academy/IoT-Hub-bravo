@@ -24,7 +24,7 @@ assignees:
 - AC3: Feature is documented and tested
 
 ## Dependencies
-- <List dependent issues, tasks, or external resources>
+- <List dependent issues or external resources>
 
 ## Additional Notes
 - <Any extra context, mockups, links, or references>

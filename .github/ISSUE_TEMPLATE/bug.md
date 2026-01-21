@@ -36,7 +36,7 @@ assignees:
 - AC3: Related tests pass (unit/integration/UI if applicable)
 
 ## Dependencies
-- <List dependent issues, tasks, or external resources>
+- <List dependent issues or external resources>
 
 ## Additional Notes
 - <Any extra context, logs, references, or instructions>

@@ -24,7 +24,7 @@ assignees:
 - AC3: ...
 
 ## Dependencies
-- <List dependent stories, tasks, or external resources>
+- <List dependent issues or external resources>
 
 ## Additional Notes
 - <Any extra context, references, or instructions>
