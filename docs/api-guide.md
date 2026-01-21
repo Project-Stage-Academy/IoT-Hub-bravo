@@ -240,5 +240,5 @@ This document must be linked from the main README.md.
 #### Documentation: ####
 
 - [API Authentication & Style Guide](#api-authentication--style-guide)
-- [OpenAPI Specification](docs/api.yaml) (`docs/api.yaml`)
-- [Postman Collection](docs/postman_collection.json) (`docs/postman_collection.json`)
+- [OpenAPI Specification](api.yaml) (`docs/api.yaml`)
+- [Postman Collection](postman_collection.json) (`docs/postman_collection.json`)
