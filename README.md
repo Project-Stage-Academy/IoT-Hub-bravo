@@ -111,3 +111,6 @@ A working MVP and microservice stack in staging. CI pipelines that build .deb pa
 
 Follow the repository guidelines for branching, testing and CI. Open a pull request for feature work and include tests and documentation for changes.
 
+## Grading
+
+Intern work is evaluated according to a measurable rubric. See the full details [here](docs/grading.md).
