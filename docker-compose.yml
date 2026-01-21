@@ -1,4 +1,14 @@
 services:
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    container_name: openAPI_specification
+    ports:
+      - "5433:8080"
+    environment:
+      SWAGGER_JSON: /docs/api.yaml
+    volumes:
+      - ./docs:/docs
+    restart: always
   web:
     build:
       context: .

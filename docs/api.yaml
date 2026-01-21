@@ -1,0 +1,611 @@
+openapi: 3.0.3
+
+info:
+  title: Devices & Telemetry API
+  version: "1.4.1"
+  description: |
+    API for managing devices and their telemetry, with full CRUD support, JWT authentication,
+    pagination, schema versioning, and example payloads for testing.
+
+servers:
+  - url: http://localhost:8000
+
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Obtain JWT access token
+      description: |
+        Authenticates a user and returns a JWT access token.
+        The token must be used in the `Authorization` header for all protected endpoints.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+            examples:
+              valid_credentials:
+                value:
+                  username: test_user
+                  password: password
+      responses:
+        '200':
+          description: JWT token issued successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/devices/:
+    get:
+      tags:
+        - Devices
+      summary: List devices with pagination
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 5
+          description: Maximum number of devices to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of items to skip
+      responses:
+        '200':
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDevices'
+    post:
+      tags:
+        - Devices
+      summary: Create a new device
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionedDeviceCreate'
+      responses:
+        '201':
+          description: Device created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/devices/{id}/:
+    get:
+      tags:
+        - Devices
+      summary: Get device by id
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Device found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '404':
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Devices
+      summary: Replace device
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceCreate'
+      responses:
+        '200':
+          description: Device updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - Devices
+      summary: Partially update device
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevicePatch'
+      responses:
+        '200':
+          description: Device updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          description: Invalid patch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Devices
+      summary: Delete device
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Device deleted
+        '404':
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/telemetry/:
+    get:
+      tags:
+        - Telemetry
+      summary: List telemetry records by device_id with pagination
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 5
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of telemetry records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTelemetry'
+    post:
+      tags:
+        - Telemetry
+      summary: Create telemetry record
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelemetryCreate'
+      responses:
+        '201':
+          description: Telemetry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Telemetry'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/telemetry/{id}/:
+    get:
+      tags:
+        - Telemetry
+      summary: Get telemetry by id
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Telemetry found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Telemetry'
+        '404':
+          description: Telemetry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Telemetry
+      summary: Replace telemetry
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelemetryCreate'
+      responses:
+        '200':
+          description: Telemetry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Telemetry'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Telemetry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - Telemetry
+      summary: Partially update telemetry
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelemetryPatch'
+      responses:
+        '200':
+          description: Telemetry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Telemetry'
+        '400':
+          description: Invalid patch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Telemetry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Telemetry
+      summary: Delete telemetry
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Telemetry deleted
+        '404':
+          description: Telemetry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token containing claims:
+        - sub: authenticated user id
+        - scope: granted permissions (e.g., devices:read)
+        - role: user | admin | device
+        - exp: expiration timestamp
+
+  schemas:
+    Device:
+      type: object
+      properties:
+        id:
+          type: integer
+        serial_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        user_id:
+          type: integer
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - serial_id
+        - name
+        - user_id
+        - is_active
+        - created_at
+
+    DeviceCreate:
+      type: object
+      properties:
+        serial_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        user_id:
+          type: integer
+        is_active:
+          type: boolean
+      required:
+        - serial_id
+        - name
+        - user_id
+        - is_active
+
+    DevicePatch:
+      type: object
+      properties:
+        serial_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        user_id:
+          type: integer
+        is_active:
+          type: boolean
+
+    VersionedDeviceCreate:
+      type: object
+      properties:
+        schema_version:
+          type: string
+        device:
+          $ref: '#/components/schemas/DeviceCreate'
+      required:
+        - schema_version
+        - device
+
+    Telemetry:
+      type: object
+      properties:
+        id:
+          type: integer
+        device_id:
+          type: integer
+        key:
+          type: string
+        value:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - device_id
+        - key
+        - value
+        - created_at
+
+    TelemetryCreate:
+      type: object
+      properties:
+        device_id:
+          type: integer
+        key:
+          type: string
+        value:
+          type: number
+      required:
+        - device_id
+        - key
+        - value
+
+    TelemetryPatch:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: number
+
+    AuthLoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          example: test_user
+        password:
+          type: string
+          format: password
+          example: password
+      required:
+        - username
+        - password
+
+    AuthTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: bearer
+        expires_in:
+          type: integer
+          example: 3600
+      required:
+        - access_token
+        - token_type
+        - expires_in
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+      example:
+        code: 404
+        message: "Resource not found"
+
+    PaginatedDevices:
+      type: object
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
+      required:
+        - total
+        - limit
+        - offset
+        - items
+
+    PaginatedTelemetry:
+      type: object
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Telemetry'
+      required:
+        - total
+        - limit
+        - offset
+        - items

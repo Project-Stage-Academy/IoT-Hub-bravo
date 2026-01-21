@@ -1,0 +1,252 @@
+{
+  "info": {
+    "name": "Devices & Telemetry API - Full",
+    "_postman_id": "full-collection-123",
+    "description": "Full collection covering auth, all CRUD operations, pagination, schema versioning and error scenarios",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "token", "value": "" },
+    { "key": "deviceId", "value": "1" },
+    { "key": "telemetryId", "value": "101" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login (Get JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('token', json.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"test_user\",\n  \"password\": \"password\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Devices",
+      "item": [
+        {
+          "name": "List Devices (paginated)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/devices/?limit=5&offset=0"
+          }
+        },
+        {
+          "name": "Create Device (schema v1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('deviceId', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/devices/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schema_version\": \"1.0\",\n  \"device\": {\n    \"serial_id\": \"ABC12345\",\n    \"name\": \"Device One\",\n    \"description\": \"Temperature sensor\",\n    \"user_id\": 42,\n    \"is_active\": true\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Device - Invalid (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/devices/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schema_version\": \"1.0\",\n  \"device\": {\n    \"name\": \"No Serial ID\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Device by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/devices/{{deviceId}}/"
+          }
+        },
+        {
+          "name": "Get Device by ID - Not Found (404)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/devices/99999/"
+          }
+        },
+        {
+          "name": "Update Device (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/devices/{{deviceId}}/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial_id\": \"ABC12345\",\n  \"name\": \"Device Updated\",\n  \"description\": \"Updated desc\",\n  \"user_id\": 42,\n  \"is_active\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Patch Device",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/devices/{{deviceId}}/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Device Patched\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Device",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/devices/{{deviceId}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Telemetry",
+      "item": [
+        {
+          "name": "List Telemetry (paginated)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/telemetry/?device_id={{deviceId}}&limit=5&offset=0"
+          }
+        },
+        {
+          "name": "Create Telemetry",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('telemetryId', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/telemetry/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_id\": {{deviceId}},\n  \"key\": \"temperature\",\n  \"value\": 23.5\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Telemetry - Invalid (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/telemetry/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_id\": \"wrong\",\n  \"value\": \"NaN\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Telemetry by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/telemetry/{{telemetryId}}/"
+          }
+        },
+        {
+          "name": "Update Telemetry (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/telemetry/{{telemetryId}}/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_id\": {{deviceId}},\n  \"key\": \"temperature\",\n  \"value\": 24.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Patch Telemetry",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/telemetry/{{telemetryId}}/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": 25.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Telemetry",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/telemetry/{{telemetryId}}/"
+          }
+        }
+      ]
+    }
+  ]
+}

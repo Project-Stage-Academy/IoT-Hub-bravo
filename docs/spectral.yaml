@@ -1,0 +1,58 @@
+extends:
+  - recommended
+
+rules:
+  no-unused-components: error
+  no-empty-servers: warn
+  operation-description: error
+  info-contact: warn
+
+  operation-summary-sentence-case:
+    description: "Operation summary should start with a capital letter (sentence case)"
+    message: "Operation summary must be in sentence case"
+    severity: error
+    given: "$.paths[*][*].summary"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[A-Z][^A-Z]*.*$"
+
+  example-summary-sentence-case:
+    description: "Example summaries should start with a capital letter"
+    message: "Example summary must be sentence cased"
+    severity: error
+    given: "$..examples[*].summary"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[A-Z][^A-Z]*.*$"
+
+  schema-must-have-examples:
+    description: "Every schema should have at least one example"
+    message: "Schema '{{path}}' must include an example"
+    severity: warn
+    given: "$.components.schemas[*]"
+    then:
+      function: truthy
+      functionOptions:
+        path: "example"
+
+  description-length:
+    description: "Operation descriptions should be at least 10 characters"
+    message: "Description is too short; make it more informative"
+    severity: warn
+    given: "$.paths[*][*].description"
+    then:
+      function: length
+      functionOptions:
+        min: 10
+
+  no-empty-query-params:
+    description: "Query parameters should have a name and type"
+    message: "Query parameter '{{name}}' is missing name or type"
+    severity: error
+    given: "$.paths[*][*].parameters[?(@.in=='query')]"
+    then:
+      function: allTruthy
+      functionOptions:
+        paths: ["name", "schema.type"]
