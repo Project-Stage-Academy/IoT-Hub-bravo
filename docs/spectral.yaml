@@ -1,6 +1,4 @@
-extends:
-  - recommended
-
+extends: "spectral:oas"
 rules:
   no-unused-components: error
   no-empty-servers: warn
