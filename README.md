@@ -176,3 +176,49 @@ A working MVP and microservice stack in staging. CI pipelines that build .deb pa
 
 Follow the repository guidelines for branching, testing and CI. Open a pull request for feature work and include tests and documentation for changes.
 
+
+## Quick Start - Admin Setup
+
+### Automatic Initialization
+
+When you run `docker-compose up`, the system automatically performs the following on startup:
+
+1. ✅ Waits for PostgreSQL database to be ready
+2. ✅ Runs database migrations
+3. ✅ Creates admin user groups with permissions:
+   - **Superuser** - Full system access
+   - **Admin** - Full access to all IoT Hub models (view, add, change, delete)
+   - **Operator** - Can view, add, and change data (cannot delete)
+   - **Viewer** - Read-only access to all data
+4. ✅ Creates test users for each role
+5. ✅ Seeds initial test data (devices, metrics, telemetry, rules, events)
+
+### Admin Credentials
+
+After running `docker-compose up`, you can access the admin panel with these pre-created users:
+
+| Username | Password | Role | Permissions |
+|----------|----------|------|-------------|
+| `admin_from_script` | `admin123` | Superuser | Full system access, can manage users and settings |
+| `admin_user` | `admin123` | Admin | Full CRUD access to all IoT models |
+| `operator_user` | `operator123` | Operator | View, Add, Change (no Delete) |
+| `viewer_user` | `viewer123` | Viewer | Read-only access |
+
+**Admin Panel URL:** http://localhost:8000/admin/
+
+### Manual Commands
+
+If you need to manually run initialization commands:
+
+```bash
+# Enter Django container
+docker exec -it web bash
+
+# Setup admin users and groups (safe to run multiple times)
+python manage.py setup_admin
+
+# Seed test data (safe to run multiple times)
+python manage.py seed_db
+
+# Or force re-seeding
+python manage.py seed_db --force
