@@ -34,22 +34,45 @@ cd IoT-Hub-bravo
 
 2. Edit the `.env` file and configure the following variables:
    ```env
+   # ===============================
+   # Notes
+   # ===============================
+   # - This file is intended as an example and should be copied to `.env` before use.
+   # - Override values in `.env` for local development or Docker deployment as needed.
+   # - Keep SECRET_KEY secret in production.
+   
+   # ===============================
    # Django Settings
+   # ===============================
    # Generate a new secret key: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
    SECRET_KEY=django-insecure-change-this-in-production-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   
+   # For local/dev — True (shows errors). For staging/prod — False.
    DEBUG=True
    ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
-
+   
+   # ===============================
    # Database Configuration
-   DB_NAME=db_name
-   DB_USER=db_user
-   DB_PASSWORD=db_password
-   DB_HOST=localhost
+   # ===============================
+   
+   # Database name, user, and password
+   DB_NAME=iot_hub_db
+   DB_USER=iot_user_db
+   DB_PASSWORD=iot_password
+   
+   # Database host:
+   # - For local launch without Docker: use DB_HOST=localhost
+   #   (make sure PostgreSQL is installed locally, database and user are created)
+   # - For Docker Compose launch: use DB_HOST=db
+   DB_HOST=db  # or localhost for local PostgreSQL
    DB_PORT=5432
-
+   
+   # ===============================
    # CORS Configuration
+   # ===============================
    # Set to True only for development (allows all origins)
    CORS_ALLOW_ALL_ORIGINS=False
+   
    # Comma-separated list of allowed origins (used when CORS_ALLOW_ALL_ORIGINS=False)
    CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000
    ```
@@ -74,6 +97,7 @@ This command will:
 - Build the Docker images
 - Start PostgreSQL database
 - Run Django migrations
+- Seed database with initial development data
 - Start Django application
 - Run in detached mode (`-d`)
 
@@ -87,7 +111,48 @@ To stop the services:
 docker compose down
 ```
 
-### 4. Access the Application
+### 4. Database Setup
+
+The project uses an automated workflow for database management via the `entrypoint.sh` script. When you run `docker compose up`, the system automatically handles the database readiness, schema updates, and initial data.
+
+> Manual intervention is only required if you change the database schema in your Python code or need to re-run the initial data population.
+
+#### **Automated Workflow (Default)**
+Every time the container starts, the following sequence is executed automatically:
+1. **Wait for DB:** Ensures PostgreSQL is ready to accept connections.
+2. **Apply Migrations:** Syncs the database schema with the current models.
+3. **Seed Database:** Runs the `seed_db` command to ensure development data exists.
+
+---
+
+#### **Manual Management**
+
+If you modify `models.py` files or need to trigger database tasks manually, use the following commands:
+
+| Task | Command | When to use |
+| :--- | :--- | :--- |
+| **Create Migrations** | `docker compose exec web python manage.py makemigrations` | After you change any `models.py` file. |
+| **Apply Migrations** | `docker compose exec web python manage.py migrate` | To manually sync the DB schema. |
+| **Seed Database** | `docker compose exec web python manage.py seed_db` | To populate the DB with initial data manually. |
+
+
+
+---
+
+#### **Initial Data Population (Seed)**
+The `seed_db` command is **idempotent** (safe to run multiple times). It populates the database with essential development objects:
+
+* **Default Users & Roles:** Creates a `testuser` (Client role) and an `adminuser` (Admin role) with pre-configured passwords.
+* **Sample Devices:** Registers initial IoT devices for testing.
+* **Metrics & Bindings:** Sets up device-metric associations (e.g., temperature, humidity, battery level).
+* **Initial Rules & Events:** Defines default logic rules and populates sample event data.
+
+To manually refresh or verify the initial state, run:
+```bash
+docker compose exec web python manage.py seed_db
+```
+
+### 5. Access the Application
 
 - **API and Admin UI:** http://localhost:8000
 - **Django Admin:** http://localhost:8000/admin
