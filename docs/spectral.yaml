@@ -1,13 +1,14 @@
-extends: ["spectral:oas"]
+extends:
+  - "spectral:oas"
 
 rules:
-
   no-unused-components:
+    description: "Warn on schemas that are defined but not referenced"
     given: "$.components.schemas[*]"
     then:
-      function: truthy
-      message: "Component '{{path}}' is defined but never used"
-      severity: error
+      function: unreferencedReusableObject
+      functionOptions:
+        reusableObjectsLocation: "#/components/schemas"
 
   no-empty-servers:
     given: "$.servers[*]"
@@ -17,8 +18,10 @@ rules:
       severity: warn
 
   schema-must-have-examples:
-    given: "$.components.schemas[*].example"
+    description: "Schema must include example"
+    given: "$.components.schemas[*]"
     then:
+      field: example
       function: truthy
       message: "Schema '{{path}}' must include at least one example"
       severity: warn

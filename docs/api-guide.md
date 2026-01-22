@@ -85,6 +85,7 @@ GET /api/devices/
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 ### 1.5 Endpoint Authorization Matrix
+**Implementation**: Authorization is enforced via Django middleware that validates JWT claims. See `middleware/jwt_auth.py`(TODO) for implementation details.
 **Devices API**
 | Endpoint             | Method | Required Scope   | Required Role |
 | -------------------- | ------ | ---------------- | ------------- |
@@ -99,7 +100,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 | Endpoint               | Method | Required Scope     | Required Role  |
 | ---------------------- | ------ | ------------------ | -------------- |
 | `/api/telemetry/`      | GET    | `telemetry:read`   | user           |
-| `/api/telemetry/`      | POST   | `telemetry:write`  | device / admin |
+| `/api/telemetry/`      | POST   | `telemetry:write`  | admin          |
 | `/api/telemetry/{id}/` | GET    | `telemetry:read`   | user           |
 | `/api/telemetry/{id}/` | PUT    | `telemetry:write`  | admin          |
 | `/api/telemetry/{id}/` | PATCH  | `telemetry:write`  | admin          |
