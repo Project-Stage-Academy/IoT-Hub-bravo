@@ -18,9 +18,37 @@ class DeviceAdmin(admin.ModelAdmin):
     )
     list_filter = ("is_active", "created_at")
     search_fields = ("serial_id", "name", "user__username", "description")
-    readonly_fields = ("id", "created_at", "latest_telemetry_timestamp")
+    readonly_fields = (
+        "id",
+        "created_at",
+        "latest_telemetry_timestamp",
+        "recent_telemetry_display",
+    )
     date_hierarchy = "created_at"
     actions = ["enable_devices", "disable_devices"]
+    fieldsets = (
+        (
+            "Device Information",
+            {
+                "fields": (
+                    "id",
+                    "serial_id",
+                    "name",
+                    "description",
+                    "user",
+                    "is_active",
+                    "created_at",
+                )
+            },
+        ),
+        (
+            "Telemetry Data",
+            {
+                "fields": ("latest_telemetry_timestamp", "recent_telemetry_display"),
+                "classes": ("collapse",),
+            },
+        ),
+    )
 
     @admin.display(description="Latest Telemetry")
     def latest_telemetry_timestamp(self, obj):
@@ -32,6 +60,36 @@ class DeviceAdmin(admin.ModelAdmin):
         if latest:
             return latest
         return format_html('<span style="color: gray;">No data</span>')
+
+    @admin.display(description="Recent Telemetry (Last 10)")
+    def recent_telemetry_display(self, obj):
+        telemetries = (
+            Telemetry.objects.filter(device_metric__device=obj)
+            .select_related("device_metric__metric")
+            .order_by("-ts")[:10]
+        )
+
+        if not telemetries:
+            return format_html(
+                '<p style="color: gray;">No telemetry data available</p>'
+            )
+
+        html = '<table style="width: 100%; border-collapse: collapse;">'
+        html += '<tr style="background-color: #f2f2f2;"><th style="border: 1px solid #ddd; padding: 8px;">Metric</th><th style="border: 1px solid #ddd; padding: 8px;">Value</th><th style="border: 1px solid #ddd; padding: 8px;">Timestamp</th></tr>'
+
+        for t in telemetries:
+            value = ""
+            if t.value_numeric is not None:
+                value = f"{t.value_numeric:.3f}"
+            elif t.value_bool is not None:
+                value = str(t.value_bool)
+            elif t.value_str is not None:
+                value = t.value_str
+
+            html += f'<tr><td style="border: 1px solid #ddd; padding: 8px;">{t.device_metric.metric.metric_type}</td><td style="border: 1px solid #ddd; padding: 8px;">{value}</td><td style="border: 1px solid #ddd; padding: 8px;">{t.ts}</td></tr>'
+
+        html += "</table>"
+        return format_html(html)
 
     @admin.action(description="Enable selected devices")
     def enable_devices(self, request, queryset):
