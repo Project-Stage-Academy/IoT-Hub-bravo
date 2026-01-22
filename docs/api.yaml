@@ -59,6 +59,7 @@ paths:
       tags:
         - Authentication
       summary: Refresh access token
+      operationId: refreshToken
       security: []
       requestBody:
         required: true
