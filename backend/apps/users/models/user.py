@@ -43,3 +43,6 @@ class User(AbstractBaseUser, PermissionsMixin):
                 name="check_valid_user_role",
             )
         ]
+
+    def __str__(self):
+        return self.username
