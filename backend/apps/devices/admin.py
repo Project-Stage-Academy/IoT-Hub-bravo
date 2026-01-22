@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Device, Telemetry
+from .models import Device, Telemetry, Metric, DeviceMetric
 import csv
 from django.http import HttpResponse
 
@@ -153,3 +153,20 @@ class TelemetryAdmin(admin.ModelAdmin):
             request, f"{queryset.count()} telemetry record(s) exported to CSV."
         )
         return response
+
+
+@admin.register(Metric)
+class MetricAdmin(admin.ModelAdmin):
+    list_display = ("id", "metric_type", "data_type")
+    list_filter = ("data_type",)
+    search_fields = ("metric_type",)
+    readonly_fields = ("id",)
+
+
+@admin.register(DeviceMetric)
+class DeviceMetricAdmin(admin.ModelAdmin):
+    list_display = ("id", "device", "metric", "device_active")
+
+    @admin.display(boolean=True, description="Device Active")
+    def device_active(self, obj):
+        return obj.device.is_active
