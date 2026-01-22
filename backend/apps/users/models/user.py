@@ -1,11 +1,15 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+
+from ..managers import UserManager
+
 
 class UserRole(models.TextChoices):
     ADMIN = 'admin', 'Admin'
     CLIENT = 'client', 'Client'
 
-class User(AbstractBaseUser):
+class User(AbstractBaseUser, PermissionsMixin):
+    objects = UserManager()
     id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=150, unique=True, null=False)
     email = models.EmailField(max_length=255, unique=True, null=False)
@@ -19,6 +23,8 @@ class User(AbstractBaseUser):
     )
     created_at = models.DateTimeField(auto_now_add=True, null=False)
     updated_at = models.DateTimeField(auto_now=True, null=False)
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email']
@@ -36,4 +42,3 @@ class User(AbstractBaseUser):
                 name="check_valid_user_role"
             )
         ]
-
