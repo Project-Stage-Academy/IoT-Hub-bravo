@@ -5,8 +5,9 @@ from ..managers import UserManager
 
 
 class UserRole(models.TextChoices):
-    ADMIN = 'admin', 'Admin'
-    CLIENT = 'client', 'Client'
+    ADMIN = "admin", "Admin"
+    CLIENT = "client", "Client"
+
 
 class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
@@ -26,19 +27,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['email']
+    USERNAME_FIELD = "username"
+    REQUIRED_FIELDS = ["email"]
 
     last_login = None
 
     class Meta:
-        db_table = 'users'
+        db_table = "users"
         indexes = [
-            models.Index(fields=['role'], name='idx_users_role'),
+            models.Index(fields=["role"], name="idx_users_role"),
         ]
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(role__in = UserRole.values),
-                name="check_valid_user_role"
+                condition=models.Q(role__in=UserRole.values),
+                name="check_valid_user_role",
             )
         ]
