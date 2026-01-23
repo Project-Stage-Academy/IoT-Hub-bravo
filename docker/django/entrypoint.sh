@@ -28,10 +28,19 @@ python manage.py migrate --noinput || { echo "Migration failed"; exit 1; }
 echo "Migrations completed."
 
 # -----------------------------
+# Setup TimescaleDB
+# -----------------------------
+echo "Setting up TimescaleDB..."
+python manage.py setup_timescaledb || { echo "TimescaleDB setup failed"; exit 1; }
+echo "TimescaleDB setup completed." 
+
+# -----------------------------
 # Seed Database
 # -----------------------------
 echo "Seeding database..."
 python manage.py seed_db || { echo "Seeding failed"; exit 1; }
 echo "Seeding completed."
+
+
 
 exec "$@"
