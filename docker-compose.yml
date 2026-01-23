@@ -2,13 +2,13 @@ services:
   swagger-ui:
     image: swaggerapi/swagger-ui
     container_name: openAPI_specification
+    restart: always
     ports:
       - "5433:8080"
     environment:
       SWAGGER_JSON: /docs/api.yaml
     volumes:
       - ./docs:/docs
-    restart: always
     networks:
       - backend
 
@@ -27,9 +27,34 @@ services:
       - ./.env
     networks:
       - backend
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   media_data:
+  db_data:
 
 networks:
   backend:
