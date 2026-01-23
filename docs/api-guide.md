@@ -74,7 +74,7 @@ Content-Type: application/json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "bearer",
-  "expires_in": 3600
+  "expires_in": "2026-01-22T17:00:00Z"
 }
 ```
 Access token will automatically expire in 60 minutes.
