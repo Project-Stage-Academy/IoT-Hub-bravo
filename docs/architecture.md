@@ -31,7 +31,7 @@ The MVP prioritizes **clarity, debuggability, and local reproducibility** over h
 * Hosts the Django Admin UI for operational control
 * Handles authentication and authorization (JWT + admin auth)
 
-#### Telemetry Ingestion Agents
+#### Telemetry Ingestion Agents (Python)
 
 * Accept telemetry via:
 
@@ -40,19 +40,19 @@ The MVP prioritizes **clarity, debuggability, and local reproducibility** over h
 * Validate and normalize incoming telemetry payloads
 * Publish telemetry messages to the message broker
 
-#### Rule Evaluation Service
+#### Rule Evaluation Service (Java)
 
 * Consumes telemetry events from the message broker
 * Evaluates trigger-based rules (thresholds, conditions)
 * Emits rule-triggered events back to the broker
 
-#### Streaming & Aggregation Service
+#### Streaming & Aggregation Service (Scala)
 
 * Consumes telemetry streams
 * Performs basic aggregations and stream processing
 * Publishes aggregated results or derived events
 
-#### Message Broker
+#### Message Broker (Kafka / RabbitMQ)
 
 * Serves as the asynchronous backbone of the system
 * Decouples ingestion, rule evaluation, and downstream processing
