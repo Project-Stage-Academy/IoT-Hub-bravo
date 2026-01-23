@@ -46,3 +46,7 @@ Confirm the app is reachable from host and routing works
 - Migrations applied successfully
 - Service available at http://localhost:8000
 - Django admin available at http://localhost:8000/admin/
+
+## Validated by
+
+- [Name of validator] Date: 2026-01-23
