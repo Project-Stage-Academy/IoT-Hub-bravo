@@ -1,14 +1,4 @@
-Ок, робимо **`docs/architecture.md`** так, щоб воно:
-
-* відповідало requirements
-* відповідало **реальному dev stack**
-* без «майбутніх» мікросервісів у діаграмі (тільки MVP)
-
-Нижче — **готовий контент файлу** + Mermaid, який ти зможеш експортувати в SVG/PNG.
-
----
-
-# IoT Catalog Hub — Architecture (MVP)
+# IoT Catalog Hub - Architecture (MVP)
 
 ## 1. Architecture Overview
 
@@ -61,7 +51,7 @@ The MVP prioritizes **clarity, debuggability, and local reproducibility** over h
 * Performs basic aggregations and stream processing
 * Publishes aggregated results or derived events
 
-#### Message Broker (Kafka or RabbitMQ)
+#### Message Broker (Kafka / RabbitMQ)
 
 * Serves as the asynchronous backbone of the system
 * Decouples ingestion, rule evaluation, and downstream processing
@@ -126,7 +116,7 @@ The MVP prioritizes **clarity, debuggability, and local reproducibility** over h
 Below is the **authoritative MVP architecture diagram**.
 This diagram reflects only components that will be (are) implemented in development stack.
 
-```
+```mermaid
 flowchart LR
     subgraph Clients
         Device["IoT Devices"]
