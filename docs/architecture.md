@@ -126,7 +126,6 @@ flowchart LR
 
     subgraph Ingestion
         MQTT["MQTT Agent (Python)"]
-        HTTPAgent["HTTP Ingestion Agent (Python)"]
     end
 
     subgraph Core
@@ -152,10 +151,8 @@ flowchart LR
     end
 
     Device --> MQTT
-    Device --> HTTPAgent
 
     MQTT --> Broker
-    HTTPAgent --> Broker
 
     AdminUser --> Django
 
@@ -173,7 +170,6 @@ flowchart LR
 
     Django --> Prom
     MQTT --> Prom
-    HTTPAgent --> Prom
     Rules --> Prom
     Stream --> Prom
 
