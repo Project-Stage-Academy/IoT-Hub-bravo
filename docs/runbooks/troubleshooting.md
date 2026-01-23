@@ -54,14 +54,13 @@ docker compose up -d --build
 
 ---
 
-## 3. MQTT / HTTP Telemetry Not Received
+## 3. MQTT Telemetry Not Received
 
 **Symptoms:** Telemetry agents do not forward device messages.
 **Diagnostics:**
 
 ```bash
 docker compose logs mqtt
-docker compose logs http_agent
 ```
 
 **Fix:**

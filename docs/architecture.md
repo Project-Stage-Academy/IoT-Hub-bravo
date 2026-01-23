@@ -31,11 +31,11 @@ The MVP prioritizes **clarity, debuggability, and local reproducibility** over h
 
 #### Django API Gateway & Admin UI
 
-* Acts as the primary entry point for HTTP clients
+* Acts as the primary entry point for clients
 * Provides REST APIs for:
 
   * Device registry
-  * Telemetry ingestion (HTTP)
+  * Telemetry ingestion
   * Rule management
   * User and role management
 * Hosts the Django Admin UI for operational control
@@ -46,7 +46,6 @@ The MVP prioritizes **clarity, debuggability, and local reproducibility** over h
 * Accept telemetry via:
 
   * MQTT
-  * HTTP forwarding
 * Validate and normalize incoming telemetry payloads
 * Publish telemetry messages to the message broker
 
@@ -136,7 +135,6 @@ flowchart LR
 
     subgraph Ingestion
         MQTT["MQTT Agent (Python)"]
-        HTTPAgent["HTTP Ingestion Agent (Python)"]
     end
 
     subgraph Core
@@ -162,10 +160,8 @@ flowchart LR
     end
 
     Device --> MQTT
-    Device --> HTTPAgent
 
     MQTT --> Broker
-    HTTPAgent --> Broker
 
     AdminUser --> Django
 
@@ -183,7 +179,6 @@ flowchart LR
 
     Django --> Prom
     MQTT --> Prom
-    HTTPAgent --> Prom
     Rules --> Prom
     Stream --> Prom
 
