@@ -1,14 +1,4 @@
-Ок, робимо **`docs/architecture.md`** так, щоб воно:
-
-* відповідало requirements
-* відповідало **реальному dev stack**
-* без «майбутніх» мікросервісів у діаграмі (тільки MVP)
-
-Нижче — **готовий контент файлу** + Mermaid, який ти зможеш експортувати в SVG/PNG.
-
----
-
-# IoT Catalog Hub — Architecture (MVP)
+# IoT Catalog Hub - Architecture (MVP)
 
 ## 1. Architecture Overview
 
@@ -41,7 +31,7 @@ The MVP prioritizes **clarity, debuggability, and local reproducibility** over h
 * Hosts the Django Admin UI for operational control
 * Handles authentication and authorization (JWT + admin auth)
 
-#### Telemetry Ingestion Agents (Python)
+#### Telemetry Ingestion Agents
 
 * Accept telemetry via:
 
@@ -50,19 +40,19 @@ The MVP prioritizes **clarity, debuggability, and local reproducibility** over h
 * Validate and normalize incoming telemetry payloads
 * Publish telemetry messages to the message broker
 
-#### Rule Evaluation Service (Java)
+#### Rule Evaluation Service
 
 * Consumes telemetry events from the message broker
 * Evaluates trigger-based rules (thresholds, conditions)
 * Emits rule-triggered events back to the broker
 
-#### Streaming & Aggregation Service (Scala)
+#### Streaming & Aggregation Service
 
 * Consumes telemetry streams
 * Performs basic aggregations and stream processing
 * Publishes aggregated results or derived events
 
-#### Message Broker (Kafka or RabbitMQ)
+#### Message Broker
 
 * Serves as the asynchronous backbone of the system
 * Decouples ingestion, rule evaluation, and downstream processing
@@ -127,7 +117,7 @@ The MVP prioritizes **clarity, debuggability, and local reproducibility** over h
 Below is the **authoritative MVP architecture diagram**.
 This diagram reflects only components that will be (are) implemented in development stack.
 
-```
+```mermaid
 flowchart LR
     subgraph Clients
         Device["IoT Devices"]
