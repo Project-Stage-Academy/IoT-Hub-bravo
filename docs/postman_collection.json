@@ -1,22 +1,22 @@
 {
   "info": {
-    "name": "Devices & Telemetry API - Full",
-    "_postman_id": "full-collection-123",
-    "description": "Full collection covering auth, all CRUD operations, pagination, schema versioning and error scenarios",
+    "name": "Devices & Telemetry API (OpenAPI 1.4.1)",
+    "_postman_id": "devices-telemetry-141-full",
+    "description": "Full Postman collection aligned with OpenAPI 3.0.3 (Devices, Telemetry, Auth)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8000" },
     { "key": "token", "value": "" },
-    { "key": "deviceId", "value": "1" },
-    { "key": "telemetryId", "value": "101" }
+    { "key": "deviceId", "value": "" },
+    { "key": "telemetryId", "value": "" }
   ],
   "item": [
     {
       "name": "Authentication",
       "item": [
         {
-          "name": "Login (Get JWT)",
+          "name": "Login",
           "event": [
             {
               "listen": "test",
@@ -44,22 +44,21 @@
       "name": "Devices",
       "item": [
         {
-          "name": "List Devices (paginated)",
+          "name": "List Devices",
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": "{{baseUrl}}/api/devices/?limit=5&offset=0"
+            "url": "{{baseUrl}}/api/devices?limit=5&offset=0"
           }
         },
         {
-          "name": "Create Device (schema v1)",
+          "name": "Create Device",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "const json = pm.response.json();",
-                  "pm.collectionVariables.set('deviceId', json.id);"
+                  "pm.collectionVariables.set('deviceId', pm.response.json().id);"
                 ]
               }
             }
@@ -70,25 +69,10 @@
               { "key": "Authorization", "value": "Bearer {{token}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/api/devices/",
+            "url": "{{baseUrl}}/api/devices",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"schema_version\": \"1.0\",\n  \"device\": {\n    \"serial_id\": \"ABC12345\",\n    \"name\": \"Device One\",\n    \"description\": \"Temperature sensor\",\n    \"user_id\": 42,\n    \"is_active\": true\n  }\n}"
-            }
-          }
-        },
-        {
-          "name": "Create Device - Invalid (400)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "url": "{{baseUrl}}/api/devices/",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"schema_version\": \"1.0\",\n  \"device\": {\n    \"name\": \"No Serial ID\"\n  }\n}"
+              "raw": "{\n  \"schema_version\": \"v1\",\n  \"device\": {\n    \"serial_id\": \"ABC12345\",\n    \"name\": \"Smoke detector\",\n    \"description\": \"CO2 sensor\",\n    \"user_id\": 1,\n    \"is_active\": true\n  }\n}"
             }
           }
         },
@@ -97,15 +81,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": "{{baseUrl}}/api/devices/{{deviceId}}/"
-          }
-        },
-        {
-          "name": "Get Device by ID - Not Found (404)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": "{{baseUrl}}/api/devices/99999/"
+            "url": "{{baseUrl}}/api/devices/{{deviceId}}"
           }
         },
         {
@@ -116,10 +92,10 @@
               { "key": "Authorization", "value": "Bearer {{token}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/api/devices/{{deviceId}}/",
+            "url": "{{baseUrl}}/api/devices/{{deviceId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"serial_id\": \"ABC12345\",\n  \"name\": \"Device Updated\",\n  \"description\": \"Updated desc\",\n  \"user_id\": 42,\n  \"is_active\": false\n}"
+              "raw": "{\n  \"schema_version\": \"v1\",\n  \"device\": {\n    \"serial_id\": \"ABC12345\",\n    \"name\": \"Updated device\",\n    \"description\": \"Updated\",\n    \"user_id\": 1,\n    \"is_active\": false\n  }\n}"
             }
           }
         },
@@ -131,10 +107,10 @@
               { "key": "Authorization", "value": "Bearer {{token}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/api/devices/{{deviceId}}/",
+            "url": "{{baseUrl}}/api/devices/{{deviceId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Device Patched\"\n}"
+              "raw": "{\n  \"schema_version\": \"v1\",\n  \"device\": {\n    \"name\": \"Patched name\"\n  }\n}"
             }
           }
         },
@@ -143,7 +119,7 @@
           "request": {
             "method": "DELETE",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": "{{baseUrl}}/api/devices/{{deviceId}}/"
+            "url": "{{baseUrl}}/api/devices/{{deviceId}}"
           }
         }
       ]
@@ -152,11 +128,11 @@
       "name": "Telemetry",
       "item": [
         {
-          "name": "List Telemetry (paginated)",
+          "name": "List Telemetry",
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": "{{baseUrl}}/api/telemetry/?device_id={{deviceId}}&limit=5&offset=0"
+            "url": "{{baseUrl}}/api/telemetry?device_id={{deviceId}}&limit=5&offset=0"
           }
         },
         {
@@ -166,8 +142,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "const json = pm.response.json();",
-                  "pm.collectionVariables.set('telemetryId', json.id);"
+                  "pm.collectionVariables.set('telemetryId', pm.response.json().id);"
                 ]
               }
             }
@@ -178,25 +153,10 @@
               { "key": "Authorization", "value": "Bearer {{token}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/api/telemetry/",
+            "url": "{{baseUrl}}/api/telemetry",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"device_id\": {{deviceId}},\n  \"key\": \"temperature\",\n  \"value\": 23.5\n}"
-            }
-          }
-        },
-        {
-          "name": "Create Telemetry - Invalid (400)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "url": "{{baseUrl}}/api/telemetry/",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"device_id\": \"wrong\",\n  \"value\": \"NaN\"\n}"
+              "raw": "{\n  \"schema_version\": \"v1\",\n  \"telemetry\": {\n    \"device_id\": {{deviceId}},\n    \"key\": \"temperature\",\n    \"value\": 23.5\n  }\n}"
             }
           }
         },
@@ -205,7 +165,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": "{{baseUrl}}/api/telemetry/{{telemetryId}}/"
+            "url": "{{baseUrl}}/api/telemetry/{{telemetryId}}"
           }
         },
         {
@@ -216,10 +176,10 @@
               { "key": "Authorization", "value": "Bearer {{token}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/api/telemetry/{{telemetryId}}/",
+            "url": "{{baseUrl}}/api/telemetry/{{telemetryId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"device_id\": {{deviceId}},\n  \"key\": \"temperature\",\n  \"value\": 24.0\n}"
+              "raw": "{\n  \"schema_version\": \"v1\",\n  \"telemetry\": {\n    \"device_id\": {{deviceId}},\n    \"key\": \"temperature\",\n    \"value\": 24.0\n  }\n}"
             }
           }
         },
@@ -231,10 +191,10 @@
               { "key": "Authorization", "value": "Bearer {{token}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/api/telemetry/{{telemetryId}}/",
+            "url": "{{baseUrl}}/api/telemetry/{{telemetryId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"value\": 25.0\n}"
+              "raw": "{\n  \"schema_version\": \"v1\",\n  \"telemetry\": {\n    \"value\": 25.0\n  }\n}"
             }
           }
         },
@@ -243,7 +203,7 @@
           "request": {
             "method": "DELETE",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": "{{baseUrl}}/api/telemetry/{{telemetryId}}/"
+            "url": "{{baseUrl}}/api/telemetry/{{telemetryId}}"
           }
         }
       ]
