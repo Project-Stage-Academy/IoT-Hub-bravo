@@ -93,6 +93,8 @@ erDiagram
 ## DBML LINK
 https://dbdiagram.io/d/IoT-db-696d114dd6e030a0245f8e22
 
+---
+
 ## TimescaleDB Hypertable Setup
 To optimize the storage of high-frequency telemetry data, we use **TimescaleDB Hypertables**. This partitions the telemetry data by time, ensuring fast queries even with millions of records.
 
@@ -105,6 +107,8 @@ If you need to manually trigger the hypertable creation (e.g., after database ma
 ```bash 
 docker compose exec web python manage.py setup_timescaledb
 ```
+
+---
 
 ## Example Common Query & EXPLAIN ANALYZE
 
@@ -209,3 +213,104 @@ Sort  (cost=23.89..23.89 rows=1 width=1311) (actual time=0.456..0.472 rows=0 loo
 1. Starting with bitmap index scan on `device_metrics` (device_id index) — immediately detects no metrics for the device  
 2. Early termination by PostgreSQL planner — skips scanning the `telemetries` hypertable and its chunks entirely (never executed on ChunkAppend)  
 3. Primary key lookups for joins to `devices` and `metrics` — negligible cost even when data exists
+
+
+---
+
+## Database Backup and Recovery Manual
+
+This guide provides instructions for creating database snapshots, automating the backup process, and verifying data integrity
+
+
+### 1. Manual Backup (Custom Format)
+
+**To create a manual backup:**
+
+```bash
+# 1. Ensure the backup directory exists on your host machine
+mkdir -p backups
+
+# 2. Run the dump command
+# The output is redirected to a file on your host machine
+docker compose exec -T db pg_dump \
+  -U iot_user_db -d iot_hub_db \
+  --format=custom \
+  --no-owner --no-privileges \
+  > backups/iot_hub_$(date +%Y%m%d_%H%M%S).dump
+```
+
+### 2. Restore Procedure
+To restore data from a .dump file, we use pg_restore. 
+
+**To restore into a test database:**
+
+```bash
+# 1. Create a clean database for verification
+docker compose exec db psql -U iot_user_db -d postgres -c "DROP DATABASE IF EXISTS iot_db_test;"
+docker compose exec db psql -U iot_user_db -d postgres -c "CREATE DATABASE iot_db_test;"
+
+# 2. Enable TimescaleDB to restore
+docker compose exec db psql -U iot_user_db -d iot_db_test \
+  -c "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
+
+
+# 3. Restore the data (using 4 parallel jobs for better performance)
+docker compose exec -i -T db pg_restore \
+  -U iot_user_db \
+  -d iot_db_test \
+  --no-owner \
+  --no-privileges \
+  < backups/snapshot_20260124_022006.dump #set your backup file name
+```
+
+
+[!IMPORTANT] Note the -i flag and the < operator. This pipes the file from your host machine into the Docker container.
+
+### 3. Automated Daily Backup Script
+Save the following script as scripts/backup_db.sh in your project root.
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+# --- Configuration ---
+BACKUP_DIR="./backups"
+DB_NAME="iot_hub_db"
+DB_USER="iot_user_db"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="$BACKUP_DIR/snapshot_$TIMESTAMP.dump"
+
+# Create directory if it doesn't exist
+mkdir -p "$BACKUP_DIR"
+
+echo "Starting database backup for $DB_NAME..."
+
+# Execute dump
+docker compose exec -T db pg_dump \
+  -U "$DB_USER" -d "$DB_NAME" \
+  --format=custom \
+  --no-owner --no-privileges \
+  > "$BACKUP_FILE"
+
+echo "Backup created successfully: $BACKUP_FILE"
+echo "Size: $(du -h "$BACKUP_FILE" | cut -f1)"
+
+# --- Cleanup ---
+# Remove backups older than 7 days to save disk space
+find "$BACKUP_DIR" -name "snapshotш*.dump" -mtime +7 -delete
+echo "Old backups (older than 7 days) have been removed."
+```
+
+Setup instructions:
+* Make it executable: `chmod +x scripts/backup_db.sh`
+* Run manually: `./scripts/backup_db.sh`
+
+
+### 4. Scheduling with Cron
+To automate backups on a server, add the script to the system's `crontab`.
+* Open crontab: `crontab -e`
+* Add the following line (runs daily at 7:00 AM):
+```bash
+0 7 * * * cd /path/to/your/project && ./scripts/backup_db.sh >> backups/backup.log 2>&1
+```
+* `:wq` to save 
