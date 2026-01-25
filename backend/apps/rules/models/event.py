@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class Event(models.Model):
     id = models.BigAutoField(primary_key=True)
     timestamp = models.DateTimeField(default=models.functions.Now(), null=False, db_index=True)
