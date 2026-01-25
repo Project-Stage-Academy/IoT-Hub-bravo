@@ -5,13 +5,15 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+defaults: &backend_defaults
+  run:
+    working-directory: ./backend
+
 jobs:
   lint:
     name: Lint Code
     runs-on: ubuntu-22.04
-    defaults:
-      run:
-        working-directory: ./backend
+    defaults: *backend_defaults
 
     steps:
       - name: Get code
@@ -66,9 +68,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ "3.10", "3.11" ]
-    defaults:
-      run:
-        working-directory: ./backend
+    defaults: *backend_defaults
 
     steps:
       - name: Get code
@@ -100,6 +100,8 @@ jobs:
     name: Build Django container
     runs-on: ubuntu-22.04
     needs: [ test ]
+    env:
+      DOCKERFILE_PATH: ./docker/django/Dockerfile
 
     steps:
       - name: Get code
@@ -112,7 +114,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./docker/django/Dockerfile
+          file: ${{ env.DOCKERFILE_PATH }}
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
