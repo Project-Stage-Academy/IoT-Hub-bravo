@@ -1,0 +1,59 @@
+extends:
+  - "spectral:oas"
+
+rules:
+  no-unused-components:
+    description: "Warn on schemas that are defined but not referenced"
+    given: "$.components.schemas[*]"
+    then:
+      function: unreferencedReusableObject
+      functionOptions:
+        reusableObjectsLocation: "#/components/schemas"
+
+  no-empty-servers:
+    given: "$.servers[*]"
+    then:
+      function: truthy
+      message: "Server entry must not be empty"
+      severity: warn
+
+  schema-must-have-examples:
+    description: "Schema must include example"
+    given: "$.components.schemas[*]"
+    then:
+      field: example
+      function: truthy
+      message: "Schema '{{path}}' must include at least one example"
+      severity: warn
+
+  operation-description:
+    given: "$.paths[*][*].description"
+    then:
+      function: truthy
+      message: "Operation must have a description"
+      severity: error
+
+  operation-summary-sentence-case:
+    given: "$.paths[*][*].summary"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[A-Z][^A-Z]*.*$"
+      message: "Operation summary must be sentence cased"
+      severity: error
+
+  example-summary-sentence-case:
+    given: "$..examples[*].summary"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[A-Z][^A-Z]*.*$"
+      message: "Example summary must be sentence cased"
+      severity: error
+
+  info-contact:
+    given: "$.info.contact"
+    then:
+      function: truthy
+      message: "API info must include a contact"
+      severity: warn

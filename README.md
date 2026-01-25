@@ -155,6 +155,7 @@ docker compose exec web python manage.py seed_db
 ### 5. Access the Application
 
 - **API and Admin UI:** http://localhost:8000
+- **Swagger UI (API testing)**: http://localhost:5433
 - **Django Admin:** http://localhost:8000/admin
 
 **Optional:** Create a superuser to access the Django admin interface:
@@ -175,6 +176,7 @@ A working MVP and microservice stack in staging. CI pipelines that build .deb pa
 ## Contributing
 
 Follow the repository guidelines for branching, testing and CI. Open a pull request for feature work and include tests and documentation for changes.
+Before contributing, review the [API Authentication & Style Guide](./docs/api-guide.md) to ensure consistency in endpoints, authentication, and JSON formatting.
 
 ## Grading
 
