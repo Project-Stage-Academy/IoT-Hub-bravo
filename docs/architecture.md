@@ -36,6 +36,7 @@ The MVP prioritizes **clarity, debuggability, and local reproducibility** over h
 * Accept telemetry via:
 
   * MQTT
+  * HTTP
 * Validate and normalize incoming telemetry payloads
 * Publish telemetry messages to the message broker
 
@@ -125,6 +126,7 @@ flowchart LR
 
     subgraph Ingestion
         MQTT["MQTT Agent (Python)"]
+        HTTPAgent["HTTP Ingestion Agent (Python)"]
     end
 
     subgraph Core
@@ -150,8 +152,10 @@ flowchart LR
     end
 
     Device --> MQTT
+    Device --> HTTPAgent
 
     MQTT --> Broker
+    HTTPAgent --> Broker
 
     AdminUser --> Django
 
@@ -169,10 +173,9 @@ flowchart LR
 
     Django --> Prom
     MQTT --> Prom
+    HTTPAgent --> Prom
     Rules --> Prom
     Stream --> Prom
-
-    Prom --> Grafana
 ```
 
 ---
