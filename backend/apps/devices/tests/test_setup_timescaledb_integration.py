@@ -27,7 +27,7 @@ from unittest.mock import MagicMock, patch
 class TestSetupTimescaleDBIntegration:
     """
     Integration test suite for TimescaleDB hypertable setup command.
-    
+
     Validates:
     - Command execution and output generation
     - Flag handling (--dry-run, --force, combinations)
@@ -38,11 +38,11 @@ class TestSetupTimescaleDBIntegration:
     def test_setup_timescaledb_runs_without_error(self):
         """
         Test basic command execution.
-        
+
         Validates that the setup_timescaledb command executes and produces
         output. If TimescaleDB extension is not available in the test environment,
         the command appropriately reports the unavailability.
-        
+
         Expected outcomes:
         - Command completes with output
         - Either setup proceeds or extension unavailability is reported
@@ -57,18 +57,17 @@ class TestSetupTimescaleDBIntegration:
 
         output = out.getvalue()
         assert (
-            "Starting TimescaleDB setup" in output
-            or "not available" in output
+            "Starting TimescaleDB setup" in output or "not available" in output
         ), "Command should produce output indicating setup or extension status"
 
     def test_dry_run_flag_does_not_modify_database(self):
         """
         Test --dry-run flag behavior.
-        
+
         Validates that the --dry-run flag causes the command to show planned
         SQL operations without executing them, preventing unintended database
         modifications during testing or preview scenarios.
-        
+
         Expected outcomes:
         - Command includes dry-run notification in output
         - No actual SQL execution occurs
@@ -89,11 +88,11 @@ class TestSetupTimescaleDBIntegration:
     def test_force_flag_bypasses_hypertable_check(self):
         """
         Test --force flag behavior.
-        
+
         Validates that the --force flag allows re-running the setup command
         even if the telemetries table is already a hypertable. This is useful
         for reapplying compression policies or retention rules.
-        
+
         Expected outcomes:
         - Command bypasses early exit for existing hypertable
         - Setup steps are attempted or extension status is reported
@@ -111,12 +110,12 @@ class TestSetupTimescaleDBIntegration:
     def test_dry_run_and_force_together(self):
         """
         Test combined --dry-run and --force flags.
-        
+
         Validates that both flags can be used simultaneously:
         - --force bypasses hypertable existence check
         - --dry-run prevents actual SQL execution
         - All planned setup operations are displayed
-        
+
         Expected outcomes:
         - Command completes successfully
         - Both flag behaviors are respected
@@ -134,12 +133,12 @@ class TestSetupTimescaleDBIntegration:
     def test_command_with_no_flags(self):
         """
         Test default command execution without flags.
-        
+
         Validates the standard execution path where:
         - Hypertable existence is checked (exits early if already exists)
         - TimescaleDB setup proceeds only if necessary
         - Appropriate status messages are output
-        
+
         Expected outcomes:
         - Command produces informational output
         - Normal execution flow is followed
@@ -162,7 +161,7 @@ class TestSetupTimescaleDBExtensionChecks:
     def test_extension_not_available_exits_with_error(self, mocker):
         """
         Test that command exits with error when TimescaleDB extension is not available.
-        
+
         Verifies that the command:
         - Checks pg_available_extensions
         - Exits with code 1 when extension not found
@@ -190,7 +189,7 @@ class TestSetupTimescaleDBExtensionChecks:
     def test_extension_available_but_not_installed_shows_notice(self, mocker):
         """
         Test that command shows notice when extension is available but not yet enabled.
-        
+
         Verifies that:
         - Extension availability check passes
         - Installation check returns None (not installed)
@@ -220,7 +219,7 @@ class TestSetupTimescaleDBExtensionChecks:
     def test_extension_already_installed_skips_notice(self, mocker):
         """
         Test that command skips "not yet enabled" notice when extension already installed.
-        
+
         Verifies that:
         - Extension availability check passes
         - Installation check returns a version (already installed)
@@ -252,7 +251,7 @@ class TestSetupTimescaleDBHypertableChecks:
     def test_table_already_hypertable_exits_without_force(self, mocker):
         """
         Test that command exits early when table is already hypertable (without --force).
-        
+
         Verifies that:
         - Extension checks pass
         - Hypertable check finds existing hypertable
@@ -280,7 +279,7 @@ class TestSetupTimescaleDBHypertableChecks:
     def test_table_not_yet_hypertable_proceeds_with_setup(self, mocker):
         """
         Test that command proceeds to setup when table is not yet hypertable.
-        
+
         Verifies that:
         - Extension checks pass
         - Hypertable check returns None (not yet hypertable)
@@ -316,7 +315,7 @@ class TestSetupTimescaleDBDryRun:
     def test_dry_run_shows_all_six_sql_steps_exactly(self):
         """
         Test that --dry-run displays all 6 SQL steps in correct order.
-        
+
         Verifies:
         - All 6 SQL steps are shown with "Would execute:" prefix
         - Steps are in correct order (CREATE EXTENSION → compression → retention)
@@ -354,18 +353,30 @@ class TestSetupTimescaleDBDryRun:
         pos_retention = output.find("add_retention_policy")
 
         # All positions should be found (either all > 0 or all == -1 if extension unavailable)
-        positions = [pos_create_ext, pos_drop_constraint, pos_hypertable,
-                    pos_compress, pos_compression_policy, pos_retention]
+        positions = [
+            pos_create_ext,
+            pos_drop_constraint,
+            pos_hypertable,
+            pos_compress,
+            pos_compression_policy,
+            pos_retention,
+        ]
 
         # If extension available, verify order
         if all(p >= 0 for p in positions):
-            assert (pos_create_ext < pos_drop_constraint < pos_hypertable <
-                   pos_compress < pos_compression_policy < pos_retention)
+            assert (
+                pos_create_ext
+                < pos_drop_constraint
+                < pos_hypertable
+                < pos_compress
+                < pos_compression_policy
+                < pos_retention
+            )
 
     def test_dry_run_shows_cleaned_sql_without_extra_whitespace(self):
         """
         Test that SQL in dry-run output is cleaned (indentation removed).
-        
+
         Verifies:
         - Multi-line SQL statements are reformatted cleanly
         - No excessive leading whitespace per line
@@ -385,8 +396,9 @@ class TestSetupTimescaleDBDryRun:
             return
 
         # Extract "Would execute:" blocks
-        sql_blocks = re.findall(r"Would execute:\n(.*?)(?=Would execute:|Dry run|$)",
-                               output, re.DOTALL)
+        sql_blocks = re.findall(
+            r"Would execute:\n(.*?)(?=Would execute:|Dry run|$)", output, re.DOTALL
+        )
 
         for block in sql_blocks:
             lines = block.strip().split("\n")
@@ -405,7 +417,7 @@ class TestSetupTimescaleDBErrorHandling:
     def test_sql_steps_executed_in_atomic_transaction(self, mocker):
         """
         Test that SQL steps are executed within transaction.atomic() context.
-        
+
         Verifies:
         - All SQL steps are within atomic transaction
         - On error, transaction context is used properly
@@ -416,9 +428,9 @@ class TestSetupTimescaleDBErrorHandling:
 
         mock_cursor = MagicMock()
         mock_cursor.fetchone.side_effect = [
-            (1,),        # pg_available_extensions → available
-            ("17.0",),   # pg_extension → installed
-            None,        # timescaledb_information.hypertables → not hypertable
+            (1,),  # pg_available_extensions → available
+            ("17.0",),  # pg_extension → installed
+            None,  # timescaledb_information.hypertables → not hypertable
         ]
 
         execute_call_count = [0]
@@ -444,7 +456,7 @@ class TestSetupTimescaleDBErrorHandling:
     def test_database_error_shows_full_traceback_in_debug_mode(self, mocker):
         """
         Test that full traceback is shown when DEBUG=True, but not when DEBUG=False.
-        
+
         Verifies:
         - DEBUG=True → shows "Full traceback:" and exception details
         - DEBUG=False → shows only error message, no traceback
@@ -479,7 +491,7 @@ class TestSetupTimescaleDBErrorHandling:
     def test_operational_error_during_execution_caught_and_reported(self, mocker):
         """
         Test that OperationalError (connection lost) is caught and reported.
-        
+
         Verifies:
         - OperationalError is caught separately
         - Error message is shown
@@ -500,4 +512,3 @@ class TestSetupTimescaleDBErrorHandling:
         output = out.getvalue()
         # Should show error indication
         assert "Cannot check TimescaleDB availability" in output or "error" in output.lower()
-

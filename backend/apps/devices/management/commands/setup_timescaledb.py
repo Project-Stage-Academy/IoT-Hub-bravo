@@ -14,12 +14,12 @@ class Command(BaseCommand):
         parser.add_argument(
             '--force',
             action='store_true',
-            help='Force setup even if already configured as hypertable'
+            help='Force setup even if already configured as hypertable',
         )
         parser.add_argument(
             '--dry-run',
             action='store_true',
-            help='Show what would be executed without making any changes'
+            help='Show what would be executed without making any changes',
         )
 
     def handle(self, *args, **options):
@@ -38,32 +38,40 @@ class Command(BaseCommand):
         try:
             with connection.cursor() as cursor:
                 # 1. Is extension available at all?
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT 1
                     FROM pg_available_extensions
                     WHERE name = 'timescaledb'
-                """)
+                """
+                )
                 extension_available = cursor.fetchone() is not None
 
                 if not extension_available:
-                    self.stdout.write(self.style.ERROR(
-                        "TimescaleDB extension is not available in this PostgreSQL instance.\n"
-                        "Please install TimescaleDB first."
-                    ))
+                    self.stdout.write(
+                        self.style.ERROR(
+                            "TimescaleDB extension is not available in this PostgreSQL instance.\n"
+                            "Please install TimescaleDB first."
+                        )
+                    )
                     sys.exit(1)
 
                 # 2. Is it already installed?
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT extversion
                     FROM pg_extension
                     WHERE extname = 'timescaledb'
-                """)
+                """
+                )
                 extension_installed = cursor.fetchone() is not None
 
                 if not extension_installed:
-                    self.stdout.write(self.style.NOTICE(
-                        "TimescaleDB extension is available but not yet enabled."
-                    ))
+                    self.stdout.write(
+                        self.style.NOTICE(
+                            "TimescaleDB extension is available but not yet enabled."
+                        )
+                    )
 
         except DatabaseError as e:
             self.stdout.write(self.style.ERROR(f"Cannot check TimescaleDB availability: {e}"))
@@ -77,22 +85,26 @@ class Command(BaseCommand):
         if extension_installed:
             try:
                 with connection.cursor() as cursor:
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         SELECT 1
                         FROM timescaledb_information.hypertables
                         WHERE hypertable_schema = 'public'
                           AND hypertable_name = 'telemetries'
-                    """)
+                    """
+                    )
                     is_already_hypertable = cursor.fetchone() is not None
             except DatabaseError:
                 # view does not exist or other issue → assume not hypertable
                 pass
 
         if is_already_hypertable and not force:
-            self.stdout.write(self.style.WARNING(
-                "Table 'telemetries' is already a hypertable. "
-                "Use --force to re-apply settings."
-            ))
+            self.stdout.write(
+                self.style.WARNING(
+                    "Table 'telemetries' is already a hypertable. "
+                    "Use --force to re-apply settings."
+                )
+            )
             return
 
         self.stdout.write(self.style.NOTICE("Starting TimescaleDB setup..."))
@@ -103,11 +115,11 @@ class Command(BaseCommand):
         sql_steps = [
             (
                 "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;",
-                "TimescaleDB extension enabled."
+                "TimescaleDB extension enabled.",
             ),
             (
                 "ALTER TABLE telemetries DROP CONSTRAINT IF EXISTS telemetries_pkey;",
-                "Dropped old primary key constraint (if existed)."
+                "Dropped old primary key constraint (if existed).",
             ),
             (
                 """
@@ -120,7 +132,7 @@ class Command(BaseCommand):
                     migrate_data => TRUE
                 );
                 """.strip(),
-                "Hypertable created or converted."
+                "Hypertable created or converted.",
             ),
             (
                 """
@@ -130,7 +142,7 @@ class Command(BaseCommand):
                     timescaledb.compress_orderby = 'ts DESC'
                 );
                 """.strip(),
-                "Compression enabled (segment: device_metric_id, order: ts DESC)."
+                "Compression enabled (segment: device_metric_id, order: ts DESC).",
             ),
             (
                 """
@@ -140,7 +152,7 @@ class Command(BaseCommand):
                     if_not_exists => TRUE
                 );
                 """.strip(),
-                "Compression policy added: after 30 days."
+                "Compression policy added: after 30 days.",
             ),
             (
                 """
@@ -150,7 +162,7 @@ class Command(BaseCommand):
                     if_not_exists => TRUE
                 );
                 """.strip(),
-                "Retention policy added: keep data for 1 year."
+                "Retention policy added: keep data for 1 year.",
             ),
         ]
 
@@ -160,8 +172,12 @@ class Command(BaseCommand):
                     for sql, success_message in sql_steps:
                         if dry_run:
                             # Show cleaned SQL without extra indentation
-                            cleaned_sql = "\n".join(line.strip() for line in sql.splitlines() if line.strip())
-                            self.stdout.write(self.style.HTTP_INFO(f"Would execute:\n{cleaned_sql}"))
+                            cleaned_sql = "\n".join(
+                                line.strip() for line in sql.splitlines() if line.strip()
+                            )
+                            self.stdout.write(
+                                self.style.HTTP_INFO(f"Would execute:\n{cleaned_sql}")
+                            )
                             continue
 
                         cursor.execute(sql)
@@ -186,8 +202,10 @@ class Command(BaseCommand):
             self.stdout.write(self.style.NOTICE("\nDry run completed — no changes were made."))
         else:
             self.stdout.write(self.style.SUCCESS("\nTimescaleDB setup completed successfully!"))
-            self.stdout.write(self.style.NOTICE(
-                "You can verify status with:\n"
-                "SELECT * FROM timescaledb_information.hypertables "
-                "WHERE hypertable_name = 'telemetries';"
-            ))
+            self.stdout.write(
+                self.style.NOTICE(
+                    "You can verify status with:\n"
+                    "SELECT * FROM timescaledb_information.hypertables "
+                    "WHERE hypertable_name = 'telemetries';"
+                )
+            )
