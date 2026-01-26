@@ -60,6 +60,12 @@ cd IoT-Hub-bravo
    DB_USER=iot_user_db
    DB_PASSWORD=iot_password
    
+   # Enable TimescaleDB extension (set to true to use TimescaleDB features)
+   ENABLE_TIMESCALEDB=false #NOTE: use lowercase true/false
+
+   # Enable Seed Data on startup (set to true to populate initial data)
+   ENABLE_SEED_DATA=false #NOTE: use lowercase true/false
+
    # Database host:
    # - For local launch without Docker: use DB_HOST=localhost
    #   (make sure PostgreSQL is installed locally, database and user are created)
@@ -113,15 +119,35 @@ docker compose down
 
 ### 4. Database Setup
 
-The project uses an automated workflow for database management via the `entrypoint.sh` script. When you run `docker compose up`, the system automatically handles the database readiness, schema updates, and initial data.
+The project uses an automated workflow for database management via the `entrypoint.sh` script. When you run `docker compose up`, the system automatically handles the database readiness, schema updates, and optional data initialization.
 
-> Manual intervention is only required if you change the database schema in your Python code or need to re-run the initial data population.
+> Manual intervention is only required if you change the database schema in your Python code or need to re-run specific database tasks.
 
-#### **Automated Workflow (Default)**
-Every time the container starts, the following sequence is executed automatically:
+For comprehensive database documentation including schema details, hypertable setup, query optimization, and backup procedures, see [docs/schema.md](./docs/schema.md).
+
+#### **Automated Workflow (On Container Start)**
+
+Every time the container starts, the following sequence is executed:
+
 1. **Wait for DB:** Ensures PostgreSQL is ready to accept connections.
 2. **Apply Migrations:** Syncs the database schema with the current models.
-3. **Seed Database:** Runs the `seed_db` command to ensure development data exists.
+3. **TimescaleDB Setup** (if `ENABLE_TIMESCALEDB=true`): Creates hypertable, compression policies, and retention rules on the `telemetries` table.
+4. **Database Seeding** (if `ENABLE_SEED_DATA=true`): Populates initial development data.
+
+**Configure these in `.env`:**
+```env
+ENABLE_TIMESCALEDB=true   # Enable TimescaleDB hypertable optimization (default: true)
+ENABLE_SEED_DATA=true     # Populate initial data on startup (default: true)
+```
+
+**Example configurations:**
+
+| Scenario | `ENABLE_TIMESCALEDB` | `ENABLE_SEED_DATA` | Purpose |
+|----------|:---:|:---:|---|
+| **Local Development** | `true` | `true` | Full setup with test data |
+| **Testing** | `true` | `false` | Only DB structure, no data interference |
+| **Production** | `true` | `false` | Never auto-seed; manual data management |
+| **Schema-only** | `false` | `false` | Standard PostgreSQL, no TimescaleDB |
 
 ---
 
@@ -130,16 +156,16 @@ Every time the container starts, the following sequence is executed automaticall
 If you modify `models.py` files or need to trigger database tasks manually, use the following commands:
 
 | Task | Command | When to use |
-| :--- | :--- | :--- |
-| **Create Migrations** | `docker compose exec web python manage.py makemigrations` | After you change any `models.py` file. |
-| **Apply Migrations** | `docker compose exec web python manage.py migrate` | To manually sync the DB schema. |
-| **Seed Database** | `docker compose exec web python manage.py seed_db` | To populate the DB with initial data manually. |
-
-
+|:---|:---|:---|
+| **Create Migrations** | `docker compose exec web python manage.py makemigrations` | After changing any `models.py` file |
+| **Apply Migrations** | `docker compose exec web python manage.py migrate` | To manually sync the DB schema |
+| **Setup TimescaleDB** | `docker compose exec web python manage.py setup_timescaledb` | To manually configure hypertable (see [schema.md](./docs/schema.md#timescaledb-hypertable-setup)) |
+| **Seed Database** | `docker compose exec web python manage.py seed_db` | To populate or refresh initial data (see [schema.md](./docs/schema.md#data-seeding)) |
 
 ---
 
 #### **Initial Data Population (Seed)**
+
 The `seed_db` command is **idempotent** (safe to run multiple times). It populates the database with essential development objects:
 
 * **Default Users & Roles:** Creates a `testuser` (Client role) and an `adminuser` (Admin role) with pre-configured passwords.
@@ -147,10 +173,12 @@ The `seed_db` command is **idempotent** (safe to run multiple times). It populat
 * **Metrics & Bindings:** Sets up device-metric associations (e.g., temperature, humidity, battery level).
 * **Initial Rules & Events:** Defines default logic rules and populates sample event data.
 
-To manually refresh or verify the initial state, run:
+To manually refresh or verify the initial state:
 ```bash
 docker compose exec web python manage.py seed_db
 ```
+
+For more details on seed data fixtures and structure, see [docs/schema.md](./docs/schema.md#data-seeding).
 
 ### 5. Access the Application
 

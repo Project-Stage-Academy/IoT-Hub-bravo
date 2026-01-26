@@ -1,46 +1,76 @@
 #!/bin/sh
 set -e
 
-# -----------------------------
-# Wait for PostgreSQL with timeout
-# -----------------------------
+# =============================
+# Helpers
+# =============================
+log() {
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+}
+
+# =============================
+# Configuration
+# =============================
 TIMEOUT=30 # seconds
 COUNT=0
+ENABLE_TIMESCALEDB=${ENABLE_TIMESCALEDB:-true}
+ENABLE_SEED_DATA=${ENABLE_SEED_DATA:-true}
 
-echo "Waiting for PostgreSQL at $DB_HOST:$DB_PORT ..."
+# =============================
+# Wait for PostgreSQL
+# =============================
+log "Waiting for PostgreSQL at $DB_HOST:$DB_PORT ..."
 
 until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" >/dev/null 2>&1; do
   COUNT=$((COUNT + 1))
   if [ "$COUNT" -ge "$TIMEOUT" ]; then
-    echo "Timeout ($TIMEOUT s). PostgreSQL is not ready."
+    log "Timeout (${TIMEOUT}s). PostgreSQL is not ready."
     exit 1
   fi
   sleep 1
 done
 
-echo "PostgreSQL is ready!"
+log "PostgreSQL is ready."
 
-# -----------------------------
-# Run Django migrations
-# -----------------------------
-echo "Running migrations..."
-python manage.py migrate --noinput || { echo "Migration failed"; exit 1; }
-echo "Migrations completed."
+# =============================
+# Django migrations
+# =============================
+log "Running migrations..."
+python manage.py migrate --noinput || {
+  log "Migration failed."
+  exit 1
+}
+log "Migrations completed."
 
-# -----------------------------
-# Setup TimescaleDB
-# -----------------------------
-echo "Setting up TimescaleDB..."
-python manage.py setup_timescaledb || { echo "TimescaleDB setup failed"; exit 1; }
-echo "TimescaleDB setup completed." 
+# =============================
+# TimescaleDB setup (optional)
+# =============================
+if [ "$ENABLE_TIMESCALEDB" = "true" ]; then
+  log "Setting up TimescaleDB..."
+  python manage.py setup_timescaledb || {
+    log "TimescaleDB setup failed."
+    exit 1
+  }
+  log "TimescaleDB setup completed."
+else
+  log "Skipping TimescaleDB setup (ENABLE_TIMESCALEDB=false)."
+fi
 
-# -----------------------------
-# Seed Database
-# -----------------------------
-echo "Seeding database..."
-python manage.py seed_db || { echo "Seeding failed"; exit 1; }
-echo "Seeding completed."
+# =============================
+# Database seeding (optional)
+# =============================
+if [ "$ENABLE_SEED_DATA" = "true" ]; then
+  log "Seeding database..."
+  python manage.py seed_db || {
+    log "Seeding failed."
+    exit 1
+  }
+  log "Seeding completed."
+else
+  log "Skipping database seeding (ENABLE_SEED_DATA=false)."
+fi
 
-
-
+# =============================
+# Start main process
+# =============================
 exec "$@"

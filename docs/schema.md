@@ -1,6 +1,16 @@
 
 # Database Schema
 
+## Table of Contents
+- [Entity Relationship Diagram](#entity-relationship-diagram)
+- [Recommended Indexes](#recommended-indexes)
+- [TimescaleDB Hypertable Setup](#timescaledb-hypertable-setup)
+- [Query Optimization Examples](#query-optimization-examples)
+- [Database Backup and Recovery](#database-backup-and-recovery)
+- [Data Seeding](#data-seeding)
+
+## Entity Relationship Diagram
+
 ```mermaid
 erDiagram
     USERS ||--o{ DEVICES          : "owns"
@@ -108,15 +118,76 @@ If you need to manually trigger the hypertable creation (e.g., after database ma
 docker compose exec web python manage.py setup_timescaledb
 ```
 
+> ⚠️ **PRODUCTION WARNING**: Hypertable creation is **irreversible without data loss**. Once created, converting back to a regular table requires either:
+> - Exporting all data and reimporting
+> - Deleting all data in the table
+> 
+> **Always test in a staging environment first and ensure you have a full backup before running this command in production.**
+
+### Testing the Setup Command
+
+Integration tests are available to verify the `setup_timescaledb` command works correctly:
+
+**Run all tests:**
+```bash
+docker compose exec web pytest apps/devices/tests/test_setup_timescaledb_integration.py -v
+```
+
+**Run specific test:**
+```bash
+docker compose exec web pytest apps/devices/tests/test_setup_timescaledb_integration.py::TestSetupTimescaleDBIntegration::test_dry_run_flag_does_not_modify_database -v
+```
+
+**Available test cases (15 total):**
+
+**Integration Tests (TestSetupTimescaleDBIntegration):**
+- `test_setup_timescaledb_runs_without_error` - Basic command execution
+- `test_dry_run_flag_does_not_modify_database` - Verifies `--dry-run` flag
+- `test_force_flag_bypasses_hypertable_check` - Verifies `--force` flag
+- `test_dry_run_and_force_together` - Tests combined flags
+- `test_command_with_no_flags` - Default execution path
+
+**Extension Checks (TestSetupTimescaleDBExtensionChecks):**
+- `test_extension_not_available_exits_with_error` - Extension not found error handling
+- `test_extension_available_but_not_installed_shows_notice` - Extension availability vs installation
+- `test_extension_already_installed_skips_notice` - Skips notice when installed
+
+**Hypertable Checks (TestSetupTimescaleDBHypertableChecks):**
+- `test_table_already_hypertable_exits_without_force` - Early exit when already hypertable
+- `test_table_not_yet_hypertable_proceeds_with_setup` - Proceeds when not yet hypertable
+
+**Dry-Run Tests (TestSetupTimescaleDBDryRun):**
+- `test_dry_run_shows_all_six_sql_steps_exactly` - Verifies all SQL steps displayed
+- `test_dry_run_shows_cleaned_sql_without_extra_whitespace` - SQL formatting validation
+
+**Error Handling (TestSetupTimescaleDBErrorHandling):**
+- `test_sql_steps_executed_in_atomic_transaction` - Transaction atomicity verification
+- `test_database_error_shows_full_traceback_in_debug_mode` - Debug mode tracebacks
+- `test_operational_error_during_execution_caught_and_reported` - OperationalError handling
+
+**Test flags:**
+```bash
+# Verbose output
+docker compose exec web pytest apps/devices/tests/test_setup_timescaledb_integration.py -v
+
+# Include print statements
+docker compose exec web pytest apps/devices/tests/test_setup_timescaledb_integration.py -v -s
+
+# Stop on first failure
+docker compose exec web pytest apps/devices/tests/test_setup_timescaledb_integration.py -x
+```
+- [Testing Setup](PYTEST_SETUP.md) - Pytest configuration and testing guide
+
+
 ---
 
-## Example Common Query & EXPLAIN ANALYZE
+## Query Optimization Examples
 
-#### Query Optimization for Telemetry Data
+### Query Optimization for Telemetry Data
 
 This document demonstrates how the `telemetries` table is optimized for common IoT use cases using TimescaleDB hypertable partitioning, indexes, and compression.
 
-#### Table Optimization Summary
+### Table Optimization Summary
 
 - **Hypertable partitioning**: by `ts` (7-day chunks)
 - **Indexes**:
@@ -129,7 +200,7 @@ This document demonstrates how the `telemetries` table is optimized for common I
 
 All examples below were executed on a database with seeded test data (January 23, 2026).
 
-#### 1. Last 100 measurements for a specific metric (by device_metric_id)
+### 1. Last 100 measurements for a specific metric (by device_metric_id)
 
 **Query**:
 
@@ -145,7 +216,10 @@ WHERE device_metric_id = 123
 ORDER BY ts DESC
 LIMIT 100;
 ```
-**EXPLAIN ANALYZE output**
+
+<details>
+<summary><b>EXPLAIN ANALYZE Output</b> (click to expand)</summary>
+
 ```
 Limit  (cost=4.47..4.48 rows=3 width=61) (actual time=0.812..0.823 rows=0 loops=1)
    ->  Sort  (cost=4.47..4.48 rows=3 width=61) (actual time=0.811..0.821 rows=0 loops=1)
@@ -157,35 +231,40 @@ Limit  (cost=4.47..4.48 rows=3 width=61) (actual time=0.812..0.823 rows=0 loops=
                      Index Cond: (device_metric_id = 123)
  Planning Time: 11.316 ms
  Execution Time: 1.170 ms
- ```
+```
+
+</details>
  **This query is optimized by:**
 
 1. Using the composite index `idx_telemetries_metric_time` (device_metric_id, ts) to instantly filter by metric and enable backward scan for newest-first order  
 2. Leveraging TimescaleDB chunk exclusion — only relevant time chunks are considered  
 3. Early termination when no matching rows exist — no chunk scan or JSONB decompression needed
 
- #### 2. Recent measurements with device name, metric type, and values
- 
- ```sql
-    EXPLAIN ANALYZE
-    SELECT 
-        d.serial_id,
-        d.name AS device_name,
-        m.metric_type AS metric_type,
-        t.ts,
-        t.value_numeric,
-        t.value_bool,
-        t.value_str
-    FROM telemetries t
-    JOIN device_metrics dm ON t.device_metric_id = dm.id
-    JOIN devices d ON dm.device_id = d.id
-    JOIN metrics m ON dm.metric_id = m.id
-    WHERE d.id = 789                           
-    AND t.ts >= NOW() - INTERVAL '24 hours'
-    ORDER BY t.ts DESC;
- ```
-**EXPLAIN ANALYZE output**
- ```
+### 2. Recent measurements with device name, metric type, and values
+
+```sql
+EXPLAIN ANALYZE
+SELECT 
+    d.serial_id,
+    d.name AS device_name,
+    m.metric_type AS metric_type,
+    t.ts,
+    t.value_numeric,
+    t.value_bool,
+    t.value_str
+FROM telemetries t
+JOIN device_metrics dm ON t.device_metric_id = dm.id
+JOIN devices d ON dm.device_id = d.id
+JOIN metrics m ON dm.metric_id = m.id
+WHERE d.id = 789                           
+AND t.ts >= NOW() - INTERVAL '24 hours'
+ORDER BY t.ts DESC;
+```
+
+<details>
+<summary><b>EXPLAIN ANALYZE Output</b> (click to expand)</summary>
+
+```
 Sort  (cost=23.89..23.89 rows=1 width=1311) (actual time=0.456..0.472 rows=0 loops=1)
    Sort Key: t.ts DESC
    Sort Method: quicksort  Memory: 25kB
@@ -207,20 +286,18 @@ Sort  (cost=23.89..23.89 rows=1 width=1311) (actual time=0.456..0.472 rows=0 loo
                Index Cond: (id = dm.metric_id)
  Planning Time: 35.270 ms
  Execution Time: 1.308 ms
- ```
- **This query is optimized by:**
+```
 
-1. Starting with bitmap index scan on `device_metrics` (device_id index) — immediately detects no metrics for the device  
-2. Early termination by PostgreSQL planner — skips scanning the `telemetries` hypertable and its chunks entirely (never executed on ChunkAppend)  
-3. Primary key lookups for joins to `devices` and `metrics` — negligible cost even when data exists
+</details>
 
 
 ---
 
-## Database Backup and Recovery Manual
+## Database Backup and Recovery
 
-This guide provides instructions for creating database snapshots, automating the backup process, and verifying data integrity
+This guide provides instructions for creating database snapshots, automating the backup process, and verifying data integrity.
 
+> ⚠️ **PRODUCTION WARNING**: Always test backup and restore procedures in a staging environment before relying on them in production. Ensure backups are stored securely and regularly tested for integrity.
 
 ### 1. Manual Backup (Custom Format)
 
@@ -267,50 +344,84 @@ docker compose exec -i -T db pg_restore \
 [!IMPORTANT] Note the -i flag and the < operator. This pipes the file from your host machine into the Docker container.
 
 ### 3. Automated Daily Backup Script
-Save the following script as scripts/backup_db.sh in your project root.
 
-```bash
-#!/bin/bash
-set -euo pipefail
+The backup script is maintained in [scripts/backup_db.sh](../scripts/backup_db.sh) to avoid duplication with this documentation.
 
-# --- Configuration ---
-BACKUP_DIR="./backups"
-DB_NAME="iot_hub_db"
-DB_USER="iot_user_db"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="$BACKUP_DIR/snapshot_$TIMESTAMP.dump"
-
-# Create directory if it doesn't exist
-mkdir -p "$BACKUP_DIR"
-
-echo "Starting database backup for $DB_NAME..."
-
-# Execute dump
-docker compose exec -T db pg_dump \
-  -U "$DB_USER" -d "$DB_NAME" \
-  --format=custom \
-  --no-owner --no-privileges \
-  > "$BACKUP_FILE"
-
-echo "Backup created successfully: $BACKUP_FILE"
-echo "Size: $(du -h "$BACKUP_FILE" | cut -f1)"
-
-# --- Cleanup ---
-# Remove backups older than 7 days to save disk space
-find "$BACKUP_DIR" -name "snapshotш*.dump" -mtime +7 -delete
-echo "Old backups (older than 7 days) have been removed."
-```
-
-Setup instructions:
+**Setup instructions:**
 * Make it executable: `chmod +x scripts/backup_db.sh`
 * Run manually: `./scripts/backup_db.sh`
+* View the full script: See [scripts/backup_db.sh](../scripts/backup_db.sh)
 
+The script includes:
+- Automatic timestamped backup creation
+- Custom PostgreSQL dump format for efficiency
+- Automatic cleanup of backups older than 7 days
+- Detailed logging of backup operations
 
 ### 4. Scheduling with Cron
+
 To automate backups on a server, add the script to the system's `crontab`.
 * Open crontab: `crontab -e`
 * Add the following line (runs daily at 7:00 AM):
 ```bash
 0 7 * * * cd /path/to/your/project && ./scripts/backup_db.sh >> backups/backup.log 2>&1
 ```
-* `:wq` to save 
+* `:wq` to save
+---
+
+## Data Seeding
+
+### Overview
+
+The `seed_db` management command populates the database with fixture data for development and testing. It is **idempotent**, meaning it can be safely run multiple times without corrupting data.
+
+### Automatic Seeding
+
+By default, seeding runs automatically when the container starts:
+
+```bash
+docker compose up
+```
+
+To disable automatic seeding, set in `.env`:
+```env
+ENABLE_SEED_DATA=false
+```
+
+### Manual Seeding
+
+To manually trigger data seeding:
+
+```bash
+docker compose exec web python manage.py seed_db
+```
+
+### Resetting Seeded Data
+
+To clear all seeded data and start fresh:
+
+```bash
+# Delete all data (destructive)
+docker compose exec web python manage.py flush
+
+# Then re-seed
+docker compose exec web python manage.py seed_db
+```
+
+> ⚠️ **WARNING**: `flush` removes **all** database data, including any data you've manually created. Use only in development environments.
+
+
+### Verification
+
+To verify that seeding was successful, check the data:
+
+```bash
+# Count users
+docker compose exec web python manage.py shell -c "from apps.users.models import User; print(f'Users: {User.objects.count()}')"
+
+# Count devices
+docker compose exec web python manage.py shell -c "from apps.devices.models import Device; print(f'Devices: {Device.objects.count()}')"
+
+# Count telemetry records
+docker compose exec web python manage.py shell -c "from apps.devices.models import Telemetry; print(f'Telemetry records: {Telemetry.objects.count()}')"
+```
