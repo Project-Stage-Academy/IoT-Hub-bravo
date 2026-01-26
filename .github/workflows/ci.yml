@@ -51,6 +51,7 @@ jobs:
       DB_PASSWORD: testpassword
       DB_HOST: db
       DB_PORT: 5432
+      SECRET_KEY: "dummy_secret_for_ci"
 
     services:
       db:
