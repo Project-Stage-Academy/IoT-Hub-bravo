@@ -2,10 +2,13 @@ services:
   web:
     command: /start-web-dev.sh
     volumes:
+      - ./backend:/app
       - static_data:/app/staticfiles
-      - media_data:/app/media
+
+  worker:
+    command: [ "celery", "-A", "conf.celery_app", "worker", "-l", "INFO" ]
+    volumes:
       - ./backend:/app
 
 volumes:
   static_data:
-  media_data:
