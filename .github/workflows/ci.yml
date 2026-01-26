@@ -49,21 +49,24 @@ jobs:
       DB_NAME: testdb
       DB_USER: postgres
       DB_PASSWORD: testpassword
-      DB_HOST: db
+      DB_HOST: localhost
       DB_PORT: 5432
+      SECRET_KEY: "dummy_secret_for_ci"
 
     services:
       db:
-        image: timescale/timescaledb:latest-pg16
+        image: timescale/timescaledb:2.13.0-pg16
         env:
           POSTGRES_DB: ${{ env.DB_NAME }}
           POSTGRES_USER: ${{ env.DB_USER }}
           POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}
+        ports:
+          - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d testdb -h 127.0.0.1"
+          --health-cmd "pg_isready -U postgres -d testdb"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
     strategy:
       matrix:
