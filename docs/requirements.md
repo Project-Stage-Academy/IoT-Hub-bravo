@@ -1,4 +1,4 @@
-# IoT Catalog Hub — Requirements (MVP)
+# IoT Catalog Hub – Requirements (MVP)
 
 ## 1. Scope of the MVP
 
