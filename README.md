@@ -1,5 +1,6 @@
 # IoT-Catalog-Hub
 
+[![CI](https://github.com/Project-Stage-Academy/IoT-Hub-bravo/actions/workflows/ci.yml/badge.svg)](https://github.com/Project-Stage-Academy/IoT-Hub-bravo/actions/workflows/ci.yml)
 
 ## Short description
 
