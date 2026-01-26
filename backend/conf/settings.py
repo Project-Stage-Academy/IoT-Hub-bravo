@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,web', cast=Csv())
 
 #Django apps
 INSTALLED_APPS = [
@@ -39,6 +39,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'conf.middleware.rate_limit.RateLimitMiddleware',
 ]
 
 ROOT_URLCONF = 'conf.urls'
@@ -167,3 +168,27 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
+RATE_LIMIT_ENABLED = config('RATE_LIMIT_ENABLED', default=True, cast=bool)
+
+RATE_LIMIT_CONFIG = {
+    '/api/telemetry/': {
+        'limit': config('RATE_LIMIT_TELEMETRY_LIMIT', default=1000, cast=int),
+        'window': config('RATE_LIMIT_TELEMETRY_WINDOW', default=60, cast=int),
+    },
+    '/admin/': {
+        'limit': config('RATE_LIMIT_ADMIN_LIMIT', default=30, cast=int),
+        'window': config('RATE_LIMIT_ADMIN_WINDOW', default=60, cast=int),
+    },
+    '/api/auth/login': {
+        'limit': config('RATE_LIMIT_LOGIN_LIMIT', default=5, cast=int),
+        'window': config('RATE_LIMIT_LOGIN_WINDOW', default=60, cast=int),
+    },
+}

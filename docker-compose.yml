@@ -12,6 +12,23 @@ services:
     networks:
       - backend
 
+  nginx:
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+    networks:
+      - backend
+    depends_on:
+      web:
+        condition: service_started
+
   web:
     build:
       context: .
@@ -21,8 +38,8 @@ services:
     restart: unless-stopped
     volumes:
       - media_data:/app/media
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     env_file:
       - ./.env
     networks:

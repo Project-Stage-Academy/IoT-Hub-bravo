@@ -1,0 +1,37 @@
+services:
+  apt-repo:
+    image: nginx:alpine
+    container_name: apt-repo-server
+    restart: unless-stopped
+    ports:
+      - "${APT_REPO_PORT:-8080}:80"
+    volumes:
+      - ./repo:/usr/share/nginx/html/repo:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./htpasswd:/etc/nginx/.htpasswd:ro
+    networks:
+      - apt-repo-net
+    environment:
+      - APT_REPO_NAME=${APT_REPO_NAME:-iot-hub-internal}
+
+  reprepro:
+    image: reprepro:latest
+    container_name: apt-repo-builder
+    restart: "no"
+    volumes:
+      - ./repo:/repo
+      - ./conf:/conf:ro
+      - ./incoming:/incoming
+    networks:
+      - apt-repo-net
+    command: >
+      sh -c "
+      reprepro -b /repo -C main includedeb stable /incoming/*.deb 2>/dev/null || true &&
+      reprepro -b /repo export stable &&
+      echo 'Repository updated successfully'
+      "
+
+networks:
+  apt-repo-net:
+    driver: bridge
+

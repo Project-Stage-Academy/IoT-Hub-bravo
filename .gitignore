@@ -205,3 +205,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# TLS certificates (local dev only)
+certs/
+*.pem
+*.key
+*.crt
+!docker/nginx/*.conf
