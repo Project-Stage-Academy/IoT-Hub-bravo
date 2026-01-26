@@ -25,9 +25,10 @@ RUN python -m pip install --upgrade pip wheel \
 
 FROM base AS runtime-deps-stage
 
-# install runtime dependencies
+# install runtime dependencies & PostgreSQL client for health checks
 RUN apt-get update && apt-get install --no-install-recommends -y \
     libpq5 \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build-stage /wheels /wheels
@@ -64,10 +65,18 @@ COPY --from=staticfiles-stage --chown=django:django /app/staticfiles /app/static
 
 # copy entrypoint
 COPY --chown=django:django ./docker/django/entrypoint.sh /entrypoint.sh
-RUN chmod 555 /entrypoint.sh
+RUN sed -i "s/\r$//g" /entrypoint.sh
 
-# Install PostgreSQL client for health checks
-RUN apt-get update && apt-get install -y postgresql-client
+# copy prod start script
+COPY --chown=django:django ./docker/django/start-web.sh /start-web.sh
+RUN sed -i "s/\r$//g" /start-web.sh
+
+# copy dev start script
+COPY --chown=django:django ./docker/django/start-web-dev.sh /start-web-dev.sh
+RUN sed -i "s/\r$//g" /start-web-dev.sh
+
+# change scripts permissions
+RUN chmod 555 /entrypoint.sh /start-web.sh /start-web-dev.sh
 
 # switch to created user
 USER django
@@ -76,4 +85,4 @@ EXPOSE 8000
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["gunicorn", "conf.wsgi:application", "--bind", "0.0.0.0:8000", "--workers=2", "--threads=4"]
+CMD ["/start-web.sh"]
