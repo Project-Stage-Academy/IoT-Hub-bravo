@@ -55,7 +55,7 @@ jobs:
 
     services:
       db:
-        image: timescale/timescaledb:latest-pg16
+        image: timescale/timescaledb:2.13.0-pg16
         env:
           POSTGRES_DB: ${{ env.DB_NAME }}
           POSTGRES_USER: ${{ env.DB_USER }}
