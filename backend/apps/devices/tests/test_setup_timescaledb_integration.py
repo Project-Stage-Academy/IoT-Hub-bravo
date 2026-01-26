@@ -13,14 +13,12 @@ Each test includes detailed docstrings explaining what is validated and why.
 
 from io import StringIO
 import re
-import sys
 
 import pytest
 from django.core.management import call_command
-from django.db import connection
 from django.db.utils import DatabaseError, OperationalError
 from django.test import override_settings
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 
 @pytest.mark.django_db
