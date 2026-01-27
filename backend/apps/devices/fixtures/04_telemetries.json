@@ -100,7 +100,7 @@
     "fields": {
       "device_metric": 5,
       "value_jsonb": {
-        "t": "boolean",
+        "t": "bool",
         "v": "True"
       },
       "ts": "2026-01-25T09:38:00+00:00",
@@ -112,7 +112,7 @@
     "fields": {
       "device_metric": 5,
       "value_jsonb": {
-        "t": "boolean",
+        "t": "bool",
         "v": "False"
       },
       "ts": "2026-01-25T09:19:00+00:00",
@@ -148,7 +148,7 @@
     "fields": {
       "device_metric": 7,
       "value_jsonb": {
-        "t": "boolean",
+        "t": "bool",
         "v": "False"
       },
       "ts": "2026-01-25T09:00:00+00:00",
@@ -160,7 +160,7 @@
     "fields": {
       "device_metric": 7,
       "value_jsonb": {
-        "t": "boolean",
+        "t": "bool",
         "v": "False"
       },
       "ts": "2026-01-25T09:13:00+00:00",

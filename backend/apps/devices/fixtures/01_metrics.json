@@ -44,7 +44,7 @@
     "pk": 6,
     "fields": {
       "metric_type": "motion_detected",
-      "data_type": "boolean"
+      "data_type": "bool"
     }
   },
   {
@@ -52,7 +52,7 @@
     "pk": 7,
     "fields": {
       "metric_type": "online",
-      "data_type": "boolean"
+      "data_type": "bool"
     }
   }
 ]
