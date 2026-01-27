@@ -1,0 +1,8 @@
+{
+    "schema_version": "v1",
+    "device_metric_id": 1,
+    "serial_id": "{{ serial_id }}",
+    "ts": "{{ timestamp }}",
+    "value": {{ value }},
+    "metric_type": "{{ metric_type }}" 
+}
