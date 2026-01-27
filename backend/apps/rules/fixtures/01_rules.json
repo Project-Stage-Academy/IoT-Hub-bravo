@@ -1,0 +1,241 @@
+[
+  {
+    "model": "rules.rule",
+    "pk": 1,
+    "fields": {
+      "name": "Living Room High Temperature Alert",
+      "description": "Trigger when temperature exceeds 27.5°C for more than 10 minutes",
+      "condition": {
+        "type": "threshold",
+        "value": 27.5,
+        "metric": "temperature",
+        "operator": ">",
+        "duration_minutes": 10
+      },
+      "action": {
+        "type": "notify",
+        "channel": "email",
+        "message": "High temperature in {device_name}: {value}°C"
+      },
+      "is_active": true,
+      "device_metric": 1
+    }
+  },
+  {
+    "model": "rules.rule",
+    "pk": 2,
+    "fields": {
+      "name": "Living Room High Humidity Alert",
+      "description": "Trigger when humidity exceeds 70% for more than 15 minutes",
+      "condition": {
+        "type": "threshold",
+        "value": 70,
+        "metric": "humidity",
+        "operator": ">",
+        "duration_minutes": 15
+      },
+      "action": {
+        "type": "notify",
+        "channel": "telegram",
+        "message": "High humidity in {device_name}: {value}%"
+      },
+      "is_active": true,
+      "device_metric": 2
+    }
+  },
+  {
+    "model": "rules.rule",
+    "pk": 3,
+    "fields": {
+      "name": "Basement High Humidity Warning",
+      "description": "Trigger when humidity exceeds 75% for more than 10 minutes",
+      "condition": {
+        "type": "threshold",
+        "value": 75,
+        "metric": "humidity",
+        "operator": ">",
+        "duration_minutes": 10
+      },
+      "action": {
+        "type": "notify",
+        "channel": "email",
+        "message": "High humidity in basement ({device_name}): {value}% - risk of mold"
+      },
+      "is_active": true,
+      "device_metric": 3
+    }
+  },
+  {
+    "model": "rules.rule",
+    "pk": 4,
+    "fields": {
+      "name": "Outdoor Low Pressure Alert",
+      "description": "Trigger when atmospheric pressure drops below 985 hPa",
+      "condition": {
+        "type": "threshold",
+        "value": 985,
+        "metric": "pressure",
+        "operator": "<",
+        "duration_minutes": 0
+      },
+      "action": {
+        "type": "notify",
+        "channel": "push",
+        "message": "Low atmospheric pressure detected: {value} hPa - possible bad weather"
+      },
+      "is_active": true,
+      "device_metric": 4
+    }
+  },
+  {
+    "model": "rules.rule",
+    "pk": 5,
+    "fields": {
+      "name": "Garage Motion Detected at Night",
+      "description": "Trigger on motion detection between 22:00 and 06:00",
+      "condition": {
+        "type": "boolean",
+        "value": true,
+        "metric": "motion_detected",
+        "operator": "==",
+        "time_restriction": "22:00-06:00"
+      },
+      "action": {
+        "type": "notify",
+        "channel": "telegram,push",
+        "message": "Motion detected in garage at {timestamp}! Check security."
+      },
+      "is_active": true,
+      "device_metric": 5
+    }
+  },
+  {
+    "model": "rules.rule",
+    "pk": 6,
+    "fields": {
+      "name": "Gateway Status Abnormal",
+      "description": "Trigger when gateway status is not 'OK' or 'online'",
+      "condition": {
+        "type": "string_match",
+        "value": "OK",
+        "metric": "status",
+        "operator": "!="
+      },
+      "action": {
+        "type": "notify",
+        "channel": "email",
+        "message": "Gateway status abnormal: {value} on {device_name}"
+      },
+      "is_active": true,
+      "device_metric": 6
+    }
+  },
+  {
+    "model": "rules.rule",
+    "pk": 7,
+    "fields": {
+      "name": "Gateway Offline Critical",
+      "description": "Trigger when gateway is offline for more than 4 minutes",
+      "condition": {
+        "type": "threshold",
+        "value": false,
+        "metric": "online",
+        "operator": "==",
+        "duration_minutes": 4
+      },
+      "action": {
+        "type": "notify",
+        "channel": "email,telegram",
+        "message": "MAIN GATEWAY OFFLINE! Device: {device_name}"
+      },
+      "is_active": true,
+      "device_metric": 7
+    }
+  },
+  {
+    "model": "rules.rule",
+    "pk": 8,
+    "fields": {
+      "name": "Office High Temperature Alert",
+      "description": "Trigger when temperature exceeds 28°C for more than 8 minutes",
+      "condition": {
+        "type": "threshold",
+        "value": 28,
+        "metric": "temperature",
+        "operator": ">",
+        "duration_minutes": 8
+      },
+      "action": {
+        "type": "notify",
+        "channel": "email",
+        "message": "High temperature in office ({device_name}): {value}°C"
+      },
+      "is_active": true,
+      "device_metric": 8
+    }
+  },
+  {
+    "model": "rules.rule",
+    "pk": 9,
+    "fields": {
+      "name": "Office High Humidity Warning",
+      "description": "Trigger when humidity exceeds 65% for more than 10 minutes",
+      "condition": {
+        "type": "threshold",
+        "value": 65,
+        "metric": "humidity",
+        "operator": ">",
+        "duration_minutes": 10
+      },
+      "action": {
+        "type": "notify",
+        "channel": "telegram",
+        "message": "High humidity in office: {value}% - possible discomfort"
+      },
+      "is_active": true,
+      "device_metric": 9
+    }
+  },
+  {
+    "model": "rules.rule",
+    "pk": 10,
+    "fields": {
+      "name": "Firmware Version Outdated",
+      "description": "Trigger when firmware version status is not 'current'",
+      "condition": {
+        "type": "string_match",
+        "value": "current",
+        "metric": "firmware_version",
+        "operator": "!="
+      },
+      "action": {
+        "type": "notify",
+        "channel": "email",
+        "message": "Outdated firmware detected on {device_name}: {value}"
+      },
+      "is_active": true,
+      "device_metric": 10
+    }
+  },
+  {
+    "model": "rules.rule",
+    "pk": 11,
+    "fields": {
+      "name": "Firmware Device Status Error",
+      "description": "Trigger when device status is not 'OK'",
+      "condition": {
+        "type": "string_match",
+        "value": "OK",
+        "metric": "status",
+        "operator": "!="
+      },
+      "action": {
+        "type": "notify",
+        "channel": "email,telegram",
+        "message": "Device status error on {device_name}: {value}"
+      },
+      "is_active": true,
+      "device_metric": 11
+    }
+  }
+]
