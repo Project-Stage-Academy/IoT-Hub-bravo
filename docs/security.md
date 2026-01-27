@@ -8,6 +8,7 @@ This document outlines the **initial security measures** for the IoT-Catalog-Hub
 
 * **Environment Variables:** All sensitive values (e.g., `SECRET_KEY`, DB credentials) are stored in `.env` files.
 * **Do not commit `.env` to Git.** Use `.env.example` for reference.
+* **.gitignore:** Make sure your `.gitignore` contains `.env` and `*.env` to prevent accidental commits of sensitive data. See [.gitignore](../.gitignore) for details.
 * **CI/CD Pipelines:** Secrets are injected through GitHub Actions / GitLab CI environment variables.
 
 ---
@@ -23,8 +24,10 @@ This document outlines the **initial security measures** for the IoT-Catalog-Hub
 ## 3. Transport Security (TLS)
 
 * **External endpoints:** TLS should be enabled in staging/production environments.
-* **Development:** TLS is optional; local dev uses HTTP.
+* **Development:** TLS is optional; local dev uses HTTP. 
+  **Warning:** Do not use production secrets in local/dev environments without TLS. Use only temporary/test credentials.
 * **Certificates:** Use self-signed certs for staging, production requires valid CA-issued certificates.
+
 
 ---
 
@@ -38,7 +41,7 @@ This document outlines the **initial security measures** for the IoT-Catalog-Hub
 
 ## 5. Messaging Security
 
-* Kafka / RabbitMQ connections can be secured using SSL/TLS in production.
+* Redis / RabbitMQ connections can be secured using SSL/TLS in production.
 * Authentication between services is recommended when moving to microservices.
 
 ---
