@@ -52,7 +52,7 @@ The MVP prioritizes **clarity, debuggability, and local reproducibility** over h
 * Performs basic aggregations and stream processing
 * Publishes aggregated results or derived events
 
-#### Message Broker (Kafka / RabbitMQ)
+#### Message Broker (Redis / RabbitMQ)
 
 * Serves as the asynchronous backbone of the system
 * Decouples ingestion, rule evaluation, and downstream processing
@@ -134,7 +134,7 @@ flowchart LR
     end
 
     subgraph Messaging
-        Broker["Kafka / RabbitMQ"]
+        Broker["Redis / RabbitMQ"]
     end
 
     subgraph Processing
