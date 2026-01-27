@@ -1,8 +1,11 @@
 from pathlib import Path
 from decouple import config, Csv
 import os
+from pythonjsonlogger import jsonlogger
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+LOG_FILE = os.path.join(BASE_DIR, "info.log")
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
@@ -21,6 +24,7 @@ INSTALLED_APPS = [
 #Third party apps
 INSTALLED_APPS += [
     'corsheaders',
+    'django_prometheus',
 ]
 
 #Local apps
@@ -31,6 +35,7 @@ INSTALLED_APPS += [
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -39,6 +44,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'conf.middleware.RequestLoggingMiddleware', #Local middleware
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'conf.urls'
@@ -167,3 +174,62 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0' # temporary
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": jsonlogger.JsonFormatter,
+            "fmt": "{asctime} {levelname} {name} {message} {user_id} {path} {method} {status}",
+            "style": "{",
+            "rename_fields": {
+                "asctime": "timestamp",
+                "levelname": "level",
+                "name": "logger_name",
+            },
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "json",   
+        },
+        
+        "file": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": LOG_FILE,
+            "formatter": "json",
+        },
+    },
+
+    "root":{
+            "handlers": ["console", "file"],
+            "level": "INFO",       
+    },
+
+    "loggers": {
+        "djangocustom": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        
+        "rules": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+
+        "celery": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+    
+}
