@@ -1,3 +1,5 @@
+name: ${COMPOSE_PROJECT_NAME:-iot-hub}
+
 x-django-base: &django_base
   build:
     context: .
