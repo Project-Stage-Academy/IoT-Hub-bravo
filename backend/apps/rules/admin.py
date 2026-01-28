@@ -51,10 +51,28 @@ class EventAdmin(admin.ModelAdmin):
 
     @admin.action(description="Mark selected events as acknowledged")
     def mark_acknowledged(self, request, queryset):
-        updated = queryset.update(acknowledged=True)
+        if not request.user.has_perm("rules.change_event"):
+            self.message_user(request, "Permission denied.", level="error")
+            return
+
+        try:
+            updated = queryset.update(acknowledged=True)
+        except Exception as exc:
+            self.message_user(request, f"Failed to acknowledge events: {exc}", level="error")
+            return
+
         self.message_user(request, f"{updated} event(s) marked as acknowledged.")
 
     @admin.action(description="Mark selected events as unacknowledged")
     def mark_unacknowledged(self, request, queryset):
-        updated = queryset.update(acknowledged=False)
+        if not request.user.has_perm("rules.change_event"):
+            self.message_user(request, "Permission denied.", level="error")
+            return
+
+        try:
+            updated = queryset.update(acknowledged=False)
+        except Exception as exc:
+            self.message_user(request, f"Failed to unacknowledge events: {exc}", level="error")
+            return
+
         self.message_user(request, f"{updated} event(s) marked as unacknowledged.")
