@@ -1,8 +1,17 @@
 {
-    "schema_version": "v1",
-    "device_metric_id": 1,
-    "serial_id": "{{ serial_id }}",
-    "ts": "{{ timestamp }}",
-    "value": {{ value }},
-    "metric_type": "{{ metric_type }}" 
+  "schema_version": 1,
+  "device": "device-01",
+  "ts": "2026-01-27T12:00:00Z",
+  "metrics": [
+    {
+      "metric": "temperature",
+      "t": "numeric",
+      "v": 23.5
+    },
+    {
+      "metric": "is_online",
+      "t": "bool",
+      "v": true
+    }
+  ]
 }

@@ -1,83 +1,74 @@
-import time
-import json
-import random
 import argparse
-import logging
-from jinja2 import Template
+import json
+import time
+import uuid
+import random
+from datetime import datetime, timezone
 
-# HTTP / MQTT
 import requests
-import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-ACTIONS = ["login", "logout", "purchase", "view_page"]
-
-PAYLOAD_TEMPLATE = """
-{
-    "schema_version": "v1",
-    "serial_id": "{{ serial_id }}",
-    "ts": "{{ timestamp }}",
-    "value": {{ value }},
-    "metric_type": "{{ metric_type }}"
-}
-"""
-
-def render_payload(serial_id, metric_type):
-    context = {
-        "serial_id": serial_id,
-        "metric_type": metric_type,
-        "value": round(random.uniform(20, 100), 2),
-        "timestamp": int(time.time())
+def build_payload(device, schema_version, template):
+    return {
+        "schema_version": schema_version,
+        "device": device,
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "metrics": [
+            {
+                "metric": k,
+                "t": v["t"],
+                "v": eval(v["v"]),
+            }
+            for k, v in template.items()
+        ],
     }
-    rendered = Template(PAYLOAD_TEMPLATE).render(**context)
-    return json.loads(rendered)
+
 
 def send_http(url, payload):
-    r = requests.post(url, json=payload)
-    logging.info("HTTP POST %s → %s %s", url, r.status_code, r.text)
+    r = requests.post(url, json=payload, timeout=5)
+    return r.status_code, r.text
 
-def send_mqtt(broker, topic, payload, client=None):
-    if client is None:
-        client = mqtt.Client()
-        client.connect(broker)
-    client.publish(topic, json.dumps(payload))
-    logging.info("MQTT PUBLISH %s → %s", topic, payload)
-    return client
+
+def send_mqtt(broker, topic, payload):
+    publish.single(topic, json.dumps(payload), hostname=broker)
+    return "published", topic
+
 
 def main():
-    parser = argparse.ArgumentParser(description="Telemetry Simulator")
-    parser.add_argument("--mode", choices=["http", "mqtt"], default="http", help="Transport mode")
-    parser.add_argument("--device", required=True, help="Device serial id")
-    parser.add_argument("--metric-type", default="temperature", help="Metric type")
-    parser.add_argument("--rate", type=float, default=1, help="Messages per second")
-    parser.add_argument("--count", type=int, default=0, help="Number of messages (0 = infinite)")
-    parser.add_argument("--url", default="http://127.0.0.1:8000/api/telemetry/", help="HTTP endpoint")
-    parser.add_argument("--mqtt-broker", default="localhost", help="MQTT broker")
-    parser.add_argument("--mqtt-topic", default="telemetry", help="MQTT topic")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=["http", "mqtt"], required=True)
+    parser.add_argument("--device", required=True)
+    parser.add_argument("--rate", type=float, default=1)
+    parser.add_argument("--count", type=int, default=1)
+    parser.add_argument("--schema-version", type=int, default=1)
+
+    parser.add_argument("--http-url", default="http://localhost:8000/api/telemetry/")
+    parser.add_argument("--mqtt-broker", default="localhost")
+    parser.add_argument("--mqtt-topic", default="telemetry")
+
     args = parser.parse_args()
 
-    interval = 1 / args.rate
-    logging.info("Simulator started: mode=%s device=%s rate=%.2f/s count=%d",
-                 args.mode, args.device, args.rate, args.count)
+    payload_template = {
+        "temperature": {"t": "numeric", "v": "round(random.uniform(20,30),2)"},
+        "is_online": {"t": "bool", "v": "True"},
+    }
 
-    mqtt_client = None
-    if args.mode == "mqtt":
-        mqtt_client = mqtt.Client()
-        mqtt_client.connect(args.mqtt_broker)
+    for i in range(args.count):
+        payload = build_payload(
+            args.device, args.schema_version, payload_template
+        )
 
-    sent = 0
-    try:
-        while args.count == 0 or sent < args.count:
-            payload = render_payload(args.device, args.metric_type)
-            if args.mode == "http":
-                send_http(args.url, payload)
-            else:
-                send_mqtt(args.mqtt_broker, args.mqtt_topic, payload, mqtt_client)
-            sent += 1
-            time.sleep(interval)
-    except KeyboardInterrupt:
-        logging.info("Simulator stopped manually after %d messages", sent)
+        if args.mode == "http":
+            status, resp = send_http(args.http_url, payload)
+        else:
+            status, resp = send_mqtt(
+                args.mqtt_broker, args.mqtt_topic, payload
+            )
+
+        print(f"[{i+1}] status={status} response={resp}")
+        time.sleep(args.rate)
+
 
 if __name__ == "__main__":
     main()

@@ -1,60 +1,36 @@
-# Create your views here.
-# views.py
+# devices/views.py
 import json
-from datetime import datetime
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.dateparse import parse_datetime
 
-from .models import Telemetry, DeviceMetric, Metric
+from apps.devices.models import Device, Metric, DeviceMetric, Telemetry
 
 
 @csrf_exempt
 def ingest_telemetry(request):
     if request.method != "POST":
-        return JsonResponse({"error": "method not allowed"}, status=405)
+        return HttpResponseBadRequest("POST only")
 
-    try:
-        payload = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "invalid json"}, status=400)
+    payload = json.loads(request.body)
 
-    required = {"schema_version", "device_metric_id", "ts", "value"}
-    if not required.issubset(payload):
-        return JsonResponse({"error": "missing fields"}, status=400)
+    device = Device.objects.get(serial_id=payload["device"])
 
-    ts = parse_datetime(payload["ts"])
-    if ts is None:
-        return JsonResponse({"error": "invalid timestamp"}, status=400)
+    for m in payload["metrics"]:
+        metric, _ = Metric.objects.get_or_create(
+            metric_type=m["metric"],
+            defaults={"data_type": m["t"]},
+        )
 
-    try:
-        device_metric = DeviceMetric.objects.select_related(
-            "metric"
-        ).get(id=payload["device_metric_id"])
-    except DeviceMetric.DoesNotExist:
-        return JsonResponse({"error": "device_metric not found"}, status=404)
+        dm, _ = DeviceMetric.objects.get_or_create(
+            device=device,
+            metric=metric,
+        )
 
-    metric = device_metric.metric
+        Telemetry.objects.create(
+            device_metric=dm,
+            value_jsonb={"t": m["t"], "v": m["v"]},
+            ts=parse_datetime(payload["ts"]),
+        )
 
-    telemetry = Telemetry(
-        device_metric=device_metric,
-        ts=ts,
-        value_jsonb={"value": payload["value"]},
-    )
-
-    if metric.data_type == "numeric":
-        telemetry.value_numeric = payload["value"]
-    elif metric.data_type == "boolean":
-        telemetry.value_bool = payload["value"]
-    elif metric.data_type == "str":
-        telemetry.value_str = payload["value"]
-
-    telemetry.save()
-
-    return JsonResponse(
-        {
-            "status": "ok",
-            "telemetry_id": telemetry.id,
-        },
-        status=201,
-    )
+    return JsonResponse({"status": "ok"})
