@@ -26,7 +26,7 @@ class RuleAdmin(admin.ModelAdmin):
         latest = Event.objects.filter(rule=obj).aggregate(Max("timestamp"))["timestamp__max"]
         if latest:
             return latest
-        return format_html('<span style="color: gray;">Never</span>')
+        return format_html('<span style="color: gray;">{}</span>', 'Never')
 
 
 @admin.register(Event)

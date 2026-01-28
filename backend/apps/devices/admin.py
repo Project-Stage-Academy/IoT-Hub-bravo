@@ -68,7 +68,7 @@ class DeviceAdmin(admin.ModelAdmin):
         latest = getattr(obj, "_latest_ts", None)
         if latest:
             return latest
-        return format_html('<span style="color: gray;">No data</span>')
+        return format_html('<span style="color: gray;">{}</span>', 'No data')
 
     @admin.display(description="Recent Telemetry (Last 10)")
     def recent_telemetry_display(self, obj):
@@ -79,7 +79,7 @@ class DeviceAdmin(admin.ModelAdmin):
         )
 
         if not telemetries:
-            return format_html('<p style="color: gray;">No telemetry data available</p>')
+            return format_html('<p style="color: gray;">{}</p>', 'No telemetry data available')
 
         header = format_html(
             "<tr style='background-color:#f2f2f2;'>"
