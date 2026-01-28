@@ -12,7 +12,24 @@ This guide describes how to use the Django Admin interface for common IoT Hub wo
 
 ### Default Development Users
 
-Run `python manage.py setup_admin` to create default users:
+Run `python manage.py setup_admin` to create default users.
+
+**Required environment variables:**
+
+| Variable | Description |
+|----------|-------------|
+| `DEV_SUPERUSER_PASSWORD` | **Required.** Superuser password |
+| `DEV_SUPERUSER_USERNAME` | Superuser username (default: `admin_from_script`) |
+| `DEV_SUPERUSER_EMAIL` | Superuser email (default: `admin_from_script@example.com`) |
+| `DEV_ADMIN_PASSWORD` | Admin user password (skip if not set) |
+| `DEV_ADMIN_USERNAME` | Admin username (default: `admin_user`) |
+| `DEV_OPERATOR_PASSWORD` | Operator user password (skip if not set) |
+| `DEV_OPERATOR_USERNAME` | Operator username (default: `operator_user`) |
+| `DEV_VIEWER_PASSWORD` | Viewer user password (skip if not set) |
+| `DEV_VIEWER_USERNAME` | Viewer username (default: `viewer_user`) |
+| `ALLOW_SETUP_ADMIN` | Set to `true` to allow running outside DEBUG mode |
+
+**Created users:**
 
 | Username | Role | Capabilities |
 |----------|------|--------------|
@@ -20,6 +37,16 @@ Run `python manage.py setup_admin` to create default users:
 | admin_user | Admin | CRUD all models |
 | operator_user | Operator | View + modify |
 | viewer_user | Viewer | Read-only |
+
+**Example usage:**
+
+```bash
+# In Docker container
+docker-compose exec backend python manage.py setup_admin
+
+# Or with env variables
+DEV_SUPERUSER_PASSWORD=secret123 python manage.py setup_admin
+```
 
 ---
 
@@ -251,4 +278,4 @@ This document describes the admin permission roles and their capabilities in the
 ## Creating Roles via Management Command
 
 ```bash
-python manage.py create_admin_groups
+python manage.py setup_admin
