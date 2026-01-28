@@ -112,7 +112,7 @@ def print_role_summary():
             print(f"  Delete: {', '.join(capabilities['can_delete'])}")
 
         if capabilities['special_permissions']:
-            print(f"  Special Permissions:")
+            print("  Special Permissions:")
             for perm in capabilities['special_permissions']:
                 print(f"    - {perm}")
 
