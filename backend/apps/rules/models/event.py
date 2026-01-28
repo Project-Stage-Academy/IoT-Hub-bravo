@@ -14,3 +14,6 @@ class Event(models.Model):
             models.Index(fields=['timestamp'], name='idx_events_timestamp'),
             models.Index(fields=['rule'], name='idx_events_rule'),
         ]
+
+    def __str__(self):
+        return f"Event {self.id} - {self.rule.name}"

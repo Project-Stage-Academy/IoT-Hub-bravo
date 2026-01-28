@@ -24,3 +24,6 @@ class Metric(models.Model):
                 name="check_valid_device_metric_type",
             )
         ]
+
+    def __str__(self):
+        return self.metric_type
