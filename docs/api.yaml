@@ -1,0 +1,888 @@
+openapi: 3.0.3
+
+info:
+  title: Devices & Telemetry API
+  version: "1.4.1"
+  description: |
+    API for managing devices and their telemetry, with full CRUD support, JWT authentication,
+    pagination, schema versioning, and example payloads for testing.
+
+servers:
+  - url: http://localhost:8000
+
+tags:
+  - name: Authentication
+    description: Authentication endpoints
+  - name: Devices
+    description: CRUD operations for devices
+  - name: Telemetry
+    description: CRUD operations for telemetry
+
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      operationId: authLogin
+      summary: Obtain JWT access token
+      description: |
+        Authenticates a user and returns a JWT access token.
+        The token must be used in the `Authorization` header for all protected endpoints.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+            examples:
+              valid_credentials:
+                value:
+                  username: test_user
+                  password: password
+      responses:
+        '200':
+          description: JWT token issued successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              required:
+                - refresh_token
+      responses:
+        '200':
+          description: Access token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+            description: Invalid request
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+
+  /api/devices:
+    get:
+      tags:
+        - Devices
+      operationId: listDevices
+      summary: List devices with pagination
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 5
+          description: Maximum number of devices to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of items to skip
+      responses:
+        '200':
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDevices'
+        '404':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Devices
+      operationId: createDevice
+      summary: Create a new device
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionedDeviceCreate'
+      responses:
+        '201':
+          description: Device created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/devices/{id}:
+    get:
+      tags:
+        - Devices
+      operationId: getDeviceById
+      summary: Get device by id
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Device found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '404':
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Devices
+      operationId: replaceDevice
+      summary: Replace device
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionedDeviceCreate'
+      responses:
+        '200':
+          description: Device updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - Devices
+      summary: Partially update device
+      operationId: patchDevice
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionedDevicePatch'
+      responses:
+        '200':
+          description: Device updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          description: Invalid patch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Devices
+      summary: Delete device
+      operationId: deleteDevice
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Device deleted
+        '404':
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/telemetry:
+    get:
+      tags:
+        - Telemetry
+      summary: List telemetry records by device_id with pagination
+      operationId: listTelemetry
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 5
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of telemetry records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTelemetry'
+        '404':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Telemetry
+      summary: Create telemetry record
+      operationId: createTelemetry
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionedTelemetryCreate'
+      responses:
+        '201':
+          description: Telemetry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Telemetry'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/telemetry/{id}:
+    get:
+      tags:
+        - Telemetry
+      summary: Get telemetry by id
+      operationId: getTelemetryById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Telemetry found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Telemetry'
+        '404':
+          description: Telemetry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Telemetry
+      summary: Replace telemetry
+      operationId: replaceTelemetry
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionedTelemetryCreate'
+      responses:
+        '200':
+          description: Telemetry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Telemetry'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Telemetry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - Telemetry
+      summary: Partially update telemetry
+      operationId: patchTelemetry
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionedTelemetryPatch'
+      responses:
+        '200':
+          description: Telemetry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Telemetry'
+        '400':
+          description: Invalid patch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Telemetry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Telemetry
+      summary: Delete telemetry
+      operationId: deleteTelemetry
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Telemetry deleted
+        '404':
+          description: Telemetry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token containing claims:
+        - sub: authenticated user id
+        - scope: granted permissions (e.g., devices:read)
+        - role: user | admin
+        - exp: expiration timestamp
+
+  schemas:
+    Device:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        serial_id:
+          type: string
+          example: "ABC12345"
+        name:
+          type: string
+          example: "Smoke detector."
+        description:
+          type: string
+          example: "A device that monitors smoke (CO2) levels in a building."
+        user_id:
+          type: integer
+          example: 1
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-22T12:00:00Z"
+      required:
+        - id
+        - serial_id
+        - name
+        - user_id
+        - is_active
+        - created_at
+      example:
+        id: 1
+        serial_id: "ABC12345"
+        name: "Smoke detector."
+        description: "A device that monitors smoke (CO2) levels in a building."
+        user_id: 1
+        is_active: true
+        created_at: "2026-01-22T12:00:00Z"
+
+    DeviceCreate:
+      type: object
+      properties:
+        serial_id:
+          type: string
+          example: "DEF12345"
+        name:
+          type: string
+          example: "Digital thermometer."
+        description:
+          type: string
+          example: "Monitors indoor temperature."
+        user_id:
+          type: integer
+          example: 1
+        is_active:
+          type: boolean
+          example: false
+      required:
+        - serial_id
+        - name
+        - user_id
+        - is_active
+      example:
+        serial_id: "ABC12345"
+        name: "Digital thermometer."
+        description: "Monitors indoor temperature."
+        user_id: 1
+        is_active: false
+
+    DevicePatch:
+      type: object
+      properties:
+        serial_id:
+          type: string
+          example: "ABC12345"
+        name:
+          type: string
+          example: "Smoke detector."
+        description:
+          type: string
+          example: "New description."
+        user_id:
+          type: integer
+          example: 1
+        is_active:
+          type: boolean
+          example: true
+      example:
+        serial_id: "ABC12345"
+        name: "Smoke detector."
+        description: "New description."
+        user_id: 1
+        is_active: true
+
+    VersionedDeviceCreate:
+      type: object
+      properties:
+        schema_version:
+          type: string
+          example: "v1"
+        device:
+          $ref: '#/components/schemas/DeviceCreate'
+      required:
+        - schema_version
+        - device
+      example:
+        schema_version: "v1"
+        device:
+          serial_id: "DEF12345"
+          name: "Digital thermometer."
+          description: "Monitors indoor temperature."
+          user_id: 1
+          is_active: false
+
+    VersionedDevicePatch:
+      type: object
+      properties:
+        schema_version:
+          type: string
+          example: "v1.0"
+        device:
+          $ref: '#/components/schemas/DevicePatch'
+      required:
+        - schema_version
+        - device
+      example:
+        schema_version: "1.1"
+        device:
+          name: "Updated smoke detector name."
+          description: "Updated description."
+          is_active: true
+
+    Telemetry:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        device_id:
+          type: integer
+          example: 1
+        key:
+          type: string
+          example: "temperature"
+        value:
+          type: number
+          example: 18.3
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-04-13T18:45:37Z"
+      required:
+        - id
+        - device_id
+        - key
+        - value
+        - created_at
+      example:
+        id: 1
+        device_id: 1
+        key: "temperature"
+        value: 18.3
+        created_at: "2024-04-13T18:45:37Z"
+
+    TelemetryCreate:
+      type: object
+      properties:
+        device_id:
+          type: integer
+          example: 1
+        key:
+          type: string
+          example: "humidity"
+        value:
+          type: number
+          example: 25.43
+      required:
+        - device_id
+        - key
+        - value
+      example:
+        device_id: 1
+        key: "humidity"
+        value: 25.43
+
+    TelemetryPatch:
+      type: object
+      properties:
+        key:
+          type: string
+          example: "temperature"
+        value:
+          type: number
+          example: 24.3
+      example:
+        key: "temperature"
+        value: 24.3
+
+    VersionedTelemetryCreate:
+      type: object
+      properties:
+        schema_version:
+          type: string
+          example: "v1"
+        telemetry:
+          $ref: '#/components/schemas/TelemetryCreate'
+      required:
+        - schema_version
+        - telemetry
+      example:
+        schema_version: "v2"
+        telemetry:
+          device_id: 1
+          key: "humidity"
+          value: 25.43
+
+    VersionedTelemetryPatch:
+      type: object
+      properties:
+        schema_version:
+          type: string
+          example: "v1.0"
+        telemetry:
+          $ref: '#/components/schemas/TelemetryPatch'
+      required:
+        - schema_version
+        - telemetry
+      example:
+        schema_version: "v1.2"
+        telemetry:
+          key: "temperature"
+          value: 24.3
+
+    AuthLoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          example: test_user
+        password:
+          type: string
+          format: password
+          example: password
+      required:
+        - username
+        - password
+      example:
+        username: test_user
+        password: password
+
+    AuthTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type:
+          type: string
+          example: bearer
+        expires_in:
+          type: string
+          format: date-time
+          example: "2026-01-22T17:00:00Z"
+      required:
+        - access_token
+        - token_type
+        - expires_in
+      example:
+        access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type: bearer
+        expires_in: "2026-01-22T17:00:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+      example:
+        code: 404
+        message: "Resource not found"
+
+    PaginatedDevices:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 12
+        limit:
+          type: integer
+          example: 5
+        offset:
+          type: integer
+          example: 0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
+          example:
+            [
+              {
+                id: 1,
+                serial_id: "ABC12345",
+                name: "Smoke detector.",
+                description: "A device that monitors smoke (CO2) levels in a building.",
+                user_id: 1,
+                is_active: true,
+                created_at: "2026-01-22T12:00:00Z"
+              },
+              {
+                id: 2,
+                serial_id: "QWE12345",
+                name: "Humidity meter.",
+                description: "A device that monitors humidity(%) level in a building.",
+                user_id: 1,
+                is_active: false,
+                created_at: "2026-01-22T14:32:54Z"
+              }
+            ]
+      required:
+        - total
+        - limit
+        - offset
+        - items
+      example:
+        total: 12
+        limit: 5
+        offset: 0
+        items:
+          - id: 1
+            serial_id: "ABC12345"
+            name: "Smoke detector."
+            description: "A device that monitors smoke (CO2) levels in a building."
+            user_id: 1
+            is_active: true
+            created_at: "2026-01-22T12:00:00Z"
+          - id: 2
+            serial_id: "QWE12345"
+            name: "Humidity meter."
+            description: "A device that monitors humidity(%) level in a building."
+            user_id: 1
+            is_active: false
+            created_at: "2026-01-22T14:32:54Z"
+
+    PaginatedTelemetry:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 20
+        limit:
+          type: integer
+          example: 5
+        offset:
+          type: integer
+          example: 0
+          # Offset = 5 means skip 5 results and display the next 5.
+          # example: page 1 (result showed: 1-5), page 2 (result showed : 6-10) , page 3 (result showed: 11-15), and etc.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Telemetry'
+          example: 
+              [
+              {
+                id: 1,
+                device_id: 1,
+                key: "temperature",
+                value: 18.3,
+                created_at: "2024-04-13T18:45:37Z"
+              },
+              {
+                id: 2,
+                device_id: 1,
+                key: "humidity",
+                value: 6.73,
+                created_at: "2022-07-01T11:23:33Z"
+              }
+            ]
+      required:
+        - total
+        - limit
+        - offset
+        - items
+      example:
+        total: 20
+        limit: 5
+        offset: 0
+        items:
+          - id: 1
+            device_id: 1
+            key: "temperature"
+            value: 18.3
+            created_at: "2024-04-13T18:45:37Z"
+          - id: 2
+            device_id: 1
+            key: "humidity"
+            value: 6.73
+            created_at: "2022-07-01T11:23:33Z"
