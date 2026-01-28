@@ -1,5 +1,4 @@
 import pytest
-from django.urls import reverse
 
 from apps.devices.models import Device, Metric, DeviceMetric, Telemetry
 from apps.rules.models import Rule, Event
@@ -75,7 +74,7 @@ def event(rule):
 @pytest.fixture
 def logged_in_client(client, superuser):
     """
-    Аналог твого setUp(): логінимося перед тестом.
+    Logs in before each test (analog of a setUp()).
     """
     ok = client.login(username="test_admin", password="testpass123")
     assert ok is True
@@ -240,7 +239,7 @@ def test_device_enable_action_works(logged_in_client, device):
         {"action": "enable_devices", "_selected_action": [str(device.id)]},
         follow=False,
     )
-    # admin action зазвичай редіректить назад на changelist
+    # Admin actions usually redirect back to the changelist
     assert resp.status_code in (302, 200)
 
     device.refresh_from_db()
@@ -249,7 +248,7 @@ def test_device_enable_action_works(logged_in_client, device):
 
 @pytest.mark.django_db
 def test_non_staff_user_cannot_access_admin(client, django_user_model):
-    user = django_user_model.objects.create_user(
+    django_user_model.objects.create_user(
         username="regular_user",
         email="regular@example.com",
         password="testpass123",

@@ -1,162 +1,199 @@
-from django.core.management.base import BaseCommand
-from django.contrib.auth import get_user_model
+import os
+
+from django.apps import apps
+from django.conf import settings
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
-User = get_user_model()
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
 class Command(BaseCommand):
-    help = "Setup admin users, groups and permissions for development"
+    help = "Setup admin users, groups and permissions for development/testing only."
 
     def handle(self, *args, **options):
-        self.stdout.write("Setting up admin users and permissions...")
-
-        # Create superuser if not exists
-        if not User.objects.filter(username="admin_from_script").exists():
-            User.objects.create_superuser(
-                username="admin_from_script",
-                email="admin_from_script@example.com",
-                password="admin123",
+        # Gate: dev/test only (allow override via env)
+        allow = _env_bool("ALLOW_SETUP_ADMIN", default=False)
+        if not (settings.DEBUG or allow):
+            raise CommandError(
+                "setup_admin is disabled outside development/testing. "
+                "Set ALLOW_SETUP_ADMIN=true to override."
             )
-            self.stdout.write(
-                self.style.SUCCESS("Created superuser: admin_from_script / admin123")
-            )  # ← І тут
-        else:
-            self.stdout.write("Superuser 'admin_from_script' already exists")  # ← І тут
 
-        # Create groups and permissions
-        self.create_viewer_group()
-        self.create_operator_group()
-        self.create_admin_group()
+        self.stdout.write("Setting up admin users, groups and permissions...")
 
-        # Create test users
-        self.create_test_users()
+        user_model = apps.get_model("users", "User")
 
-        self.stdout.write(self.style.SUCCESS("\nAdmin setup completed successfully!"))
-        self.stdout.write("\nAvailable users:")
-        self.stdout.write("  - admin_from_script / admin123 (Superuser)")
-        self.stdout.write("  - viewer_user / viewer123 (Viewer - read only)")
-        self.stdout.write("  - operator_user / operator123 (Operator - can add/edit)")
-        self.stdout.write("  - admin_user / admin123 (Admin - full access)")
+        try:
+            with transaction.atomic():
+                self._create_or_update_groups()
+                self._create_superuser(user_model)
+                self._create_role_users(user_model)
 
-    def create_viewer_group(self):
-        """Viewer: Read-only access to all models"""
-        group, created = Group.objects.get_or_create(name="Viewer")
+        except CommandError:
+            raise
+        except Exception as exc:
+            raise CommandError(f"Admin setup failed: {exc}") from exc
 
-        if created:
-            from apps.devices.models import Device, Telemetry, Metric, DeviceMetric
-            from apps.rules.models import Rule, Event
+        self.stdout.write(self.style.SUCCESS("Admin setup completed successfully."))
+        self.stdout.write(
+            "Available users (passwords come from environment variables):"
+        )
+        self.stdout.write("  - DEV_SUPERUSER_USERNAME (Superuser)")
+        self.stdout.write("  - DEV_VIEWER_USERNAME (Viewer)")
+        self.stdout.write("  - DEV_OPERATOR_USERNAME (Operator)")
+        self.stdout.write("  - DEV_ADMIN_USERNAME (Admin)")
 
-            models = [Device, Telemetry, Metric, DeviceMetric, Rule, Event]
+    def _create_superuser(self, user_model):
+        username = os.getenv("DEV_SUPERUSER_USERNAME", "admin_from_script")
+        email = os.getenv("DEV_SUPERUSER_EMAIL", "admin_from_script@example.com")
+        password = os.getenv("DEV_SUPERUSER_PASSWORD")
 
-            for model in models:
-                content_type = ContentType.objects.get_for_model(model)
-                permission = Permission.objects.get(
-                    codename=f"view_{model._meta.model_name}",
-                    content_type=content_type,
-                )
-                group.permissions.add(permission)
-
-            self.stdout.write(
-                self.style.SUCCESS("Created group: Viewer (read-only access)")
+        if not password:
+            raise CommandError(
+                "DEV_SUPERUSER_PASSWORD is required. "
+                "Refusing to create a superuser with a hardcoded/default password."
             )
-        else:
-            self.stdout.write("Group 'Viewer' already exists")
 
-    def create_operator_group(self):
-        """Operator: Can view, add, change but not delete. Can run admin actions."""
-        group, created = Group.objects.get_or_create(name="Operator")
+        if user_model.objects.filter(username=username).exists():
+            self.stdout.write(f"Superuser '{username}' already exists.")
+            return
 
-        if created:
-            from apps.devices.models import Device, Telemetry, Metric, DeviceMetric
-            from apps.rules.models import Rule, Event
+        user_model.objects.create_superuser(
+            username=username, email=email, password=password
+        )
+        self.stdout.write(self.style.SUCCESS(f"Created superuser: {username}"))
 
-            models = [Device, Telemetry, Metric, DeviceMetric, Rule, Event]
-
-            for model in models:
-                content_type = ContentType.objects.get_for_model(model)
-
-                # Add view, add, change permissions
-                for action in ["view", "add", "change"]:
-                    permission = Permission.objects.get(
-                        codename=f"{action}_{model._meta.model_name}",
-                        content_type=content_type,
-                    )
-                    group.permissions.add(permission)
-
-            self.stdout.write(
-                self.style.SUCCESS("Created group: Operator (view, add, change access)")
-            )
-        else:
-            self.stdout.write("Group 'Operator' already exists")
-
-    def create_admin_group(self):
-        """Admin: Full access to all models"""
-        group, created = Group.objects.get_or_create(name="Admin")
-
-        if created:
-            from apps.devices.models import Device, Telemetry, Metric, DeviceMetric
-            from apps.rules.models import Rule, Event
-
-            models = [Device, Telemetry, Metric, DeviceMetric, Rule, Event]
-
-            for model in models:
-                content_type = ContentType.objects.get_for_model(model)
-
-                # Add all permissions
-                for action in ["view", "add", "change", "delete"]:
-                    permission = Permission.objects.get(
-                        codename=f"{action}_{model._meta.model_name}",
-                        content_type=content_type,
-                    )
-                    group.permissions.add(permission)
-
-            self.stdout.write(self.style.SUCCESS("Created group: Admin (full access)"))
-        else:
-            self.stdout.write("Group 'Admin' already exists")
-
-    def create_test_users(self):
-        """Create test users for each role"""
+    def _create_role_users(self, user_model):
         users_data = [
             {
-                "username": "viewer_user",
-                "email": "viewer@example.com",
-                "password": "viewer123",
+                "username_env": "DEV_VIEWER_USERNAME",
+                "email_env": "DEV_VIEWER_EMAIL",
+                "password_env": "DEV_VIEWER_PASSWORD",
+                "default_username": "viewer_user",
+                "default_email": "viewer@example.com",
                 "group": "Viewer",
             },
             {
-                "username": "operator_user",
-                "email": "operator@example.com",
-                "password": "operator123",
+                "username_env": "DEV_OPERATOR_USERNAME",
+                "email_env": "DEV_OPERATOR_EMAIL",
+                "password_env": "DEV_OPERATOR_PASSWORD",
+                "default_username": "operator_user",
+                "default_email": "operator@example.com",
                 "group": "Operator",
             },
             {
-                "username": "admin_user",
-                "email": "admin_user@example.com",
-                "password": "admin123",
+                "username_env": "DEV_ADMIN_USERNAME",
+                "email_env": "DEV_ADMIN_EMAIL",
+                "password_env": "DEV_ADMIN_PASSWORD",
+                "default_username": "admin_user",
+                "default_email": "admin_user@example.com",
                 "group": "Admin",
             },
         ]
 
-        for user_data in users_data:
-            username = user_data["username"]
-            if not User.objects.filter(username=username).exists():
-                user = User.objects.create_user(
-                    username=username,
-                    email=user_data["email"],
-                    password=user_data["password"],
-                )
-                user.is_staff = True
-                user.save()
+        for item in users_data:
+            username = os.getenv(item["username_env"], item["default_username"])
+            email = os.getenv(item["email_env"], item["default_email"])
+            password = os.getenv(item["password_env"])
 
-                group = Group.objects.get(name=user_data["group"])
-                user.groups.add(group)
-
+            if not password:
                 self.stdout.write(
-                    self.style.SUCCESS(
-                        f"Created user: {username} / {user_data['password']} (group: {user_data['group']})"
-                    )
+                    f"Skipping user '{username}': missing {item['password_env']}."
                 )
+                continue
+
+            user, created = user_model.objects.get_or_create(
+                username=username,
+                defaults={"email": email},
+            )
+
+            if created:
+                user.set_password(password)
+                user.is_staff = True
+                user.save(update_fields=["password", "is_staff", "email"])
+                self.stdout.write(self.style.SUCCESS(f"Created user: {username}"))
             else:
-                self.stdout.write(f"User '{username}' already exists")
+                changed = False
+                if not user.is_staff:
+                    user.is_staff = True
+                    changed = True
+                if email and user.email != email:
+                    user.email = email
+                    changed = True
+                if changed:
+                    user.save(update_fields=["is_staff", "email"])
+                self.stdout.write(f"User '{username}' already exists.")
+
+            group = Group.objects.get(name=item["group"])
+            user.groups.add(group)
+
+    def _create_or_update_groups(self):
+        """
+        Creates groups and ensures permissions are up to date.
+        This runs inside a transaction.atomic() in handle().
+        """
+        device_model = apps.get_model("devices", "Device")
+        telemetry_model = apps.get_model("devices", "Telemetry")
+        metric_model = apps.get_model("devices", "Metric")
+        device_metric_model = apps.get_model("devices", "DeviceMetric")
+        rule_model = apps.get_model("rules", "Rule")
+        event_model = apps.get_model("rules", "Event")
+
+        models = [
+            device_model,
+            telemetry_model,
+            metric_model,
+            device_metric_model,
+            rule_model,
+            event_model,
+        ]
+
+        self._ensure_group_permissions(name="Viewer", models=models, actions=["view"])
+        self._ensure_group_permissions(
+            name="Operator", models=models, actions=["view", "add", "change"]
+        )
+        self._ensure_group_permissions(
+            name="Admin", models=models, actions=["view", "add", "change", "delete"]
+        )
+
+    def _ensure_group_permissions(self, name, models, actions):
+        group, _ = Group.objects.get_or_create(name=name)
+
+        perms = []
+        missing = []
+
+        for model in models:
+            content_type = ContentType.objects.get_for_model(model)
+            for action in actions:
+                codename = f"{action}_{model._meta.model_name}"
+
+                # SAFE: don't crash if permissions are not created yet.
+                perm = Permission.objects.filter(
+                    codename=codename, content_type=content_type
+                ).first()
+                if perm is None:
+                    missing.append(
+                        f"{codename} ({content_type.app_label}.{content_type.model})"
+                    )
+                    continue
+                perms.append(perm)
+
+        group.permissions.set(perms)
+
+        if missing:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Ensured group: {name} permissions with missing entries (run migrations?): "
+                    + ", ".join(missing)
+                )
+            )
+        else:
+            self.stdout.write(self.style.SUCCESS(f"Ensured group: {name} permissions."))

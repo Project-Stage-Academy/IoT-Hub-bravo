@@ -1,8 +1,11 @@
-from django.contrib import admin
-from django.utils.html import format_html
-from .models import Device, Telemetry, Metric, DeviceMetric
 import csv
+
+from django.contrib import admin
+from django.db.models import Max
 from django.http import HttpResponse
+from django.utils.html import format_html, format_html_join
+
+from .models import Device, Telemetry, Metric, DeviceMetric
 
 
 @admin.register(Device)
@@ -50,13 +53,19 @@ class DeviceAdmin(admin.ModelAdmin):
         ),
     )
 
+    def get_queryset(self, request):
+        """
+        Annotate latest telemetry timestamp to avoid N+1 queries on the changelist.
+        """
+        qs = super().get_queryset(request)
+        # Reverse relations (default related_name):
+        # Device -> DeviceMetric: devicemetric_set (query name: devicemetric)
+        # DeviceMetric -> Telemetry: telemetry_set (query name: telemetry)
+        return qs.annotate(_latest_ts=Max("devicemetric__telemetry__ts"))
+
     @admin.display(description="Latest Telemetry")
     def latest_telemetry_timestamp(self, obj):
-        from django.db.models import Max
-
-        latest = Telemetry.objects.filter(device_metric__device=obj).aggregate(
-            Max("ts")
-        )["ts__max"]
+        latest = getattr(obj, "_latest_ts", None)
         if latest:
             return latest
         return format_html('<span style="color: gray;">No data</span>')
@@ -74,31 +83,67 @@ class DeviceAdmin(admin.ModelAdmin):
                 '<p style="color: gray;">No telemetry data available</p>'
             )
 
-        html = '<table style="width: 100%; border-collapse: collapse;">'
-        html += '<tr style="background-color: #f2f2f2;"><th style="border: 1px solid #ddd; padding: 8px;">Metric</th><th style="border: 1px solid #ddd; padding: 8px;">Value</th><th style="border: 1px solid #ddd; padding: 8px;">Timestamp</th></tr>'
+        header = format_html(
+            "<tr style='background-color:#f2f2f2;'>"
+            "<th style='border:1px solid #ddd; padding:8px;'>Metric</th>"
+            "<th style='border:1px solid #ddd; padding:8px;'>Value</th>"
+            "<th style='border:1px solid #ddd; padding:8px;'>Timestamp</th>"
+            "</tr>"
+        )
 
-        for t in telemetries:
-            value = ""
-            if t.value_numeric is not None:
-                value = f"{t.value_numeric:.3f}"
-            elif t.value_bool is not None:
-                value = str(t.value_bool)
-            elif t.value_str is not None:
-                value = t.value_str
+        rows = format_html_join(
+            "",
+            "<tr>"
+            "<td style='border:1px solid #ddd; padding:8px;'>{}</td>"
+            "<td style='border:1px solid #ddd; padding:8px;'>{}</td>"
+            "<td style='border:1px solid #ddd; padding:8px;'>{}</td>"
+            "</tr>",
+            (
+                (
+                    t.device_metric.metric.metric_type,
+                    t.formatted_value(),
+                    t.ts,
+                )
+                for t in telemetries
+            ),
+        )
 
-            html += f'<tr><td style="border: 1px solid #ddd; padding: 8px;">{t.device_metric.metric.metric_type}</td><td style="border: 1px solid #ddd; padding: 8px;">{value}</td><td style="border: 1px solid #ddd; padding: 8px;">{t.ts}</td></tr>'
-
-        html += "</table>"
-        return format_html(html)
+        return format_html(
+            "<table style='width:100%; border-collapse:collapse;'>{}{}</table>",
+            header,
+            rows,
+        )
 
     @admin.action(description="Enable selected devices")
     def enable_devices(self, request, queryset):
-        updated = queryset.update(is_active=True)
+        if not request.user.has_perm("devices.change_device"):
+            self.message_user(request, "Permission denied.", level="error")
+            return
+
+        try:
+            updated = queryset.update(is_active=True)
+        except Exception as exc:
+            self.message_user(
+                request, f"Failed to enable devices: {exc}", level="error"
+            )
+            return
+
         self.message_user(request, f"{updated} device(s) successfully enabled.")
 
     @admin.action(description="Disable selected devices")
     def disable_devices(self, request, queryset):
-        updated = queryset.update(is_active=False)
+        if not request.user.has_perm("devices.change_device"):
+            self.message_user(request, "Permission denied.", level="error")
+            return
+
+        try:
+            updated = queryset.update(is_active=False)
+        except Exception as exc:
+            self.message_user(
+                request, f"Failed to disable devices: {exc}", level="error"
+            )
+            return
+
         self.message_user(request, f"{updated} device(s) successfully disabled.")
 
 
@@ -113,37 +158,32 @@ class TelemetryAdmin(admin.ModelAdmin):
 
     @admin.display(description="Value")
     def display_value(self, obj):
-        if obj.value_numeric is not None:
-            return f"{obj.value_numeric:.3f} (numeric)"
-        elif obj.value_bool is not None:
-            return f"{obj.value_bool} (bool)"
-        elif obj.value_str is not None:
-            return f"{obj.value_str} (str)"
+        value = obj.formatted_value_with_type()
+        if value:
+            return value
         return format_html('<span style="color: gray;">N/A</span>')
 
     @admin.action(description="Export selected telemetry to CSV")
     def export_to_csv(self, request, queryset):
+        # Optional, but reasonable: exporting implies viewing permission.
+        if not request.user.has_perm("devices.view_telemetry"):
+            self.message_user(request, "Permission denied.", level="error")
+            return None
+
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="telemetry_export.csv"'
 
         writer = csv.writer(response)
         writer.writerow(["ID", "Device", "Metric", "Value", "Timestamp", "Created At"])
 
-        for telemetry in queryset:
-            value = ""
-            if telemetry.value_numeric is not None:
-                value = f"{telemetry.value_numeric:.3f}"
-            elif telemetry.value_bool is not None:
-                value = str(telemetry.value_bool)
-            elif telemetry.value_str is not None:
-                value = telemetry.value_str
-
+        qs = queryset.select_related("device_metric__device", "device_metric__metric")
+        for telemetry in qs:
             writer.writerow(
                 [
                     telemetry.id,
                     telemetry.device_metric.device.name,
                     telemetry.device_metric.metric.metric_type,
-                    value,
+                    telemetry.formatted_value(),
                     telemetry.ts,
                     telemetry.created_at,
                 ]
