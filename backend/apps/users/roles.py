@@ -33,11 +33,10 @@ ROLE_CAPABILITIES = {
             "Create/delete users",
             "Modify Django settings",
             "Access all admin actions",
-            "Bypass all permission checks"
+            "Bypass all permission checks",
         ],
-        "typical_users": ["System administrators", "DevOps engineers"]
+        "typical_users": ["System administrators", "DevOps engineers"],
     },
-
     "admin": {
         "description": "Full access to IoT Hub models and data",
         "can_view": ["Device", "Telemetry", "Metric", "DeviceMetric", "Rule", "Event"],
@@ -50,9 +49,8 @@ ROLE_CAPABILITIES = {
             "Delete telemetry data",
             "Modify rules and events",
         ],
-        "typical_users": ["IoT platform administrators", "Data managers"]
+        "typical_users": ["IoT platform administrators", "Data managers"],
     },
-
     "operator": {
         "description": "Can view, add, and modify data but cannot delete",
         "can_view": ["Device", "Telemetry", "Metric", "DeviceMetric", "Rule", "Event"],
@@ -63,11 +61,10 @@ ROLE_CAPABILITIES = {
         "special_permissions": [
             "Activate/deactivate devices",
             "Create and modify rules",
-            "Add telemetry data manually"
+            "Add telemetry data manually",
         ],
-        "typical_users": ["Device operators", "Support engineers", "IoT technicians"]
+        "typical_users": ["Device operators", "Support engineers", "IoT technicians"],
     },
-
     "viewer": {
         "description": "Read-only access to all IoT Hub data",
         "can_view": ["Device", "Telemetry", "Metric", "DeviceMetric", "Rule", "Event"],
@@ -75,12 +72,9 @@ ROLE_CAPABILITIES = {
         "can_change": [],
         "can_delete": [],
         "can_access_admin": True,
-        "special_permissions": [
-            "Export data to CSV",
-            "View dashboards and reports"
-        ],
-        "typical_users": ["Analysts", "Auditors", "Stakeholders", "Clients"]
-    }
+        "special_permissions": ["Export data to CSV", "View dashboards and reports"],
+        "typical_users": ["Analysts", "Auditors", "Stakeholders", "Clients"],
+    },
 }
 
 

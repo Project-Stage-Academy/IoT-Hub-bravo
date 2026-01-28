@@ -23,9 +23,7 @@ class RuleAdmin(admin.ModelAdmin):
     def last_triggered(self, obj):
         from django.db.models import Max
 
-        latest = Event.objects.filter(rule=obj).aggregate(Max("timestamp"))[
-            "timestamp__max"
-        ]
+        latest = Event.objects.filter(rule=obj).aggregate(Max("timestamp"))["timestamp__max"]
         if latest:
             return latest
         return format_html('<span style="color: gray;">Never</span>')
