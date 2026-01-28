@@ -25,10 +25,11 @@ RUN python -m pip install --upgrade pip wheel \
 
 FROM base AS runtime-deps-stage
 
-# install runtime dependencies & PostgreSQL client for health checks
+# install runtime dependencies, PostgreSQL and Redis clients for health checks
 RUN apt-get update && apt-get install --no-install-recommends -y \
     libpq5 \
     postgresql-client \
+    redis-tools \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build-stage /wheels /wheels
