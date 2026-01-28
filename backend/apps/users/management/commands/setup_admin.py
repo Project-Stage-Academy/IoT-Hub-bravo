@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.db import transaction, models
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -62,14 +62,24 @@ class Command(BaseCommand):
                 "Refusing to create a superuser with a hardcoded/default password."
             )
 
-        if user_model.objects.filter(username=username).exists():
+        existing_user = user_model.objects.filter(
+            models.Q(username=username) | models.Q(email=email)
+        ).first()
+
+        if existing_user:
             self.stdout.write(f"Superuser '{username}' already exists.")
+            if not existing_user.is_superuser:
+                existing_user.is_superuser = True
+                existing_user.is_staff = True
+                existing_user.save(update_fields=["is_superuser", "is_staff"])
+                self.stdout.write(f"Updated '{username}' to superuser.")
             return
 
         user_model.objects.create_superuser(
             username=username, email=email, password=password
         )
         self.stdout.write(self.style.SUCCESS(f"Created superuser: {username}"))
+
 
     def _create_role_users(self, user_model):
         users_data = [

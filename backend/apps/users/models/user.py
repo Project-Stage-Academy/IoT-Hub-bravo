@@ -11,8 +11,10 @@ class UserRole(models.TextChoices):
 
 class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
+    id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=150, unique=True, null=False)
     email = models.EmailField(max_length=255, unique=True, null=False)
+    password = models.CharField(max_length=255, null=False)
     role = models.CharField(
         max_length=10,
         choices=UserRole.choices,
@@ -28,10 +30,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["email"]
 
+    last_login = None
+
     class Meta:
         db_table = "users"
-        verbose_name = "user"
-        verbose_name_plural = "users"
         indexes = [
             models.Index(fields=["role"], name="idx_users_role"),
         ]
