@@ -2,16 +2,10 @@
   "schema_version": 1,
   "device": "device-01",
   "ts": "2026-01-27T12:00:00Z",
-  "metrics": [
-    {
-      "metric": "temperature",
-      "t": "numeric",
-      "v": 23.5
-    },
-    {
-      "metric": "is_online",
-      "t": "bool",
-      "v": true
-    }
-  ]
+  "metrics": {
+      "temperature": 23.5,
+      "humidity": 42,
+      "is_online": true
+  }
 }
+

@@ -10,27 +10,38 @@ from apps.devices.models import Device, Metric, DeviceMetric, Telemetry
 @csrf_exempt
 def ingest_telemetry(request):
     if request.method != "POST":
-        return HttpResponseBadRequest("POST only")
+        return JsonResponse({"error": "method not allowed"}, status=405)
 
-    payload = json.loads(request.body)
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "invalid json"}, status=400)
 
-    device = Device.objects.get(serial_id=payload["device"])
+    required = {"device", "metrics", "ts"}
+    if not required.issubset(payload):
+        return JsonResponse({"error": "missing fields"}, status=400)
 
-    for m in payload["metrics"]:
-        metric, _ = Metric.objects.get_or_create(
-            metric_type=m["metric"],
-            defaults={"data_type": m["t"]},
-        )
+    from django.utils.dateparse import parse_datetime
+    ts = parse_datetime(payload["ts"])
 
-        dm, _ = DeviceMetric.objects.get_or_create(
-            device=device,
-            metric=metric,
-        )
+    try:
+        device = Device.objects.get(serial_id=payload["device"])
+    except Device.DoesNotExist:
+        return JsonResponse({"error": "device not found"}, status=404)
 
-        Telemetry.objects.create(
-            device_metric=dm,
-            value_jsonb={"t": m["t"], "v": m["v"]},
-            ts=parse_datetime(payload["ts"]),
-        )
+    created = []
 
-    return JsonResponse({"status": "ok"})
+    for name, value in payload["metrics"].items():
+        try:
+            metric = Metric.objects.get(metric_type=name)
+            dm = DeviceMetric.objects.get(device=device, metric=metric)
+        except (Metric.DoesNotExist, DeviceMetric.DoesNotExist):
+            continue  # або повертати 400, якщо строгий режим
+
+        telemetry = Telemetry(device_metric=dm, ts=ts, value_jsonb={"t": metric.data_type, "v": value})
+
+        telemetry.save()
+        created.append(telemetry.id)
+
+    return JsonResponse({"status": "ok", "created": len(created)}, status=201)
+

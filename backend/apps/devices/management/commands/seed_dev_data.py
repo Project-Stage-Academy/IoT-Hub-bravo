@@ -8,6 +8,7 @@ from django.core.management import call_command
 from django.contrib.auth import get_user_model
 from apps.users.models import UserRole
 from django.apps import apps
+import sys
 
 User = get_user_model()
 
@@ -196,10 +197,8 @@ class Command(BaseCommand):
 
         has_users = User.objects.exists()
         if has_users and not self.force:
-            raise CommandError(
-                'Database is not empty. '
-                'Use --force to overwrite existing data.'
-            )
+            self.stdout.write(self.style.ERROR('Database is not empty. Use --force to overwrite existing data.'))
+            sys.exit(0)
         elif has_users and self.force:
             self.stdout.write(self.style.WARNING(
                 'Warning: Existing users will be deleted due to --force.'

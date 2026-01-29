@@ -8,7 +8,6 @@
       "condition": {
         "type": "threshold",
         "value": 27.5,
-        "metric": "temperature",
         "operator": ">",
         "duration_minutes": 10
       },
@@ -30,7 +29,6 @@
       "condition": {
         "type": "threshold",
         "value": 70,
-        "metric": "humidity",
         "operator": ">",
         "duration_minutes": 15
       },
@@ -52,7 +50,6 @@
       "condition": {
         "type": "threshold",
         "value": 75,
-        "metric": "humidity",
         "operator": ">",
         "duration_minutes": 10
       },
@@ -74,7 +71,6 @@
       "condition": {
         "type": "threshold",
         "value": 985,
-        "metric": "pressure",
         "operator": "<",
         "duration_minutes": 0
       },
@@ -96,7 +92,6 @@
       "condition": {
         "type": "boolean",
         "value": true,
-        "metric": "motion_detected",
         "operator": "==",
         "time_restriction": "22:00-06:00"
       },
@@ -118,7 +113,6 @@
       "condition": {
         "type": "string_match",
         "value": "OK",
-        "metric": "status",
         "operator": "!="
       },
       "action": {
@@ -139,7 +133,6 @@
       "condition": {
         "type": "threshold",
         "value": false,
-        "metric": "online",
         "operator": "==",
         "duration_minutes": 4
       },
@@ -161,7 +154,6 @@
       "condition": {
         "type": "threshold",
         "value": 28,
-        "metric": "temperature",
         "operator": ">",
         "duration_minutes": 8
       },
@@ -183,7 +175,6 @@
       "condition": {
         "type": "threshold",
         "value": 65,
-        "metric": "humidity",
         "operator": ">",
         "duration_minutes": 10
       },
@@ -205,7 +196,6 @@
       "condition": {
         "type": "string_match",
         "value": "current",
-        "metric": "firmware_version",
         "operator": "!="
       },
       "action": {
@@ -226,7 +216,6 @@
       "condition": {
         "type": "string_match",
         "value": "OK",
-        "metric": "status",
         "operator": "!="
       },
       "action": {
