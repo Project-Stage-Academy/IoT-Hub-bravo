@@ -80,3 +80,74 @@ Configure in **Settings > General > Pull Requests**:
 - [ ] Allow rebase merging
 - [x] Automatically delete head branches
  
+## Sample PR Workflow Validation
+ 
+This section documents a validated end-to-end workflow from issue to merge.
+ 
+### Test Run: Django Admin Configuration
+ 
+**Issue:** US-33 — Configure Django Admin for IoT Hub models
+ 
+**1. Branch Creation**
+ 
+```bash
+git checkout main
+git pull origin main
+git checkout -b us-33-django-admin
+```
+ 
+Branch name follows convention: `us-<number>-<short-description>`
+ 
+**2. Changes Made**
+ 
+| File | Action |
+|------|--------|
+| `backend/apps/devices/admin.py` | Register Device, Metric, DeviceMetric, Telemetry models |
+| `backend/apps/rules/admin.py` | Register Rule, Event models |
+| `backend/apps/users/admin.py` | Register custom User model |
+| `backend/apps/devices/models/telemetry.py` | Add formatted_value() helper methods |
+| `backend/apps/rules/models/event.py` | Add acknowledged field |
+| `backend/apps/users/management/commands/setup_admin.py` | Management command for dev users |
+| `backend/tests/test_admin_smoke.py` | Automated smoke tests for admin pages |
+| `docs/admin.md` | Admin workflow documentation |
+ 
+**3. Commit Messages**
+ 
+```
+feat(admin): register Device and Telemetry models in Django Admin
+feat(admin): register Rule and Event models in Django Admin
+feat(admin): register custom User model in Django Admin
+feat(admin): add bulk enable/disable, CSV export, acknowledge actions
+feat(models): add formatted_value methods to Telemetry model
+feat(models): add acknowledged field to Event model
+chore(admin): add setup_admin management command
+test(admin): add smoke tests for admin pages
+docs(admin): add admin workflow and role documentation
+```
+ 
+**4. Push and PR**
+ 
+```bash
+git push -u origin us-33-django-admin
+gh pr create --title "PR US33 Configure Django Admin" --body "..."
+```
+ 
+**5. CI Verification**
+ 
+- [x] `lint` job passes (black, ruff)
+- [x] `test` job passes (pytest with 22 admin smoke tests)
+- [x] `build` job passes (Docker image)
+ 
+**6. Review and Merge**
+ 
+- [x] PR created with description and linked issue
+- [x] At least 1 reviewer approved
+- [x] Review feedback addressed (permission checks, format_html fixes)
+- [x] All CI checks passed
+- [x] Squash merged into `main`
+- [x] Branch deleted after merge
+ 
+### Result
+ 
+Workflow validated successfully. All steps from CONTRIBUTING.md were followed.
+ 
