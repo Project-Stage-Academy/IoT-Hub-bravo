@@ -18,3 +18,6 @@ class Rule(models.Model):
             models.Index(fields=['device_metric'], name='idx_rules_device_metric'),
             models.Index(fields=['is_active'], name='idx_rules_is_active'),
         ]
+
+    def __str__(self):
+        return self.name

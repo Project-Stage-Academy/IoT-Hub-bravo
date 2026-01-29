@@ -52,4 +52,15 @@ else
   log "Skipping database seeding (ENABLE_SEED_DATA=false)."
 fi
 
+# =============================
+# Setup admin users & groups
+# =============================
+if [ "${ALLOW_SETUP_ADMIN:-false}" = "true" ]; then
+  log "Setting up admin users and permissions..."
+  python manage.py setup_admin || {
+    log "Admin setup failed (non-critical, continuing)."
+  }
+  log "Admin setup completed."
+fi
+
 exec python manage.py runserver 0.0.0.0:8000

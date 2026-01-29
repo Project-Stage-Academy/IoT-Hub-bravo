@@ -17,3 +17,6 @@ class DeviceMetric(models.Model):
             models.Index(fields=['device'], name='idx_device_metrics_device'),
             models.Index(fields=['metric'], name='idx_device_metrics_metric'),
         ]
+
+    def __str__(self):
+        return f"{self.device.name} - {self.metric.metric_type}"
