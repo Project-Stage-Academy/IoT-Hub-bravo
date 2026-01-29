@@ -8,7 +8,7 @@ This document records a cold-start validation run to confirm the local Docker de
 
 ```bash
 git clone <repo-url>
-cd iot-catalog-hub
+cd IoT-Hub-bravo
 ```
 
 
@@ -46,3 +46,7 @@ Confirm the app is reachable from host and routing works
 - Migrations applied successfully
 - Service available at http://localhost:8000
 - Django admin available at http://localhost:8000/admin/
+
+## Validated by
+
+- [Name of validator] Date: 2026-01-23
