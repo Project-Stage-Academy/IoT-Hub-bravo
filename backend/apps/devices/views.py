@@ -1,6 +1,5 @@
-# devices/views.py
 import json
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.dateparse import parse_datetime
 
@@ -21,7 +20,6 @@ def ingest_telemetry(request):
     if not required.issubset(payload):
         return JsonResponse({"error": "missing fields"}, status=400)
 
-    from django.utils.dateparse import parse_datetime
     ts = parse_datetime(payload["ts"])
 
     try:
@@ -36,12 +34,13 @@ def ingest_telemetry(request):
             metric = Metric.objects.get(metric_type=name)
             dm = DeviceMetric.objects.get(device=device, metric=metric)
         except (Metric.DoesNotExist, DeviceMetric.DoesNotExist):
-            continue  # або повертати 400, якщо строгий режим
+            continue
 
-        telemetry = Telemetry(device_metric=dm, ts=ts, value_jsonb={"t": metric.data_type, "v": value})
+        telemetry = Telemetry(
+            device_metric=dm, ts=ts, value_jsonb={"t": metric.data_type, "v": value}
+        )
 
         telemetry.save()
         created.append(telemetry.id)
 
     return JsonResponse({"status": "ok", "created": len(created)}, status=201)
-

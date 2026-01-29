@@ -3,6 +3,8 @@ import json
 import random
 import time
 from datetime import datetime, timezone
+from apps.devices.models import Device, DeviceMetric
+import django
 
 import requests
 import paho.mqtt.publish as publish
@@ -19,10 +21,7 @@ sys.path.append(str(BASE_DIR))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "conf.settings")
 
 
-import django
 django.setup()
-
-from apps.devices.models import Device, DeviceMetric
 
 def prompt(msg):
     """Prompt dev for input and return the stripped string"""
@@ -37,21 +36,22 @@ def parse_value(value, data_type):
         return value.lower() in ("true", "false", "1", "0")
     return value
 
+
 class ManualProvider:
     """Data provider that requests input from the dev manually"""
+
     def __init__(self, device_metric):
         self.device_metric = device_metric
 
     def get(self):
         metric = self.device_metric.metric
-        value = prompt(
-            f"Enter value for {metric.metric_type} ({metric.data_type}): "
-        )
+        value = prompt(f"Enter value for {metric.metric_type} ({metric.data_type}): ")
         return parse_value(value, metric.data_type)
 
 
 class RandomProvider:
     """Data provider that generates random values"""
+
     def __init__(self, device_metric):
         self.metric = device_metric.metric
         self.rule = self._configure()
@@ -69,7 +69,7 @@ class RandomProvider:
         if t == "bool":
             return lambda: random.choice([True, False])
 
-         # For other types, dev provides a list of possible values
+        # For other types, dev provides a list of possible values
         values = prompt(f"{name} values (comma-separated): ").split(",")
         values = [v.strip() for v in values if v.strip()]
         return lambda: random.choice(values)
@@ -77,7 +77,7 @@ class RandomProvider:
     def get(self):
         return self.rule()
 
-    
+
 def send_http(url, payload):
     """Send telemetry payload via HTTP POST"""
     r = requests.post(url, json=payload, timeout=5)
@@ -92,13 +92,22 @@ def send_mqtt(broker, topic, payload):
 
 def main():
     parser = argparse.ArgumentParser(description="IoT Telemetry Simulator")
-    parser.add_argument("--mode", choices=["http", "mqtt"], required=True, help="Data sending mode http/mqtt")
+    parser.add_argument(
+        "--mode", choices=["http", "mqtt"], required=True, help="Data sending mode http/mqtt"
+    )
     parser.add_argument("--device", required=True, help="Device serial ID")
     parser.add_argument("--rate", type=float, default=1, help="Messages per second")
     parser.add_argument("--count", type=int, default=1, help="Number of messages to send")
     parser.add_argument("--schema-version", type=int, default=1, help="Message schema version")
-    parser.add_argument("--value-generation", choices=["manual", "random"], required=True, help="Metric value generation mode manual/random")
-    parser.add_argument("--http-url", default="http://localhost:8000/api/telemetry/", help="HTTP endpoint URL")
+    parser.add_argument(
+        "--value-generation",
+        choices=["manual", "random"],
+        required=True,
+        help="Metric value generation mode manual/random",
+    )
+    parser.add_argument(
+        "--http-url", default="http://localhost:8000/api/telemetry/", help="HTTP endpoint URL"
+    )
     parser.add_argument("--mqtt-broker", default="mosquitto", help="MQTT broker hostname")
     parser.add_argument("--mqtt-topic", default="telemetry", help="MQTT topic to publish to")
 
@@ -112,13 +121,9 @@ def main():
     except Device.DoesNotExist:
         print(f"Device with serial_id '{args.device}' does not exist.")
         return
-    
+
     # Fetch all metrics for the device
-    device_metrics = (
-        DeviceMetric.objects
-        .select_related("metric")
-        .filter(device=device)
-    )
+    device_metrics = DeviceMetric.objects.select_related("metric").filter(device=device)
 
     if not device_metrics.exists():
         print("Device has no metrics configured")
@@ -138,10 +143,7 @@ def main():
 
     # Send telemetry messages
     for i in range(args.count):
-        metrics_payload = {
-            name: provider.get()
-            for name, provider in providers.items()
-        }
+        metrics_payload = {name: provider.get() for name, provider in providers.items()}
 
         payload = {
             "schema_version": 1,

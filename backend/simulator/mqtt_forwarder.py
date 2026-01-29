@@ -7,9 +7,13 @@ MQTT_BROKER = "mosquitto"
 MQTT_TOPIC = "telemetry"
 HTTP_URL = "http://localhost:8000/api/telemetry/"
 
+
 def on_connect(client, userdata, flags, rc):
-    print(f"--- Connected to MQTT broker with result code {rc} ---\n --- Use Ctrl+C to stop subscriber ---")
+    print(
+        f"--- Connected to MQTT broker with result code {rc} ---\n --- Use Ctrl+C to stop subscriber ---"
+    )
     client.subscribe(MQTT_TOPIC)
+
 
 def on_message(client, userdata, msg):
     try:
@@ -30,6 +34,7 @@ def on_message(client, userdata, msg):
     except Exception as e:
         print(f"Unexpected error: {e}")
 
+
 def main():
     client = mqtt.Client()
     client.on_connect = on_connect
@@ -43,6 +48,7 @@ def main():
         print("\nShutting down MQTT subscriber...")
         client.disconnect()
         print("--- Subscriber stopped gracefully ---")
+
 
 if __name__ == "__main__":
     main()

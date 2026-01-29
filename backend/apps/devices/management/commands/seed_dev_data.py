@@ -22,6 +22,7 @@ class Command(BaseCommand):
     - Loads fixtures in a strict dependency order
     - Uses temporary fixtures to keep Git clean
     """
+
     help = 'Seeds dev data using temporary fixtures.'
 
     USERS_DATA = [
@@ -52,17 +53,23 @@ class Command(BaseCommand):
     ]
 
     def add_arguments(self, parser):
-        parser.add_argument('--force', action='store_true', help='Delete existing seeded data and recreate it from fixtures')
-        parser.add_argument('--dry-run', action='store_true', help='Run the seed process without writing anything to the database')
+        parser.add_argument(
+            '--force',
+            action='store_true',
+            help='Delete existing seeded data and recreate it from fixtures',
+        )
+        parser.add_argument(
+            '--dry-run',
+            action='store_true',
+            help='Run the seed process without writing anything to the database',
+        )
 
     def handle(self, *args, **options):
         self.force = options['force']
         self.dry_run = options['dry_run']
-        
+
         if self.dry_run and self.force:
-            self.stdout.write(self.style.WARNING(
-                '--force is ignored in dry-run mode'
-            ))
+            self.stdout.write(self.style.WARNING('--force is ignored in dry-run mode'))
 
         self._ensure_safe_to_seed()
 
@@ -76,7 +83,9 @@ class Command(BaseCommand):
                 if self.dry_run:
                     for u in self.USERS_DATA:
                         self.stdout.write(f'[DRY-RUN] Would create user: {u["username"]}')
-                        self.stdout.write(f'[DRY-RUN] Would load fixtures after user creation and create temp devices fixture')
+                        self.stdout.write(
+                            '[DRY-RUN] Would load fixtures after user creation and create temp devices fixture'
+                        )
                 else:
                     users = self._create_users()
                     self._load_fixtures(users)
@@ -152,7 +161,6 @@ class Command(BaseCommand):
             if devices_tmp:
                 Path(devices_tmp).unlink(missing_ok=True)
 
-
     def _prepare_devices_fixture(self, clients) -> str:
         """
         Prepare a temporary devices fixture with assigned user IDs.
@@ -179,7 +187,6 @@ class Command(BaseCommand):
 
         return tmp.name
 
-
     def _loaddata(self, fixture):
         """Load a single fixture via Django loaddata."""
         self.stdout.write(f'Loading fixture: {Path(fixture).name}')
@@ -197,14 +204,16 @@ class Command(BaseCommand):
 
         has_users = User.objects.exists()
         if has_users and not self.force:
-            self.stdout.write(self.style.ERROR('Database is not empty. Use --force to overwrite existing data.'))
+            self.stdout.write(
+                self.style.ERROR('Database is not empty. Use --force to overwrite existing data.')
+            )
             sys.exit(0)
         elif has_users and self.force:
-            self.stdout.write(self.style.WARNING(
-                'Warning: Existing users will be deleted due to --force.'
-            ))
+            self.stdout.write(
+                self.style.WARNING('Warning: Existing users will be deleted due to --force.')
+            )
             self._cleanup_db()
-        
+
     def _cleanup_db(self):
         """
         Remove existing seeded data before re-seeding.
