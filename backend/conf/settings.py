@@ -1,7 +1,6 @@
 from pathlib import Path
 from decouple import config, Csv
 import os
-from pythonjsonlogger import jsonlogger
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -10,6 +9,7 @@ LOG_FILE = os.path.join(BASE_DIR, "info.log")
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+DJANGO_LOG_LEVEL = config('DJANGO_LOG_LEVEL',default = 'INFO')
 
 #Django apps
 INSTALLED_APPS = [
@@ -36,6 +36,7 @@ INSTALLED_APPS += [
 
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
+    'conf.middleware.logging_middleware.LoggingMiddleware', #Logging middleware
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -44,7 +45,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'conf.middleware.RequestLoggingMiddleware', #Local middleware
     'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
@@ -175,16 +175,16 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_BROKER_URL = 'redis://redis:6379/0' #### TEMPORARY
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0' #### TEMPORARY
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
         "json": {
-            "()": jsonlogger.JsonFormatter,
-            "fmt": "{asctime} {levelname} {name} {message} {user_id} {path} {method} {status}",
+            "()": 'pythonjsonlogger.jsonlogger.JsonFormatter',
+            "fmt": "{asctime} {levelname} {name} {message} {request_id} {duration}",
             "style": "{",
             "rename_fields": {
                 "asctime": "timestamp",
@@ -193,44 +193,40 @@ LOGGING = {
             },
         },
     },
+
+    "filters": {
+        "request_context":{
+            "()":"conf.filters.logging_filter.RequestContextFilter",
+        },
+    },
+
     "handlers": {
         "console": {
-            "level": "DEBUG",
             "class": "logging.StreamHandler",
+            "filters": ["request_context"],
             "formatter": "json",   
         },
         
         "file": {
-            "level": "DEBUG",
             "class": "logging.FileHandler",
+            "filters": ["request_context"],
             "filename": LOG_FILE,
             "formatter": "json",
         },
     },
 
-    "root":{
-            "handlers": ["console", "file"],
-            "level": "INFO",       
-    },
-
     "loggers": {
-        "djangocustom": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
+        "": {
+            "handlers": ["console","file"],
+            "level": DJANGO_LOG_LEVEL,
         },
-        
-        "rules": {
-            "handlers": ["file"],
-            "level": "INFO",
+
+        "django": { # Ensure Django logger is declared (propagate = False by default)
+            "handlers": ["console", "file"],
+            "level": DJANGO_LOG_LEVEL,
             "propagate": False,
         },
 
-        "celery": {
-            "handlers": ["file"],
-            "level": "INFO",
-            "propagate": False,
-        },
     },
     
 }
