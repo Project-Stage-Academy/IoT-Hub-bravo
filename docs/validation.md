@@ -11,7 +11,7 @@ Notes:
 
 ```bash
 git clone <repo-url>
-cd iot-catalog-hub
+cd IoT-Hub-bravo
 ```
 
 ### 2) Create environment file
@@ -66,3 +66,7 @@ Confirm the app is reachable from host and routing works
 - Django admin available at http://localhost:8000/admin/
 - Swagger UI available at http://localhost:5433/
 - Flower available at http://localhost:5555/
+
+## Validated by
+
+- [Name of validator] Date: 2026-01-23
