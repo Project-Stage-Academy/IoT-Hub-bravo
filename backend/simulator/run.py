@@ -23,6 +23,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "conf.settings")
 
 django.setup()
 
+
 def prompt(msg):
     """Prompt dev for input and return the stripped string"""
     return input(msg).strip()
