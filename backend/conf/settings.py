@@ -4,12 +4,10 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-LOG_FILE = os.path.join(BASE_DIR, "info.log")
-
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
-DJANGO_LOG_LEVEL = config('DJANGO_LOG_LEVEL',default = 'INFO')
+DJANGO_LOG_LEVEL = config('DJANGO_LOG_LEVEL', default = 'INFO')
 
 #Django apps
 INSTALLED_APPS = [
@@ -184,7 +182,7 @@ LOGGING = {
     "formatters": {
         "json": {
             "()": 'pythonjsonlogger.jsonlogger.JsonFormatter',
-            "fmt": "{asctime} {levelname} {name} {message} {request_id} {duration}",
+            "format": "{asctime} {levelname} {name} {message} {request_id} {duration}",
             "style": "{",
             "rename_fields": {
                 "asctime": "timestamp",
@@ -206,23 +204,17 @@ LOGGING = {
             "filters": ["request_context"],
             "formatter": "json",   
         },
-        
-        "file": {
-            "class": "logging.FileHandler",
-            "filters": ["request_context"],
-            "filename": LOG_FILE,
-            "formatter": "json",
-        },
+    
     },
 
     "loggers": {
         "": {
-            "handlers": ["console","file"],
+            "handlers": ["console"],
             "level": DJANGO_LOG_LEVEL,
         },
 
-        "django": { # Ensure Django logger is declared (propagate = False by default)
-            "handlers": ["console", "file"],
+        "django": { # Django logger is declared (propagate = False by default)
+            "handlers": ["console"],
             "level": DJANGO_LOG_LEVEL,
             "propagate": False,
         },

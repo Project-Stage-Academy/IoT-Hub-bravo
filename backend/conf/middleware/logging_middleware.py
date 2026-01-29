@@ -16,7 +16,7 @@ class LoggingMiddleware:
         request_id.set(str(uuid.uuid4()))
         response = self.get_response(request)
 
-        duration_ms = round((time.time() - start_time) * 1000, 2) # duration in miliseconds
+        duration_ms = round((time.time() - start_time) * 1000, 3) # duration in miliseconds
         request_duration.set(duration_ms)
         
         return response
