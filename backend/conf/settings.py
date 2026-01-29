@@ -190,11 +190,25 @@ LOGGING = {
                 "name": "logger_name",
             },
         },
+        
+        "celery_json": {
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "format": "{asctime} {levelname} {name} {message} {task_id} {task_name}",
+            "style": "{",
+            "rename_fields": {
+                "asctime": "timestamp",
+                "levelname": "level",
+                "name": "logger_name",
+            },
+        },
     },
 
     "filters": {
         "request_context":{
-            "()":"conf.filters.logging_filter.RequestContextFilter",
+            "()": "conf.filters.logging_filters.RequestContextFilter",
+        },
+        "celery_context": {
+            "()": "conf.filters.logging_filters.CeleryContextFilter",
         },
     },
 
@@ -203,8 +217,15 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "filters": ["request_context"],
             "formatter": "json",   
+            "stream": "ext://sys.stdout", # 2>&1 stdout !stderr (just to not write 2>&1 in terminal)
         },
-    
+
+        "celery_console": {
+            "class": "logging.StreamHandler",
+            "filters": ["celery_context"],
+            "formatter": "celery_json",
+            "stream": "ext://sys.stdout", # 2>&1 stdout !stderr (just to not write 2>&1 in terminal)
+        },
     },
 
     "loggers": {
@@ -219,6 +240,10 @@ LOGGING = {
             "propagate": False,
         },
 
+        "celery": {
+            "handlers": ["celery_console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
-    
 }

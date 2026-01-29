@@ -62,7 +62,9 @@ This ensures that all logs generated during a request share the same `request_id
 
 Because logs are written to stdout in JSON, no additional Celery-specific log files are required in containers.
 
-## Querying Logs
+## Querying Logs (TEMPORARY)
+
+`docker logs web -n 5 2>&1 | jq ".level"` - only bash
 
 ### By request ID
 
