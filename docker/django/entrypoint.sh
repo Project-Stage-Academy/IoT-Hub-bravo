@@ -71,6 +71,17 @@ else
 fi
 
 # =============================
+# Setup admin users & groups
+# =============================
+if [ "${ALLOW_SETUP_ADMIN:-false}" = "true" ]; then
+  log "Setting up admin users and permissions..."
+  python manage.py setup_admin || {
+    log "Admin setup failed (non-critical, continuing)."
+  }
+  log "Admin setup completed."
+fi
+
+# =============================
 # Start main process
 # =============================
 exec "$@"

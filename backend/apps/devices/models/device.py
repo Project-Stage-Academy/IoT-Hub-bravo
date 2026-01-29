@@ -16,3 +16,6 @@ class Device(models.Model):
             models.Index(fields=['user'], name='idx_devices_user_id'),
             models.Index(fields=['is_active'], name='idx_devices_is_active'),
         ]
+
+    def __str__(self):
+        return self.name
