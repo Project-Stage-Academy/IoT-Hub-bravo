@@ -8,7 +8,7 @@ This document records a cold-start validation run to confirm the local Docker de
 
 ```bash
 git clone <repo-url>
-cd iot-catalog-hub
+cd IoT-Hub-bravo
 ```
 
 

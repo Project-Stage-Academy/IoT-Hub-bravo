@@ -62,3 +62,27 @@ class Telemetry(models.Model):
                 fields=['device_metric', 'ts'], name='unique_telemetry_per_metric_time'
             ),
         ]
+
+    def formatted_value(self, precision: int = 3) -> str:
+        """
+        Returns telemetry value formatted for UI/exports.
+        """
+        if self.value_numeric is not None:
+            return f"{self.value_numeric:.{precision}f}"
+        if self.value_bool is not None:
+            return str(self.value_bool)
+        if self.value_str is not None:
+            return self.value_str
+        return ""
+
+    def formatted_value_with_type(self, precision: int = 3) -> str:
+        """
+        Returns telemetry value formatted with type label (admin list display).
+        """
+        if self.value_numeric is not None:
+            return f"{self.value_numeric:.{precision}f} (numeric)"
+        if self.value_bool is not None:
+            return f"{self.value_bool} (bool)"
+        if self.value_str is not None:
+            return f"{self.value_str} (str)"
+        return ""
