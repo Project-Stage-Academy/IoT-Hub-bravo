@@ -104,6 +104,18 @@ services:
       redis:
         condition: service_healthy
   
+  celery-exporter:
+    image: danihodovic/celery-exporter
+    container_name: celery-exporter
+    command: --broker-url=${CELERY_BROKER_URL}
+    ports:
+      - "9808:9808"
+    networks:
+      - backend
+    depends_on:
+      - redis
+
+
   prometheus:
     image: prom/prometheus
     container_name: prometheus
