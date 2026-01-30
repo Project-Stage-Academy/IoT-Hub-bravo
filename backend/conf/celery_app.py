@@ -9,7 +9,7 @@ app.autodiscover_tasks()
 
 # for logging
 app.conf.worker_hijack_root_logger = False # to keep custom logging; don't hijack root logger
-app.conf.worker_redirect_stdouts = False # no print() stuff in logs
+app.conf.worker_redirect_stdouts = True # False = no print() stuff as logs, True is default
 
 ### TEST 1
 @app.task

@@ -22,7 +22,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('django_prometheus.urls')), # "metrics/"
+    path('prometheus/', include('django_prometheus.urls')), # access metrics at "prometheus/metrics/" 
     path('rules/', include('apps.rules.urls')),
 
 ]
