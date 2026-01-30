@@ -1,37 +1,54 @@
 #!/bin/sh
 set -e
 
-# -----------------------------
-# Wait for PostgreSQL with timeout
-# -----------------------------
-TIMEOUT=30 # seconds
-COUNT=0
+# =============================
+# Configuration
+# =============================
+TIMEOUT="${TIMEOUT:-30}" # seconds
 
-echo "Waiting for PostgreSQL at $DB_HOST:$DB_PORT ..."
+# =============================
+# Helpers
+# =============================
+log() {
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+}
 
-until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" >/dev/null 2>&1; do
-  COUNT=$((COUNT + 1))
-  if [ "$COUNT" -ge "$TIMEOUT" ]; then
-    echo "Timeout ($TIMEOUT s). PostgreSQL is not ready."
-    exit 1
-  fi
-  sleep 1
-done
+wait_for_service () {
+  # $1 - service name
+  # $2.. - command to run (success when exit code == 0)
+  SERVICE="$1"
+  shift
 
-echo "PostgreSQL is ready!"
+  log "Waiting for ${SERVICE} with timeout $TIMEOUT seconds..."
+  COUNT=0
+
+  until "$@" >/dev/null 2>&1; do
+    COUNT=$((COUNT + 1))
+    if [ "$COUNT" -ge "$TIMEOUT" ]; then
+      log "Timeout (${TIMEOUT}s). ${SERVICE} is not ready."
+      exit 1
+    fi
+    sleep 1
+  done
+
+  log "${SERVICE} is ready!"
+}
 
 # -----------------------------
-# Run Django migrations
+# Wait for PostgreSQL
 # -----------------------------
-echo "Running migrations..."
-python manage.py migrate --noinput || { echo "Migration failed"; exit 1; }
-echo "Migrations completed."
+wait_for_service \
+  "PostgreSQL at ${DB_HOST}:${DB_PORT}" \
+  pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER"
 
 # -----------------------------
-# Seed Database
+# Wait for Redis
 # -----------------------------
-echo "Seeding database..."
-python manage.py seed_db || { echo "Seeding failed"; exit 1; }
-echo "Seeding completed."
+wait_for_service \
+  "Redis at ${REDIS_HOST}:${REDIS_PORT:-6379}" \
+  redis-cli -h "$REDIS_HOST" -p "${REDIS_PORT:-6379}" ping
 
+# =============================
+# Start main process
+# =============================
 exec "$@"
