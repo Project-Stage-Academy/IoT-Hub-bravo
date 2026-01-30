@@ -23,68 +23,70 @@ class Command(BaseCommand):
     - Uses temporary fixtures to keep Git clean
     """
 
-    help = 'Seeds dev data using temporary fixtures.'
+    help = "Seeds dev data using temporary fixtures."
 
     USERS_DATA = [
         {
-            'username': 'dev_admin',
-            'email': 'dev.admin@example.com',
-            'password': 'DevSecurePass',
-            'is_staff': True,
-            'is_superuser': True,
-            'role': UserRole.ADMIN.value,
+            "username": "dev_admin",
+            "email": "dev.admin@example.com",
+            "password": "DevSecurePass",
+            "is_staff": True,
+            "is_superuser": True,
+            "role": UserRole.ADMIN.value,
         },
         {
-            'username': 'alex_client',
-            'email': 'alex.smith@example.com',
-            'password': 'ClientAccess1',
-            'is_staff': False,
-            'is_superuser': False,
-            'role': UserRole.CLIENT.value,
+            "username": "alex_client",
+            "email": "alex.smith@example.com",
+            "password": "ClientAccess1",
+            "is_staff": False,
+            "is_superuser": False,
+            "role": UserRole.CLIENT.value,
         },
         {
-            'username': 'jordan_client',
-            'email': 'j.doe@example.com',
-            'password': 'ClientAccess2',
-            'is_staff': False,
-            'is_superuser': False,
-            'role': UserRole.CLIENT.value,
+            "username": "jordan_client",
+            "email": "j.doe@example.com",
+            "password": "ClientAccess2",
+            "is_staff": False,
+            "is_superuser": False,
+            "role": UserRole.CLIENT.value,
         },
     ]
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--force',
-            action='store_true',
-            help='Delete existing seeded data and recreate it from fixtures',
+            "--force",
+            action="store_true",
+            help="Delete existing seeded data and recreate it from fixtures",
         )
         parser.add_argument(
-            '--dry-run',
-            action='store_true',
-            help='Run the seed process without writing anything to the database',
+            "--dry-run",
+            action="store_true",
+            help="Run the seed process without writing anything to the database",
         )
 
     def handle(self, *args, **options):
-        self.force = options['force']
-        self.dry_run = options['dry_run']
+        self.force = options["force"]
+        self.dry_run = options["dry_run"]
 
         if self.dry_run and self.force:
-            self.stdout.write(self.style.WARNING('--force is ignored in dry-run mode'))
+            self.stdout.write(self.style.WARNING("--force is ignored in dry-run mode"))
 
         self._ensure_safe_to_seed()
 
-        self.stdout.write(self.style.MIGRATE_HEADING('--- Dev Seeding Started ---'))
+        self.stdout.write(self.style.MIGRATE_HEADING("--- Dev Seeding Started ---"))
 
         if self.dry_run:
-            self.stdout.write(self.style.WARNING('Dry-run mode enabled'))
+            self.stdout.write(self.style.WARNING("Dry-run mode enabled"))
 
         try:
             with transaction.atomic():
                 if self.dry_run:
                     for u in self.USERS_DATA:
-                        self.stdout.write(f'[DRY-RUN] Would create user: {u["username"]}')
                         self.stdout.write(
-                            '[DRY-RUN] Would load fixtures after user creation and create temp devices fixture'
+                            f'[DRY-RUN] Would create user: {u["username"]}'
+                        )
+                        self.stdout.write(
+                            "[DRY-RUN] Would load fixtures after user creation and create temp devices fixture"
                         )
                 else:
                     users = self._create_users()
@@ -92,9 +94,9 @@ class Command(BaseCommand):
         except CommandError:
             raise
         except Exception as e:
-            raise CommandError(f'Seeding failed: {e}')
+            raise CommandError(f"Seeding failed: {e}")
 
-        self.stdout.write(self.style.SUCCESS('--- Seed Completed Successfully ---'))
+        self.stdout.write(self.style.SUCCESS("--- Seed Completed Successfully ---"))
 
     def _create_users(self):
         """Create or update predefined users."""
@@ -115,19 +117,19 @@ class Command(BaseCommand):
         user, created = User.objects.get_or_create(
             username=username,
             defaults={
-                'email': email,
-                'is_staff': is_staff,
-                'is_superuser': is_superuser,
-                'is_active': True,
-                'role': role,
+                "email": email,
+                "is_staff": is_staff,
+                "is_superuser": is_superuser,
+                "is_active": True,
+                "role": role,
             },
         )
 
         user.set_password(password)
         user.save()
 
-        status = 'Created' if created else 'Updated'
-        self.stdout.write(f'{status} user: {username}')
+        status = "Created" if created else "Updated"
+        self.stdout.write(f"{status} user: {username}")
         return user
 
     def _load_fixtures(self, users):
@@ -138,10 +140,10 @@ class Command(BaseCommand):
         clients = [u for u in users if not u.is_superuser]
 
         if len(clients) < 2:
-            raise CommandError('At least two client users are required')
+            raise CommandError("At least two client users are required")
 
         # Metrics
-        self._loaddata('01_metrics.json')
+        self._loaddata("01_metrics.json")
 
         # Devices (dynamic users)
         devices_tmp = None
@@ -150,12 +152,12 @@ class Command(BaseCommand):
             self._loaddata(devices_tmp)
 
             # Device_metrics & telemetries
-            self._loaddata('03_device_metrics.json')
-            self._loaddata('04_telemetries.json')
+            self._loaddata("03_device_metrics.json")
+            self._loaddata("04_telemetries.json")
 
             # Rules & events
-            self._loaddata('01_rules.json')
-            self._loaddata('02_events.json')
+            self._loaddata("01_rules.json")
+            self._loaddata("02_events.json")
 
         finally:
             if devices_tmp:
@@ -165,23 +167,23 @@ class Command(BaseCommand):
         """
         Prepare a temporary devices fixture with assigned user IDs.
         """
-        devices_app = apps.get_app_config('devices')
-        source = Path(devices_app.path) / 'fixtures' / '02_devices.json'
+        devices_app = apps.get_app_config("devices")
+        source = Path(devices_app.path) / "fixtures" / "02_devices.json"
 
         if not source.exists():
-            raise CommandError('02_devices.json not found in devices fixtures')
+            raise CommandError("02_devices.json not found in devices fixtures")
 
         try:
-            with open(source, encoding='utf-8') as f:
+            with open(source, encoding="utf-8") as f:
                 data = json.load(f)
         except json.JSONDecodeError as exc:
-            raise CommandError('Invalid JSON in 02_devices.json') from exc
+            raise CommandError("Invalid JSON in 02_devices.json") from exc
 
         half = len(data) // 2
         for i, obj in enumerate(data):
-            obj['fields']['user'] = clients[0].id if i < half else clients[1].id
+            obj["fields"]["user"] = clients[0].id if i < half else clients[1].id
 
-        tmp = tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False)
+        tmp = tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False)
         json.dump(data, tmp, indent=2, ensure_ascii=False)
         tmp.flush()
 
@@ -189,11 +191,11 @@ class Command(BaseCommand):
 
     def _loaddata(self, fixture):
         """Load a single fixture via Django loaddata."""
-        self.stdout.write(f'Loading fixture: {Path(fixture).name}')
+        self.stdout.write(f"Loading fixture: {Path(fixture).name}")
         try:
-            call_command('loaddata', fixture, verbosity=1)
+            call_command("loaddata", fixture, verbosity=1)
         except Exception as exc:
-            raise CommandError(f'Failed loading fixture {fixture}: {exc}') from exc
+            raise CommandError(f"Failed loading fixture {fixture}: {exc}") from exc
 
     def _ensure_safe_to_seed(self):
         """
@@ -205,12 +207,16 @@ class Command(BaseCommand):
         has_users = User.objects.exists()
         if has_users and not self.force:
             self.stdout.write(
-                self.style.ERROR('Database is not empty. Use --force to overwrite existing data.')
+                self.style.ERROR(
+                    "Database is not empty. Use --force to overwrite existing data."
+                )
             )
             sys.exit(0)
         elif has_users and self.force:
             self.stdout.write(
-                self.style.WARNING('Warning: Existing users will be deleted due to --force.')
+                self.style.WARNING(
+                    "Warning: Existing users will be deleted due to --force."
+                )
             )
             self._cleanup_db()
 
@@ -219,19 +225,19 @@ class Command(BaseCommand):
         Remove existing seeded data before re-seeding.
         Executed only with --force and NOT in dry-run.
         """
-        self.stdout.write(self.style.WARNING('Cleaning existing data...'))
+        self.stdout.write(self.style.WARNING("Cleaning existing data..."))
 
         models_to_clear = [
-            'rules.Event',
-            'rules.Rule',
-            'devices.Telemetry',
-            'devices.DeviceMetric',
-            'devices.Device',
-            'devices.Metric',
+            "rules.Event",
+            "rules.Rule",
+            "devices.Telemetry",
+            "devices.DeviceMetric",
+            "devices.Device",
+            "devices.Metric",
         ]
 
         for model_path in models_to_clear:
-            app_label, model_name = model_path.split('.')
+            app_label, model_name = model_path.split(".")
             model = apps.get_model(app_label, model_name)
             deleted, _ = model.objects.all().delete()
-            self.stdout.write(f'  - {model_name}: {deleted} rows deleted')
+            self.stdout.write(f"  - {model_name}: {deleted} rows deleted")
