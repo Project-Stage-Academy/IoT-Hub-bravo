@@ -9,6 +9,49 @@ responsibly:
 
 Do **not** open a public GitHub issue for security vulnerabilities.
 
+---
+
+## Secrets Management
+
+- **Environment Variables:** All sensitive values (e.g., `SECRET_KEY`, DB credentials) are stored in `.env` files.
+- **Do not commit `.env` to Git.** Use `.env.example` for reference.
+- **.gitignore:** Ensure `.env` and `*.env` are listed. See [.gitignore](../.gitignore).
+- **CI/CD Pipelines:** Secrets are injected through GitHub Actions environment variables.
+
+---
+
+## Authentication & Authorization
+
+- **JWT** is used for API authentication.
+- **Django Admin:** Separate superuser credentials; role-based access (Admin / Operator / Viewer).
+- **Access Control:** Only authorized users can access device data and rule management endpoints.
+
+---
+
+## Transport Security (TLS)
+
+- **Production:** TLS must be enabled for all external endpoints.
+- **Staging:** Use self-signed certificates.
+- **Development:** TLS is optional; local dev uses HTTP.
+  Do not use production secrets in local/dev environments without TLS.
+
+---
+
+## Database Security
+
+- Database passwords stored in `.env` or CI secrets.
+- Local PostgreSQL / TimescaleDB runs in Docker with isolated network.
+- Avoid exposing DB ports publicly in production.
+
+---
+
+## Messaging Security
+
+- Redis / RabbitMQ connections can be secured using SSL/TLS in production.
+- Authentication between services is recommended when moving to microservices.
+
+---
+
 ## Dependency Security Alerts
 
 ### Dependabot
@@ -55,11 +98,15 @@ If an alert is not applicable, dismiss it with a reason:
 
 Always leave a comment explaining the dismissal reason.
 
+---
+
 ## CI Security Checks
 
 - **Linting:** `ruff` and `black` run on every PR
 - **Tests:** `pytest` runs on every PR against a real database
 - **Build:** Docker image build is verified on every PR
+
+---
 
 ## Best Practices
 
@@ -68,3 +115,6 @@ Always leave a comment explaining the dismissal reason.
 - Keep dependencies up to date
 - Review Dependabot PRs promptly
 - Use `.env` files locally (excluded via `.gitignore`)
+- Do not reuse development secrets in production
+- Rotate keys regularly
+- Review access permissions for Admin and Client users periodically
