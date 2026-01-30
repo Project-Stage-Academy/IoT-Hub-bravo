@@ -93,10 +93,6 @@ class DeviceSerializer:
         if self._validated_data is None:
             raise RuntimeError("Call is_valid() before update()")
         try:
-            # instance.serial_id = self._validated_data.get("serial_id", instance.serial_id)
-            # instance.name = self._validated_data.get("name", instance.name)
-            # instance.description = self._validated_data.get("description", instance.description)
-            # instance.is_active = self._validated_data.get("is_active", instance.is_active)
             for field, value in self._validated_data.items():
                 setattr(instance, field, value)
             instance.save()
