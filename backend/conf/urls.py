@@ -20,8 +20,13 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 
+from django.urls import path
+from apps.devices import views 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("api/devices/", views.list_devices, name="device-list-create"),
+    path("api/devices/<int:pk>/", views.device_detail, name="device-detail"),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
