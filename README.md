@@ -92,10 +92,21 @@ cd IoT-Hub-bravo
    - Update database credentials to match your PostgreSQL setup
    - Adjust `CORS_ALLOWED_ORIGINS` to match your frontend application URLs
 
-### 3. Start Services with Docker Compose
+### 3. Make convenience scripts executable (macOS/Linux)
+```bash
+chmod +x scripts/*.sh
+```
+
+### 4. Start Services with Docker Compose
 
 Start the application and database development services using Docker Compose:
 
+macOS/Linux:
+```bash
+./scripts/up.sh
+```
+
+Windows:
 ```bash
 docker compose up -d --build
 ```
@@ -108,17 +119,29 @@ This command will:
 - Start Django application
 - Run in detached mode (`-d`)
 
-To view logs:
+**View logs**:    
+macOS/Linux:
+```bash
+./scripts/logs.sh
+```
+
+Windows:
 ```bash
 docker compose logs -f
 ```
 
-To stop the services:
+**To stop the services**:  
+macOS/Linux:
+```bash
+./scripts/down.sh
+```
+
+Windows:
 ```bash
 docker compose down
 ```
 
-### 4. Database Setup
+### 5. Database Setup
 
 The project uses an automated workflow for database management via the `entrypoint.sh` script. When you run `docker compose up`, the system automatically handles the database readiness, schema updates, and optional data initialization.
 
@@ -181,11 +204,12 @@ docker compose exec web python manage.py seed_db
 
 For more details on seed data fixtures and structure, see [docs/schema.md](./docs/schema.md#data-seeding).
 
-### 5. Access the Application
+### 6. Access the Application
 
 - **API and Admin UI:** http://localhost:8000
 - **Swagger UI (API testing)**: http://localhost:5433
 - **Django Admin:** http://localhost:8000/admin
+- **Flower**: http://localhost:5555/
 
 **Optional:** Create a superuser to access the Django admin interface:
 ```bash
@@ -193,6 +217,29 @@ docker compose exec web python manage.py createsuperuser
 ```
 
 For more details, see [docs/dev-environment.md](./docs/dev-environment.md).
+
+
+## DIND demo (lab/demo only)
+
+This project includes a Docker-in-Docker demo runner that starts the Compose stack inside a privileged container.
+
+**Warning:** DIND requires `--privileged`. Do not use this in production.
+
+### Make scripts executable:
+```bash
+chmod +x scripts/*.sh
+```
+
+### Start the demo:
+```bash
+./scripts/dind-up.sh
+```
+
+### Stop and remove the DIND container:
+```bash
+./scripts/dind-down.sh
+```
+
 
 ## Project workflow
 
