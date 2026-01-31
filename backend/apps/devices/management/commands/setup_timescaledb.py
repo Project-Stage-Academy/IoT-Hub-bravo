@@ -27,9 +27,7 @@ class Command(BaseCommand):
         dry_run = options["dry_run"]
 
         if dry_run:
-            self.stdout.write(
-                self.style.NOTICE("DRY-RUN mode: no changes will be applied")
-            )
+            self.stdout.write(self.style.NOTICE("DRY-RUN mode: no changes will be applied"))
 
         # ────────────────────────────────────────────────
         # Check TimescaleDB extension availability & status
@@ -76,9 +74,7 @@ class Command(BaseCommand):
                     )
 
         except DatabaseError as e:
-            self.stdout.write(
-                self.style.ERROR(f"Cannot check TimescaleDB availability: {e}")
-            )
+            self.stdout.write(self.style.ERROR(f"Cannot check TimescaleDB availability: {e}"))
             sys.exit(1)
 
         # ────────────────────────────────────────────────
@@ -177,9 +173,7 @@ class Command(BaseCommand):
                         if dry_run:
                             # Show cleaned SQL without extra indentation
                             cleaned_sql = "\n".join(
-                                line.strip()
-                                for line in sql.splitlines()
-                                if line.strip()
+                                line.strip() for line in sql.splitlines() if line.strip()
                             )
                             self.stdout.write(
                                 self.style.HTTP_INFO(f"Would execute:\n{cleaned_sql}")
@@ -192,9 +186,7 @@ class Command(BaseCommand):
         except (DatabaseError, OperationalError) as e:
             self.stdout.write(self.style.ERROR(f"Database error during setup: {e}"))
             if settings.DEBUG:
-                self.stdout.write(
-                    self.style.ERROR("Full traceback:\n" + traceback.format_exc())
-                )
+                self.stdout.write(self.style.ERROR("Full traceback:\n" + traceback.format_exc()))
             raise
 
         except Exception as e:
@@ -207,13 +199,9 @@ class Command(BaseCommand):
         # Final messages
         # ────────────────────────────────────────────────
         if dry_run:
-            self.stdout.write(
-                self.style.NOTICE("\nDry run completed — no changes were made.")
-            )
+            self.stdout.write(self.style.NOTICE("\nDry run completed — no changes were made."))
         else:
-            self.stdout.write(
-                self.style.SUCCESS("\nTimescaleDB setup completed successfully!")
-            )
+            self.stdout.write(self.style.SUCCESS("\nTimescaleDB setup completed successfully!"))
             self.stdout.write(
                 self.style.NOTICE(
                     "You can verify status with:\n"

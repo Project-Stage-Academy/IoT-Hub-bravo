@@ -20,9 +20,7 @@ class Telemetry(models.Model):
                     output_field=DecimalField(max_digits=20, decimal_places=10),
                 ),
             ),
-            default=Value(
-                None, output_field=DecimalField(max_digits=20, decimal_places=10)
-            ),
+            default=Value(None, output_field=DecimalField(max_digits=20, decimal_places=10)),
         ),
         output_field=DecimalField(max_digits=20, decimal_places=10),
         db_persist=True,
@@ -58,9 +56,7 @@ class Telemetry(models.Model):
     class Meta:
         db_table = "telemetries"
         indexes = [
-            models.Index(
-                fields=["device_metric", "ts"], name="idx_telemetries_metric_time"
-            ),
+            models.Index(fields=["device_metric", "ts"], name="idx_telemetries_metric_time"),
             models.Index(fields=["ts"], name="idx_telemetries_timestamp"),
         ]
         constraints = [

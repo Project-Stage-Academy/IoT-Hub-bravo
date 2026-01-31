@@ -46,9 +46,7 @@ class ManualProvider:
 
     def get(self):
         metric = self.device_metric.metric
-        value = prompt(
-            f"Enter value for {metric.metric_type}, data type {metric.data_type}: "
-        )
+        value = prompt(f"Enter value for {metric.metric_type}, data type {metric.data_type}: ")
         return parse_value(value, metric.data_type)
 
 
@@ -126,12 +124,8 @@ def main():
     )
     parser.add_argument("--device", required=True, help="Device serial ID")
     parser.add_argument("--rate", type=float, default=1, help="Messages per second")
-    parser.add_argument(
-        "--count", type=int, default=1, help="Number of messages to send"
-    )
-    parser.add_argument(
-        "--schema-version", type=int, default=1, help="Message schema version"
-    )
+    parser.add_argument("--count", type=int, default=1, help="Number of messages to send")
+    parser.add_argument("--schema-version", type=int, default=1, help="Message schema version")
     parser.add_argument(
         "--value-generation",
         choices=["manual", "random", "non-interactive"],
@@ -143,12 +137,8 @@ def main():
         default="http://localhost:8000/api/telemetry/",
         help="HTTP endpoint URL",
     )
-    parser.add_argument(
-        "--mqtt-broker", default="mosquitto", help="MQTT broker hostname"
-    )
-    parser.add_argument(
-        "--mqtt-topic", default="telemetry", help="MQTT topic to publish to"
-    )
+    parser.add_argument("--mqtt-broker", default="mosquitto", help="MQTT broker hostname")
+    parser.add_argument("--mqtt-topic", default="telemetry", help="MQTT topic to publish to")
     parser.add_argument(
         "--non-interactive",
         action="store_true",
