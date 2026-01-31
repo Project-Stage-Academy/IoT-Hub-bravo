@@ -207,4 +207,9 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-.idea/
+# TLS certificates (local dev only)
+certs/
+*.pem
+*.key
+*.crt
+!docker/nginx/*.conf
