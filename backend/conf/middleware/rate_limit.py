@@ -104,7 +104,7 @@ class RateLimiter:
             created = cache.add(key, 1, window)
             current = 1 if created else cache.incr(key)
 
-        except Exception as e:
+        except Exception:
             logger.exception("Rate limit cache error")
             return False
 
@@ -187,5 +187,5 @@ class RateLimitMiddleware(MiddlewareMixin):
     def _get_identifier(self, request):
         if request.user.is_authenticated:
             return request.user.id
-        ip = ClientIpResolver.get_ip(request)
+        ip = ClientIPResolver.get_ip(request)
         return f"ip:{ip}"
