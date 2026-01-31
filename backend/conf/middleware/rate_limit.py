@@ -150,7 +150,7 @@ class RateLimitRuleResolver:
         _compile_rules()
         path = RateLimitRuleResolver._normalize_path(path)
 
-        rule = EXACT_RULES.get(path)
+        rule = EXACT_RULES.get(path) or EXACT_RULES.get(path.rstrip('/'))
         if rule:
             return rule
 
