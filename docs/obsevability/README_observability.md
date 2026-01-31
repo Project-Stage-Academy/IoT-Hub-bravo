@@ -4,7 +4,7 @@
 1. Make sure Docker and Docker Compose are installed.
 2. Start the stack:
    ```bash
-   docker-compose -f docker-compose.dev.yml up -d prometheus grafana
+   docker compose up -d prometheus grafana
 ````
 
 3. Verify that the services are running:
@@ -14,11 +14,16 @@
    ```
 4. Open Grafana in your browser: [http://localhost:3000](http://localhost:3000)
 
-   * Login: `admin / admin`
+   * Login: `[GRAFANA_USERNAME] / [GRAFANA_PASSWORD]`
+
+5. Open Prometheus in your browser: [http://localhost:9090](http://localhost:9090)
+
+   * By default, Prometheus usually does not require a login in a local environment.
+   * You can check the status of the targets Prometheus is scraping under **Status → Targets**. This shows whether your application is sending metrics.
 
 ## Importing a dashboard
 
-* Use the JSON file at `docs/observability/grafana-dashboard.json` (AC6).
+* Use the JSON file at `docs/observability/grafana-dashboard.json`.
 
 ## Adding a metric
 

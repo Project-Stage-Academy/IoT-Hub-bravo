@@ -105,37 +105,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-
-  worker:
-    <<: *django_base
-    image: iot-hub-worker
-    container_name: worker
-    command: [ "celery", "-A", "conf.celery_app", "worker", "-l", "INFO", "--concurrency=${CELERY_CONCURRENCY:-2}" ]
-
-  flower:
-    image: mher/flower:2.0
-    container_name: flower
-    environment:
-      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
-      CELERY_FLOWER_USER: ${CELERY_FLOWER_USER}
-      CELERY_FLOWER_PASSWORD: ${CELERY_FLOWER_PASSWORD}
-    command:
-      - "celery"
-      - "--broker=${CELERY_BROKER_URL}"
-      - "flower"
-      - "--port=5555"
-      - "--basic_auth=${CELERY_FLOWER_USER}:${CELERY_FLOWER_PASSWORD}"
-      - "--persistent=true"
-      - "--db=/data/flower.db"
-    volumes:
-      - flower_data:/data
-    ports:
-      - "5555:5555"
-    networks:
-      - backend
-    depends_on:
-      redis:
-        condition: service_healthy
   
   celery-exporter:
     image: danihodovic/celery-exporter
