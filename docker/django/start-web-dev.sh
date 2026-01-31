@@ -43,7 +43,7 @@ fi
 # =============================
 if [ "$ENABLE_SEED_DATA" = "true" ]; then
   log "Seeding database..."
-  python manage.py seed_db || {
+  python manage.py seed_dev_data || {
     log "Seeding failed."
     exit 1
   }
