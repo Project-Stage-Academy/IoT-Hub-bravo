@@ -51,7 +51,7 @@ A valid JWT token contains the following claims:
 | ------- | ------------------------------------------------------------ |
 | `sub`   | Authenticated user or device identifier                      |
 | `scope` | Granted permissions (e.g. `devices:read`, `telemetry:write`) |
-| `role`  | Actor role: `user`, `admin`, or `device`                     |
+| `role`  | Actor role: `user`, `admin`                     |
 | `exp`   | Token expiration timestamp (Unix epoch)                      |
 
 ### 1.3 Obtaining a Test JWT Token

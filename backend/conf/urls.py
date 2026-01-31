@@ -18,10 +18,12 @@ from django.contrib import admin
 from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
-from ..apps.devices import views 
+from apps.devices import views
+from apps.users.views import login 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("api/auth/login/", login, name="user-auth"),
     path("api/devices/", views.list_devices, name="device-list-create"),
     path("api/devices/<int:pk>/", views.device_detail, name="device-detail"),
 ]

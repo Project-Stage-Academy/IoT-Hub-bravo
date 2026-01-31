@@ -1,72 +1,110 @@
 from django.http import JsonResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
+from apps.users.decorators import jwt_required, role_required
+
 from .models import Device
 from .serializers.device_serializer import DeviceSerializer
+from .services.device_service import DeviceService
+
 import json
 
-def get_devices():
-    devices = Device.objects.filter(is_active=True)
-    data = [
-            DeviceSerializer(instance=d).to_representation(d)
-            for d in devices
-    ]
-    return JsonResponse(data, safe=False)
 
-def create_device(body):
+def get_devices(limit: int, offset: int):
+    if limit <= 0:
+        return JsonResponse({"error": "Limit must be greater than 0"}, status=400)
+    if offset < 0:
+        return JsonResponse({"error": "Offset must be positive integer"}, status=400)
+
+    devices_qs = Device.objects.all().order_by("id")
+    total = devices_qs.count()
+    devices = devices_qs[offset:offset + limit]
+
+    data = [DeviceSerializer(instance=d).to_representation(d) for d in devices]
+    return JsonResponse({
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "items": data
+    })
+
+def parse_json_request(body: bytes):
     try:
-        data_from_json = json.loads(body)
+        return json.loads(body), None
     except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-    serializer = DeviceSerializer(data = data_from_json)
-    if not serializer.is_valid():
-        return JsonResponse({"errors": serializer.errors}, status=400)
+        return None, JsonResponse({"error": "Invalid JSON"}, status=400)
 
-    device = serializer.create()
-    return JsonResponse(
-        serializer.to_representation(device),
-        status=201
-    )
-    
+
 @csrf_exempt
+@jwt_required
+@role_required({
+    "GET": ["client", "admin"],
+    "POST": "admin"
+})
 def list_devices(request):
     if request.method == "GET":
-        return get_devices()
+        try:
+            limit = int(request.GET.get("limit", 5))
+            offset = int(request.GET.get("offset", 0))
+        except ValueError:
+            return JsonResponse({"error": "limit and offset must be integers"}, status=400)
+
+        return get_devices(limit, offset)
+
     elif request.method == "POST":
-        return create_device(request.body)
+        data, error_response = parse_json_request(request.body)
+        if error_response:
+            return error_response
+
+        serializer = DeviceSerializer(data=data)
+        if not serializer.is_valid():
+            return JsonResponse({"errors": serializer.errors}, status=400)
+
+        device = DeviceService.create_device(serializer.validated_data)
+        return JsonResponse(serializer.to_representation(device), status=201)
+
     else:
         return HttpResponseNotAllowed(["GET", "POST"])
 
+
 @csrf_exempt
-def device_detail(request, pk):
+@jwt_required
+@role_required({
+    "GET": ["client", "admin"],
+    "PUT": "admin",
+    "PATCH": "admin",
+    "DELETE": "admin"
+})
+def device_detail(request, pk: int):
     device = get_object_or_404(Device, pk=pk)
 
     if request.method == "GET":
-        data = DeviceSerializer().to_representation(device)
-        return JsonResponse(data)
+        return JsonResponse(DeviceSerializer(instance=device).to_representation(device))
 
-    elif request.method == "PATCH":
-        try:
-            data_from_json = json.loads(request.body.decode("utf-8"))
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON"}, status=400)
-        serializer = DeviceSerializer(instance = device, data = data_from_json, partial = True)
+    data, error_response = None, None
+    if request.method in ["PATCH", "PUT"]:
+        data, error_response = parse_json_request(request.body)
+        if error_response:
+            return error_response
+
+    if request.method == "PATCH":
+        serializer = DeviceSerializer(instance=device, data=data, partial=True)
         if not serializer.is_valid():
             return JsonResponse({"errors": serializer.errors}, status=400)
-        device = serializer.update(device)
-        return JsonResponse(serializer.to_representation(device),status=200)
+
+        device = DeviceService.update_device(device, serializer.validated_data)
+        return JsonResponse(serializer.to_representation(device), status=200)
+
     elif request.method == "PUT":
-        try:
-            data_from_json = json.loads(request.body.decode("utf-8"))
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON"}, status=400)
-        serializer = DeviceSerializer(instance = device, data = data_from_json)
+        serializer = DeviceSerializer(instance=device, data=data)
         if not serializer.is_valid():
             return JsonResponse({"errors": serializer.errors}, status=400)
-        device = serializer.update(device)
-        return JsonResponse(serializer.to_representation(device), status = 200)
+
+        device = DeviceService.update_device(device, serializer.validated_data)
+        return JsonResponse(serializer.to_representation(device), status=200)
+
     elif request.method == "DELETE":
-        device.delete()
+        DeviceService.delete_device(device)
         return JsonResponse({"message": "Device deleted"}, status=204)
 
     else:

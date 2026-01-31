@@ -1,0 +1,190 @@
+{
+  "info": {
+    "name": "Device API",
+    "description": "Collection for Device API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authenticate Client",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"username\": \"testuser\", \"password\": \"testpassword\"}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/auth/login/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "Authenticate Admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"username\": \"adminuser\", \"password\": \"adminpassword\"}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/auth/login/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "Get Devices (limit=5, offset=0)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer <client/admin-token>" }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/devices/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "devices"]
+        }
+      }
+    },
+    {
+      "name": "Get Devices (limit=5, offset=5)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer <client/admin-token>" }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/devices/?limit=5&offset=5",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "devices"],
+          "query": [
+            { "key": "limit", "value": "5" },
+            { "key": "offset", "value": "5" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Device",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer <admin-token>" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"serial_id\": \"ABC123456\", \"name\": \"Testing Device\", \"description\": \"Testing description\", \"user_id\": 2, \"is_active\": false }"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/devices/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "devices"]
+        }
+      }
+    },
+    {
+      "name": "Get Device by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer <client/admin-token>" }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/devices/1/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "devices", "1"]
+        }
+      }
+    },
+    {
+      "name": "Update Device (PUT)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer <admin-token>" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"serial_id\": \"ABC123456\", \"name\": \"Update Device\", \"description\": \"Update description\", \"user_id\": 2, \"is_active\": false }"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/devices/1/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "devices", "1"]
+        }
+      }
+    },
+    {
+      "name": "Partial Update Device (PATCH)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer <admin-token>" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"name\": \"Second Update Device\", \"is_active\": true }"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/devices/1/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "devices", "1"]
+        }
+      }
+    },
+    {
+      "name": "Delete Device",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer <admin-token>" }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/devices/1/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "devices", "1"]
+        }
+      }
+    }
+  ]
+}
