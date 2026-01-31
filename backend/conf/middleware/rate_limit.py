@@ -62,14 +62,11 @@ class ClientIPResolver:
         if not forwarded:
             return remote_addr
 
-        ips = [ip.strip() for ip in forwarded.split(',')]
+        ips = [ip.strip() for ip in value.split(",")]
 
-        for ip in ips:
-            try:
-                ipaddress.ip_address(ip)
-                return ip
-            except ValueError:
-                continue
+            for ip in ips:
+                if ClientIPResolver._is_valid_public_ip(ip):
+                    return ip
 
         return remote_addr
 
