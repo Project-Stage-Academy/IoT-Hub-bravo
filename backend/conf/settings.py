@@ -177,21 +177,21 @@ CACHES = {
     }
 }
 
-RATE_LIMIT_ENABLED = config('RATE_LIMIT_ENABLED', default=True, cast=bool)
+RATE_LIMIT_ENABLED = True
 
-RATE_LIMIT_CONFIG = {
-    '/api/telemetry/': {
-        'limit': config('RATE_LIMIT_TELEMETRY_LIMIT', default=1000, cast=int),
-        'window': config('RATE_LIMIT_TELEMETRY_WINDOW', default=60, cast=int),
-    },
-    '/admin/': {
-        'limit': config('RATE_LIMIT_ADMIN_LIMIT', default=30, cast=int),
-        'window': config('RATE_LIMIT_ADMIN_WINDOW', default=60, cast=int),
-    },
-    '/api/auth/login': {
-        'limit': config('RATE_LIMIT_LOGIN_LIMIT', default=5, cast=int),
-        'window': config('RATE_LIMIT_LOGIN_WINDOW', default=60, cast=int),
-    },
+RATE_LIMIT_TRUSTED_PROXIES = [
+    "127.0.0.1/32",
+    "10.0.0.0/8",
+]
+
+RATE_LIMIT_RESPONSE = {
+    "code": 429,
+    "message": "Too many requests",
+}
+
+RATE_LIMIT_RULES = {
+    "/api/login/": {"limit": 10, "window": 60},
+    "/api/": {"limit": 100, "window": 60},
 }
 
 # Celery configuration

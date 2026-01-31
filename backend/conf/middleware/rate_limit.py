@@ -1,5 +1,4 @@
 from django.conf import settings
-import re
 import logging
 
 import ipaddress 
@@ -16,19 +15,30 @@ RATE_LIMIT_RULES is a dictionary of path patterns and their rate limit configura
 
 EXACT_RULES = {}
 PREFIX_RULES = []
+_RULES_CONFIG_ID = None
+
 
 def _compile_rules():
+    global _RULES_CONFIG_ID, EXACT_RULES, PREFIX_RULES
     rules = getattr(settings, "RATE_LIMIT_RULES", {})
+    config_id = id(rules)
+
+    if _RULES_CONFIG_ID == config_id and (EXACT_RULES or PREFIX_RULES):
+        return
+
+    _RULES_CONFIG_ID = config_id
+    exact = {}
+    prefix = []
 
     for path, config in rules.items():
         if path.endswith('/'):
-            PREFIX_RULES.append((path, config))
+            prefix.append((path, config))
         else:
-            EXACT_RULES[path] = config
+            exact[path] = config
 
-    PREFIX_RULES.sort(key=lambda x: -len(x[0]))
-
-_compile_rules()
+    prefix.sort(key=lambda x: -len(x[0]))
+    EXACT_RULES = exact
+    PREFIX_RULES = prefix
 
 
 """
@@ -54,7 +64,7 @@ class ClientIPResolver:
 
         ips = [ip.strip() for ip in forwarded.split(',')]
 
-        for ip in reversed(ips):
+        for ip in ips:
             try:
                 ipaddress.ip_address(ip)
                 return ip
@@ -129,7 +139,16 @@ RateLimitRuleResolver is a class that resolves the rate limit rule for a given p
 class RateLimitRuleResolver:
 
     @staticmethod
+    def _normalize_path(path):
+        """Add trailing slash for consistent matching with rules like /api/ and /api/login/."""
+        if path and not path.endswith('/'):
+            return path + '/'
+        return path
+
+    @staticmethod
     def resolve(path):
+        _compile_rules()
+        path = RateLimitRuleResolver._normalize_path(path)
 
         rule = EXACT_RULES.get(path)
         if rule:
