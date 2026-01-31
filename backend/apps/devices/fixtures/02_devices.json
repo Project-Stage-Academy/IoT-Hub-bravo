@@ -1,0 +1,79 @@
+[
+  {
+    "model": "devices.device",
+    "pk": 1,
+    "fields": {
+      "serial_id": "SN-A1-TEMP-0001",
+      "name": "Living Room Thermometer",
+      "description": "Indoor temperature + humidity sensor in living room",
+      "is_active": true,
+      "created_at": "2026-01-18T07:12:43Z"
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 2,
+    "fields": {
+      "serial_id": "SN-A1-HUM-0002",
+      "name": "Basement Humidity Sensor",
+      "description": "Humidity sensor monitoring basement moisture level",
+      "is_active": true,
+      "created_at": "2026-01-18T09:48:10Z"
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 3,
+    "fields": {
+      "serial_id": "SN-A1-PRES-0003",
+      "name": "Outdoor Pressure Sensor",
+      "description": "Atmospheric pressure sensor mounted outside the building",
+      "is_active": true,
+      "created_at": "2026-01-19T06:05:55Z"
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 4,
+    "fields": {
+      "serial_id": "SN-A1-MOTION-0004",
+      "name": "Garage Motion Detector",
+      "description": "Motion detection sensor for garage security",
+      "is_active": true,
+      "created_at": "2026-01-19T21:22:31Z"
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 5,
+    "fields": {
+      "serial_id": "SN-A1-STATUS-0005",
+      "name": "Main Gateway Status Monitor",
+      "description": "Reports gateway uptime and connectivity status",
+      "is_active": true,
+      "created_at": "2026-01-20T03:41:18Z"
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 6,
+    "fields": {
+      "serial_id": "SN-B2-TEMP-0101",
+      "name": "Office Climate Sensor",
+      "description": "Temperature and humidity in office workspace",
+      "is_active": true,
+      "created_at": "2026-01-20T08:15:09Z"
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 7,
+    "fields": {
+      "serial_id": "SN-B2-FW-0103",
+      "name": "Edge Device Firmware Monitor",
+      "description": "Reports firmware version and device status",
+      "is_active": true,
+      "created_at": "2026-01-21T18:36:27Z"
+    }
+  }
+]

@@ -9,14 +9,14 @@ class Rule(models.Model):
     action = models.JSONField(null=False)
     is_active = models.BooleanField(default=True, db_index=True)
     device_metric = models.ForeignKey(
-        'devices.DeviceMetric', on_delete=models.CASCADE, null=False, db_index=True
+        "devices.DeviceMetric", on_delete=models.CASCADE, null=False, db_index=True
     )
 
     class Meta:
-        db_table = 'rules'
+        db_table = "rules"
         indexes = [
-            models.Index(fields=['device_metric'], name='idx_rules_device_metric'),
-            models.Index(fields=['is_active'], name='idx_rules_is_active'),
+            models.Index(fields=["device_metric"], name="idx_rules_device_metric"),
+            models.Index(fields=["is_active"], name="idx_rules_is_active"),
         ]
 
     def __str__(self):

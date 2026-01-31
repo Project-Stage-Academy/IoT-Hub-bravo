@@ -1,0 +1,90 @@
+[
+  {
+    "model": "devices.devicemetric",
+    "pk": 1,
+    "fields": {
+      "device": 1,
+      "metric": 1
+    }
+  },
+  {
+    "model": "devices.devicemetric",
+    "pk": 2,
+    "fields": {
+      "device": 1,
+      "metric": 2
+    }
+  },
+  {
+    "model": "devices.devicemetric",
+    "pk": 3,
+    "fields": {
+      "device": 2,
+      "metric": 2
+    }
+  },
+  {
+    "model": "devices.devicemetric",
+    "pk": 4,
+    "fields": {
+      "device": 3,
+      "metric": 3
+    }
+  },
+  {
+    "model": "devices.devicemetric",
+    "pk": 5,
+    "fields": {
+      "device": 4,
+      "metric": 6
+    }
+  },
+  {
+    "model": "devices.devicemetric",
+    "pk": 6,
+    "fields": {
+      "device": 5,
+      "metric": 4
+    }
+  },
+  {
+    "model": "devices.devicemetric",
+    "pk": 7,
+    "fields": {
+      "device": 5,
+      "metric": 7
+    }
+  },
+  {
+    "model": "devices.devicemetric",
+    "pk": 8,
+    "fields": {
+      "device": 6,
+      "metric": 1
+    }
+  },
+  {
+    "model": "devices.devicemetric",
+    "pk": 9,
+    "fields": {
+      "device": 6,
+      "metric": 2
+    }
+  },
+  {
+    "model": "devices.devicemetric",
+    "pk": 10,
+    "fields": {
+      "device": 7,
+      "metric": 5
+    }
+  },
+  {
+    "model": "devices.devicemetric",
+    "pk": 11,
+    "fields": {
+      "device": 7,
+      "metric": 4
+    }
+  }
+]

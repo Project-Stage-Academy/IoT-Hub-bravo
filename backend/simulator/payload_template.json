@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "device": "device-01",
+  "ts": "2026-01-27T12:00:00Z",
+  "metrics": {
+      "temperature": 23.5,
+      "humidity": 42,
+      "is_online": true
+  }
+}
+

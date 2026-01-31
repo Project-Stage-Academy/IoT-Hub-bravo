@@ -68,7 +68,7 @@ class DeviceAdmin(admin.ModelAdmin):
         latest = getattr(obj, "_latest_ts", None)
         if latest:
             return latest
-        return format_html('<span style="color: gray;">{}</span>', 'No data')
+        return format_html('<span style="color: gray;">{}</span>', "No data")
 
     @admin.display(description="Recent Telemetry (Last 10)")
     def recent_telemetry_display(self, obj):
@@ -79,7 +79,7 @@ class DeviceAdmin(admin.ModelAdmin):
         )
 
         if not telemetries:
-            return format_html('<p style="color: gray;">{}</p>', 'No telemetry data available')
+            return format_html('<p style="color: gray;">{}</p>', "No telemetry data available")
 
         header = format_html(
             "<tr style='background-color:#f2f2f2;'>"
@@ -145,7 +145,10 @@ class DeviceAdmin(admin.ModelAdmin):
 class TelemetryAdmin(admin.ModelAdmin):
     list_display = ("id", "device_metric", "display_value", "ts", "created_at")
     list_filter = ("ts", "created_at", "device_metric")
-    search_fields = ("device_metric__device__name", "device_metric__metric__metric_type")
+    search_fields = (
+        "device_metric__device__name",
+        "device_metric__metric__metric_type",
+    )
     readonly_fields = ("id", "value_numeric", "value_bool", "value_str", "created_at")
     date_hierarchy = "ts"
     actions = ["export_to_csv"]

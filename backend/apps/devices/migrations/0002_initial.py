@@ -11,57 +11,138 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('devices', '0001_initial'),
+        ("devices", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Device',
+            name="Device",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('serial_id', models.CharField(max_length=255, unique=True)),
-                ('name', models.CharField(max_length=255)),
-                ('description', models.TextField(null=True)),
-                ('is_active', models.BooleanField(db_index=True, default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("serial_id", models.CharField(max_length=255, unique=True)),
+                ("name", models.CharField(max_length=255)),
+                ("description", models.TextField(null=True)),
+                ("is_active", models.BooleanField(db_index=True, default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'db_table': 'devices',
+                "db_table": "devices",
             },
         ),
         migrations.CreateModel(
-            name='DeviceMetric',
+            name="DeviceMetric",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
             ],
             options={
-                'db_table': 'device_metrics',
+                "db_table": "device_metrics",
             },
         ),
         migrations.CreateModel(
-            name='Metric',
+            name="Metric",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('metric_type', models.CharField(db_collation='case_insensitive', max_length=100, unique=True)),
-                ('data_type', models.CharField(choices=[('numeric', 'Numeric'), ('bool', 'Boolean'), ('str', 'String')], default='numeric', max_length=10)),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                (
+                    "metric_type",
+                    models.CharField(
+                        db_collation="case_insensitive", max_length=100, unique=True
+                    ),
+                ),
+                (
+                    "data_type",
+                    models.CharField(
+                        choices=[
+                            ("numeric", "Numeric"),
+                            ("bool", "Boolean"),
+                            ("str", "String"),
+                        ],
+                        default="numeric",
+                        max_length=10,
+                    ),
+                ),
             ],
             options={
-                'db_table': 'metrics',
+                "db_table": "metrics",
             },
         ),
         migrations.CreateModel(
-            name='Telemetry',
+            name="Telemetry",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('value_jsonb', models.JSONField()),
-                ('value_numeric', models.GeneratedField(db_persist=True, expression=models.Case(models.When(then=django.db.models.functions.comparison.Cast(django.db.models.fields.json.KeyTextTransform('v', 'value_jsonb'), output_field=models.DecimalField(decimal_places=10, max_digits=20)), value_jsonb__t='numeric'), default=models.Value(None, output_field=models.DecimalField(decimal_places=10, max_digits=20))), output_field=models.DecimalField(decimal_places=10, max_digits=20))),
-                ('value_bool', models.GeneratedField(db_persist=True, expression=models.Case(models.When(then=django.db.models.functions.comparison.Cast(django.db.models.fields.json.KeyTextTransform('v', 'value_jsonb'), output_field=models.BooleanField()), value_jsonb__t='bool'), default=None), output_field=models.BooleanField(null=True))),
-                ('value_str', models.GeneratedField(db_persist=True, expression=models.Case(models.When(then=django.db.models.fields.json.KeyTextTransform('v', 'value_jsonb'), value_jsonb__t='str'), default=None), output_field=models.TextField(null=True))),
-                ('ts', models.DateTimeField(db_index=True, default=django.db.models.functions.datetime.Now())),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("value_jsonb", models.JSONField()),
+                (
+                    "value_numeric",
+                    models.GeneratedField(
+                        db_persist=True,
+                        expression=models.Case(
+                            models.When(
+                                then=django.db.models.functions.comparison.Cast(
+                                    django.db.models.fields.json.KeyTextTransform(
+                                        "v", "value_jsonb"
+                                    ),
+                                    output_field=models.DecimalField(
+                                        decimal_places=10, max_digits=20
+                                    ),
+                                ),
+                                value_jsonb__t="numeric",
+                            ),
+                            default=models.Value(
+                                None,
+                                output_field=models.DecimalField(
+                                    decimal_places=10, max_digits=20
+                                ),
+                            ),
+                        ),
+                        output_field=models.DecimalField(
+                            decimal_places=10, max_digits=20
+                        ),
+                    ),
+                ),
+                (
+                    "value_bool",
+                    models.GeneratedField(
+                        db_persist=True,
+                        expression=models.Case(
+                            models.When(
+                                then=django.db.models.functions.comparison.Cast(
+                                    django.db.models.fields.json.KeyTextTransform(
+                                        "v", "value_jsonb"
+                                    ),
+                                    output_field=models.BooleanField(),
+                                ),
+                                value_jsonb__t="bool",
+                            ),
+                            default=None,
+                        ),
+                        output_field=models.BooleanField(null=True),
+                    ),
+                ),
+                (
+                    "value_str",
+                    models.GeneratedField(
+                        db_persist=True,
+                        expression=models.Case(
+                            models.When(
+                                then=django.db.models.fields.json.KeyTextTransform(
+                                    "v", "value_jsonb"
+                                ),
+                                value_jsonb__t="str",
+                            ),
+                            default=None,
+                        ),
+                        output_field=models.TextField(null=True),
+                    ),
+                ),
+                (
+                    "ts",
+                    models.DateTimeField(
+                        db_index=True, default=django.db.models.functions.datetime.Now()
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'db_table': 'telemetries',
+                "db_table": "telemetries",
             },
         ),
     ]
