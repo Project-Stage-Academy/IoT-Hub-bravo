@@ -1,3 +1,11 @@
+x-django-base: &django_base
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    mosquitto:
+      condition: service_healthy
 services:
   web:
     command: /start-web-dev.sh
@@ -9,6 +17,20 @@ services:
     command: [ "celery", "-A", "conf.celery_app", "worker", "-l", "INFO" ]
     volumes:
       - ./backend:/app
+  mosquitto:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+    networks:
+      - backend
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    healthcheck:
+      test: ["CMD-SHELL", "exit 0"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   static_data:
