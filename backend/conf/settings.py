@@ -1,6 +1,8 @@
-from pathlib import Path
-from decouple import config, Csv
+import json
 import os
+from pathlib import Path
+
+from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -177,22 +179,33 @@ CACHES = {
     }
 }
 
-RATE_LIMIT_ENABLED = True
-
-RATE_LIMIT_TRUSTED_PROXIES = [
-    "127.0.0.1/32",
-    "10.0.0.0/8",
-]
-
-RATE_LIMIT_RESPONSE = {
-    "code": 429,
-    "message": "Too many requests",
+# Rate limit: load from env JSON for scalability; defaults preserved when RATE_LIMIT_CONFIG_JSON unset
+_DEFAULT_RATE_LIMIT_CONFIG = {
+    "enabled": True,
+    "trusted_proxies": ["127.0.0.1/32", "10.0.0.0/8"],
+    "response": {"code": 429, "message": "Too many requests"},
+    "rules": {
+        "/api/login/": {"limit": 10, "window": 60},
+        "/api/": {"limit": 100, "window": 60},
+    },
 }
-
-RATE_LIMIT_RULES = {
-    "/api/login/": {"limit": 10, "window": 60},
-    "/api/": {"limit": 100, "window": 60},
+_raw = os.environ.get("RATE_LIMIT_CONFIG_JSON") or "{}"
+try:
+    _env_config = json.loads(_raw) if isinstance(_raw, str) else _raw
+except (json.JSONDecodeError, TypeError):
+    _env_config = {}
+RATE_LIMIT_CONFIG = {
+    **_DEFAULT_RATE_LIMIT_CONFIG,
+    **_env_config,
+    "rules": {
+        **_DEFAULT_RATE_LIMIT_CONFIG.get("rules", {}),
+        **(_env_config.get("rules") or {}),
+    },
 }
+RATE_LIMIT_ENABLED = RATE_LIMIT_CONFIG.get("enabled", True)
+RATE_LIMIT_TRUSTED_PROXIES = RATE_LIMIT_CONFIG.get("trusted_proxies", _DEFAULT_RATE_LIMIT_CONFIG["trusted_proxies"])
+RATE_LIMIT_RESPONSE = RATE_LIMIT_CONFIG.get("response", _DEFAULT_RATE_LIMIT_CONFIG["response"])
+RATE_LIMIT_RULES = RATE_LIMIT_CONFIG.get("rules", _DEFAULT_RATE_LIMIT_CONFIG["rules"])
 
 # Celery configuration
 if USE_TZ:
