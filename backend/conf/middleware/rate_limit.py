@@ -62,11 +62,11 @@ class ClientIPResolver:
         if not forwarded:
             return remote_addr
 
-        ips = [ip.strip() for ip in value.split(",")]
+        ips = [ip.strip() for ip in forwarded.split(",")]
 
-            for ip in ips:
-                if ClientIPResolver._is_valid_public_ip(ip):
-                    return ip
+        for ip in ips:
+            if ClientIPResolver._is_valid_public_ip(ip):
+                return ip
 
         return remote_addr
 
@@ -85,6 +85,14 @@ class ClientIPResolver:
             pass
 
         return False
+
+    @staticmethod
+    def _is_valid_public_ip(ip):
+        try:
+            ipaddress.ip_address(ip)
+            return True
+        except ValueError:
+            return False
 
 """
 RateLimiter is a class that checks if a request is limited.
@@ -174,7 +182,8 @@ class RateLimitMiddleware(MiddlewareMixin):
 
         identifier = self._get_identifier(request)
 
-        key = f"rl:{request.path}:{request.method}:{identifier}"
+        normalized = RateLimitRuleResolver._normalize_path(request.path).rstrip('/')
+        key = f"rl:{normalized}:{request.method}:{identifier}"
 
         if RateLimiter.is_limited(key, rule["limit"], rule["window"]):
             return RateLimitResponseFactory.build(rule["window"])
