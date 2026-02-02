@@ -7,7 +7,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
-DJANGO_LOG_LEVEL = config('DJANGO_LOG_LEVEL', default = 'INFO')
 
 # Django apps
 INSTALLED_APPS = [
@@ -198,6 +197,8 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_RESULT_EXPIRES = 60 * 60
 
 # LOGGING configuration for django and celery
+DJANGO_LOG_LEVEL = config('DJANGO_LOG_LEVEL', default = 'INFO')
+CELERY_LOG_LEVEL = config('CELERY_LOG_LEVEL', default = 'INFO')
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
