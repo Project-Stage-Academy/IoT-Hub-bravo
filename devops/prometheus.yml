@@ -1,3 +1,4 @@
+---
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -20,4 +21,5 @@ scrape_configs:
     static_configs:
       - targets: ['celery-exporter:9808']
         labels:
-          app: 'worker'        
+          app: 'worker'
+       

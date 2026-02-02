@@ -1,3 +1,4 @@
+---
 name: Lint Observability Configs
 
 on:
@@ -22,9 +23,7 @@ jobs:
 
       - name: Lint Grafana YAML
         run: |
-          for file in grafana/**/*.yml; do
-            yamllint -q "$file"
-          done
+          find grafana -type f \( -name "*.yml" -o -name "*.yaml" \) -exec yamllint {} +
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -36,6 +35,4 @@ jobs:
 
       - name: Lint Grafana JSON
         run: |
-          for file in grafana/**/*.json; do
-            jsonlint -q "$file"
-          done
+          find grafana -type f -name "*.json" -exec jsonlint -q {} \;
