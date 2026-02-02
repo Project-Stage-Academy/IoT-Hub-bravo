@@ -1,10 +1,10 @@
 from django.http import HttpResponse
 import logging
-from django.http import Http404
-from django.core.exceptions import PermissionDenied
-import time
+from django.http import HttpResponseServerError
+from prometheus_client import Counter
 
 logger = logging.getLogger("rules") # logger.setLevel(logging.INFO) - is default
+my_metric = Counter('my_metric_total', 'Description')
 
 def rules_index(request):
     """Home page for rules/"""
@@ -14,5 +14,7 @@ def rules_index(request):
     # value = "E41" 
     # logger.info("some info")
     # logger.critical("something really bad", extra={"custom_field": "some value", "error_code": value})
-        
-    return HttpResponse("app is working 12312321")
+
+    my_metric.inc()
+    return HttpResponseServerError("grafana test")    
+    # return HttpResponse("app is working 12312321")

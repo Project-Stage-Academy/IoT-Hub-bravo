@@ -1,5 +1,6 @@
 import os
 from celery import Celery
+import time
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf.settings')
 
@@ -14,6 +15,7 @@ app.conf.worker_redirect_stdouts = True # False = no print() stuff as logs, True
 ### TEST 1
 @app.task
 def add(x, y):
+    time.sleep(1)
     return x + y
 
 ### TEST 2
