@@ -212,7 +212,10 @@ class TestSetupTimescaleDBExtensionChecks:
         output = out.getvalue()
         assert "available but not yet enabled" in output or "not yet enabled" in output
         # Should NOT exit early, should show "Starting TimescaleDB setup"
-        assert "Starting TimescaleDB setup" in output or "Already a hypertable" not in output
+        assert (
+            "Starting TimescaleDB setup" in output
+            or "Already a hypertable" not in output
+        )
 
     def test_extension_already_installed_skips_notice(self, mocker):
         """
@@ -474,17 +477,25 @@ class TestSetupTimescaleDBErrorHandling:
                 call_command("setup_timescaledb", stdout=out, stderr=out)
 
             output = out.getvalue()
-            assert "Cannot check TimescaleDB availability" in output or "error" in output.lower()
+            assert (
+                "Cannot check TimescaleDB availability" in output
+                or "error" in output.lower()
+            )
 
         # Test with DEBUG=False
         out_nodebug = StringIO()
         with override_settings(DEBUG=False):
             with pytest.raises(SystemExit):
-                call_command("setup_timescaledb", stdout=out_nodebug, stderr=out_nodebug)
+                call_command(
+                    "setup_timescaledb", stdout=out_nodebug, stderr=out_nodebug
+                )
 
             output = out_nodebug.getvalue()
             # Error message should be shown
-            assert "Cannot check TimescaleDB availability" in output or "error" in output.lower()
+            assert (
+                "Cannot check TimescaleDB availability" in output
+                or "error" in output.lower()
+            )
 
     def test_operational_error_during_execution_caught_and_reported(self, mocker):
         """
@@ -498,7 +509,9 @@ class TestSetupTimescaleDBErrorHandling:
         out = StringIO()
 
         mock_cursor = MagicMock()
-        mock_cursor.fetchone.side_effect = OperationalError("Connection lost to the server")
+        mock_cursor.fetchone.side_effect = OperationalError(
+            "Connection lost to the server"
+        )
         mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
         mock_cursor.__exit__ = MagicMock(return_value=None)
 
@@ -509,4 +522,7 @@ class TestSetupTimescaleDBErrorHandling:
 
         output = out.getvalue()
         # Should show error indication
-        assert "Cannot check TimescaleDB availability" in output or "error" in output.lower()
+        assert (
+            "Cannot check TimescaleDB availability" in output
+            or "error" in output.lower()
+        )

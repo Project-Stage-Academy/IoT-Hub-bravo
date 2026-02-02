@@ -82,7 +82,9 @@ class Command(BaseCommand):
             with transaction.atomic():
                 if self.dry_run:
                     for u in self.USERS_DATA:
-                        self.stdout.write(f'[DRY-RUN] Would create user: {u["username"]}')
+                        self.stdout.write(
+                            f'[DRY-RUN] Would create user: {u["username"]}'
+                        )
                         self.stdout.write(
                             "[DRY-RUN] Would load fixtures after user creation and create temp devices fixture"
                         )
@@ -205,12 +207,16 @@ class Command(BaseCommand):
         has_users = User.objects.exists()
         if has_users and not self.force:
             self.stdout.write(
-                self.style.ERROR("Database is not empty. Use --force to overwrite existing data.")
+                self.style.ERROR(
+                    "Database is not empty. Use --force to overwrite existing data."
+                )
             )
             sys.exit(0)
         elif has_users and self.force:
             self.stdout.write(
-                self.style.WARNING("Warning: Existing users will be deleted due to --force.")
+                self.style.WARNING(
+                    "Warning: Existing users will be deleted due to --force."
+                )
             )
             self._cleanup_db()
 

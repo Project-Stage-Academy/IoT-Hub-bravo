@@ -79,7 +79,9 @@ class DeviceAdmin(admin.ModelAdmin):
         )
 
         if not telemetries:
-            return format_html('<p style="color: gray;">{}</p>', "No telemetry data available")
+            return format_html(
+                '<p style="color: gray;">{}</p>', "No telemetry data available"
+            )
 
         header = format_html(
             "<tr style='background-color:#f2f2f2;'>"
@@ -121,7 +123,9 @@ class DeviceAdmin(admin.ModelAdmin):
         try:
             updated = queryset.update(is_active=True)
         except Exception as exc:
-            self.message_user(request, f"Failed to enable devices: {exc}", level="error")
+            self.message_user(
+                request, f"Failed to enable devices: {exc}", level="error"
+            )
             return
 
         self.message_user(request, f"{updated} device(s) successfully enabled.")
@@ -135,7 +139,9 @@ class DeviceAdmin(admin.ModelAdmin):
         try:
             updated = queryset.update(is_active=False)
         except Exception as exc:
-            self.message_user(request, f"Failed to disable devices: {exc}", level="error")
+            self.message_user(
+                request, f"Failed to disable devices: {exc}", level="error"
+            )
             return
 
         self.message_user(request, f"{updated} device(s) successfully disabled.")
@@ -186,7 +192,9 @@ class TelemetryAdmin(admin.ModelAdmin):
                 ]
             )
 
-        self.message_user(request, f"{queryset.count()} telemetry record(s) exported to CSV.")
+        self.message_user(
+            request, f"{queryset.count()} telemetry record(s) exported to CSV."
+        )
         return response
 
 
