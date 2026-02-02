@@ -264,7 +264,7 @@ LOGGING = {
 
         "celery": {
             "handlers": ["celery_console"],
-            "level": "INFO",
+            "level": CELERY_LOG_LEVEL,
             "propagate": False,
         },
     },
