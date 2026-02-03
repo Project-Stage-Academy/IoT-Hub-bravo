@@ -69,11 +69,7 @@ class Command(BaseCommand):
         self.force = options["force"]
         self.dry_run = options["dry_run"]
 
-        if self.dry_run and self.force:
-            self.stdout.write(self.style.WARNING("--force is ignored in dry-run mode"))
-
-        if not self._ensure_safe_to_seed():
-            return
+        
 
         self.stdout.write(self.style.MIGRATE_HEADING("--- Dev Seeding Started ---"))
 
@@ -81,22 +77,23 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Dry-run mode enabled"))
 
         try:
-            with transaction.atomic():
+            with transaction.atomic():    
+                if not self._ensure_safe_to_seed():
+                    return
+                
+                users = self._create_users()
+                self._load_fixtures(users)
+
                 if self.dry_run:
-                    for u in self.USERS_DATA:
-                        self.stdout.write(f'[DRY-RUN] Would create user: {u["username"]}')
-                        self.stdout.write(
-                            "[DRY-RUN] Would load fixtures after user creation and create temp devices fixture"
-                        )
-                else:
-                    users = self._create_users()
-                    self._load_fixtures(users)
+                    transaction.set_rollback(True)
+                    self.stdout.write(self.style.WARNING("\n[DRY-RUN] All database changes have been rolled back."))
         except CommandError:
             raise
         except Exception as e:
             raise CommandError(f"Seeding failed: {e}")
 
-        self.stdout.write(self.style.SUCCESS("--- Seed Completed Successfully ---"))
+        if not self.dry_run:
+            self.stdout.write(self.style.SUCCESS("--- Seed Completed Successfully ---"))
 
     def _create_users(self):
         """Create or update predefined users."""
@@ -202,21 +199,23 @@ class Command(BaseCommand):
         """
         Prevent accidental seeding into non-empty database.
         """
-        if self.dry_run:
-            return True
 
         has_users = User.objects.exists()
         if has_users and not self.force:
             self.stdout.write(
                 self.style.WARNING("Database is not empty. Use --force to overwrite existing data.")
             )
+            if self.dry_run:
+                self.stdout.write(self.style.NOTICE("[DRY-RUN] Simulation ended: real execution would stop here."))
             return False
-        elif has_users and self.force:
-            self.stdout.write(
-                self.style.WARNING("Warning: Existing users will be deleted due to --force.")
-            )
+        
+        if has_users and self.force:
+            prefix = "[DRY-RUN] Would clean" if self.dry_run else "Cleaning"
+            self.stdout.write(self.style.WARNING(f"{prefix} existing data due to --force..."))
+
             self._cleanup_db()
             return True
+        return True
 
     def _cleanup_db(self):
         """
