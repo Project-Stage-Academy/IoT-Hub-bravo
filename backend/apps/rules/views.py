@@ -6,6 +6,8 @@ logger = logging.getLogger("rules")  # logger.setLevel(logging.INFO) - is defaul
 
 def rules_index(request):
     """Home page for rules/"""
-    logger.critical("Platform is running at risk", extra={"context": {"user_id": 12, "smt": "1123"}})
+    logger.critical(
+        "Platform is running at risk", extra={"context": {"user_id": 12, "smt": "1123"}}
+    )
 
     return JsonResponse({"status": "ok", "message": "grafana test"})
