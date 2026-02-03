@@ -1,7 +1,6 @@
 # Create your views here.
 
 import json
-from .models import User
 from .services import UserService
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt

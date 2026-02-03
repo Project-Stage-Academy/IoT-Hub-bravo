@@ -18,7 +18,6 @@ from django.contrib import admin
 from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
-from apps.devices import views
 from apps.users.views import login 
 
 urlpatterns = [

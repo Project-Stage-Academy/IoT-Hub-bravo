@@ -21,9 +21,9 @@ class DeviceService:
                 is_active=is_active,
             )
 
-        except IntegrityError as e:
+        except IntegrityError:
             raise RuntimeError("Device with the same serial_id already exists")
-        except DatabaseError as e:
+        except DatabaseError:
             raise RuntimeError("Database error occurred while creating device")
 
     @staticmethod
@@ -54,10 +54,10 @@ class DeviceService:
             instance.save()
             return instance
 
-        except IntegrityError as e:
+        except IntegrityError:
             raise RuntimeError("Device update violates a data constraint")
 
-        except DatabaseError as e:
+        except DatabaseError:
             raise RuntimeError("Database error occurred while updating device")
 
     @staticmethod
@@ -65,5 +65,5 @@ class DeviceService:
         try:
             device.delete()
 
-        except DatabaseError as e:
+        except DatabaseError:
             raise RuntimeError("Database error occurred while deleting device")

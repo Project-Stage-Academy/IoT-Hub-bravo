@@ -10,14 +10,10 @@ from django.core.exceptions import ValidationError
 from apps.devices.models import Device
 from apps.users.models import User
 from apps.devices.serializers.device_serializers.base_device_serializer import (
-    BaseDeviceSerializer,
     DeviceOutputSerializer,
 )
 from apps.devices.serializers.device_serializers.create_device_serializer import (
     DeviceCreateV1Serializer,
-)
-from apps.devices.serializers.device_serializers.update_device_serializer import (
-    DeviceUpdateV1Serializer,
 )
 
 pytestmark = pytest.mark.django_db

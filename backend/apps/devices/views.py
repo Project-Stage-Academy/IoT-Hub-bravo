@@ -57,7 +57,7 @@ class DeviceView(View):
 
         SerializerClass = SERIALIZERS.get(schema_version)
         if not SerializerClass:
-            return JsonResponse({"error": f"Wrong schema_version!"}, status=400)
+            return JsonResponse({"error": "Wrong schema_version!"}, status=400)
 
         serializer = SerializerClass(data=data.get("device"))
         if not serializer.is_valid():
@@ -115,7 +115,7 @@ class DeviceDetailView(View):
 
         SerializerClass = SERIALIZERS.get(schema_version)
         if not SerializerClass:
-            return JsonResponse({"error": f"Wrong schema_version!"}, status=400)
+            return JsonResponse({"error": "Wrong schema_version!"}, status=400)
 
         serializer = SerializerClass(data=data.get("device"))
         if not serializer.is_valid():
@@ -138,7 +138,7 @@ class DeviceDetailView(View):
             return JsonResponse({"errors": serializer.errors}, status=400)
 
         canonical_data = serializer.to_canonical()
-        device = DeviceService.update_device(instance=device, **serializer.validated_data)
+        device = DeviceService.update_device(instance=device, **canonical_data)
         return JsonResponse(
             DeviceOutputSerializer().to_representation(instance=device), status=200
         )
