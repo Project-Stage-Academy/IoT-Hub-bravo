@@ -1,6 +1,7 @@
 # serializers/device_serializer.py
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 from ...models import Device
+
 
 class BaseDeviceSerializer:
     required_fields = ()
@@ -17,7 +18,7 @@ class BaseDeviceSerializer:
             self._errors[field] = f"'{field}' must be a valid value."
             return False
         return True
-    
+
     def is_valid(self) -> bool:
         self._errors = {}
         self._validated_data = {}
@@ -30,7 +31,7 @@ class BaseDeviceSerializer:
             for field in self.required_fields:
                 if field not in self.initial_data or self.initial_data[field] in ("", None):
                     self._errors[field] = "This field is required."
-        
+
         if self._errors:
             return False
 
@@ -42,7 +43,7 @@ class BaseDeviceSerializer:
                         self._validated_data[field] = value.strip()
                     else:
                         self._validated_data[field] = value
-                        
+
         return not bool(self._errors)
 
     @property
@@ -55,27 +56,22 @@ class BaseDeviceSerializer:
     def errors(self) -> Dict[str, Any]:
         return self._errors or {}
 
-# class DeviceOutputSerializer:
-#     @staticmethod
-#     def to_representation(instance: Device) -> Dict[str, Any]:
-#         return {
-#             "id": instance.id,
-#             "serial_id": instance.serial_id,
-#             "name": instance.name,
-#             "description": instance.description,
-#             "user_id": instance.user.id,
-#             "is_active": instance.is_active,
-#             "created_at": instance.created_at.isoformat(),
-#         }
 
 class DeviceOutputSerializer:
     @staticmethod
-    def to_representation( instance: Device, fields: Dict[str, Any] | None = None ) -> Dict[str, Any]:
+    def to_representation(
+        instance: Device, fields: Dict[str, Any] | None = None
+    ) -> Dict[str, Any]:
         data = {}
 
         default_fields = [
-            "id", "serial_id", "name", "description",
-            "user_id", "is_active", "created_at"
+            "id",
+            "serial_id",
+            "name",
+            "description",
+            "user_id",
+            "is_active",
+            "created_at",
         ]
         fields = fields or default_fields
 
@@ -92,5 +88,5 @@ class DeviceOutputSerializer:
                     else:
                         data[field] = value
             except Exception:
-                data[field] = None 
+                data[field] = None
         return data

@@ -1,9 +1,17 @@
 from django.db import IntegrityError, DatabaseError
 from ..models import Device
 
+
 class DeviceService:
     @staticmethod
-    def create_device(*, serial_id: str, name: str, user_id: int, description: str | None = None, is_active: bool = False,) -> Device:
+    def create_device(
+        *,
+        serial_id: str,
+        name: str,
+        user_id: int,
+        description: str | None = None,
+        is_active: bool = False,
+    ) -> Device:
         try:
             return Device.objects.create(
                 serial_id=serial_id,
@@ -17,9 +25,14 @@ class DeviceService:
             raise RuntimeError("Device with the same serial_id already exists")
         except DatabaseError as e:
             raise RuntimeError("Database error occurred while creating device")
-        
+
     @staticmethod
-    def update_device(*, instance: Device,serial_id: str | None = None, name: str | None = None, description: str | None = None,
+    def update_device(
+        *,
+        instance: Device,
+        serial_id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
         is_active: bool | None = None,
         user_id: int | None = None,
     ) -> Device:
@@ -46,7 +59,6 @@ class DeviceService:
 
         except DatabaseError as e:
             raise RuntimeError("Database error occurred while updating device")
-
 
     @staticmethod
     def delete_device(device: Device) -> None:

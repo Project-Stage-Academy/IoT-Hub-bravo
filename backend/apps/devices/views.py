@@ -13,12 +13,10 @@ from .services.device_service import DeviceService
 
 import json
 
+
 @method_decorator(csrf_exempt, name="dispatch")
 @method_decorator(jwt_required, name="dispatch")
-@method_decorator(role_required({
-    "GET": ["client", "admin"],
-    "POST": ["admin"]
-}), name="dispatch")
+@method_decorator(role_required({"GET": ["client", "admin"], "POST": ["admin"]}), name="dispatch")
 class DeviceView(View):
 
     def parse_json_request(self, body: bytes):
@@ -40,14 +38,9 @@ class DeviceView(View):
             return JsonResponse({"error": "Offset must be positive integer"}, status=400)
         devices_qs = Device.objects.select_related("user").all().order_by("id")
         total = devices_qs.count()
-        devices = devices_qs[offset:offset + limit]
+        devices = devices_qs[offset : offset + limit]
         data = [DeviceOutputSerializer().to_representation(instance=d) for d in devices]
-        return JsonResponse({
-            "total": total,
-            "limit": limit,
-            "offset": offset,
-            "items": data
-        })
+        return JsonResponse({"total": total, "limit": limit, "offset": offset, "items": data})
 
     def post(self, request):
         data, error_response = self.parse_json_request(request.body)
@@ -72,25 +65,29 @@ class DeviceView(View):
 
         canonical_data = serializer.to_canonical()
         device = DeviceService.create_device(**canonical_data)
-        return JsonResponse(DeviceOutputSerializer().to_representation(instance=device), status=201)
+        return JsonResponse(
+            DeviceOutputSerializer().to_representation(instance=device), status=201
+        )
 
     def http_method_not_allowed(self, request, *args, **kwargs):
         return HttpResponseNotAllowed(["GET", "POST"])
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 @method_decorator(jwt_required, name='dispatch')
-@method_decorator(role_required({
-    "GET": ["client", "admin"],
-    "PUT": ["admin"],
-    "PATCH": ["admin"],
-    "DELETE": ["admin"]
-}), name='dispatch')
+@method_decorator(
+    role_required(
+        {"GET": ["client", "admin"], "PUT": ["admin"], "PATCH": ["admin"], "DELETE": ["admin"]}
+    ),
+    name='dispatch',
+)
 class DeviceDetailView(View):
     def parse_json_request(self, body: bytes):
         try:
             return json.loads(body), None
         except json.JSONDecodeError:
             return None, JsonResponse({"error": "Invalid JSON"}, status=400)
-        
+
     def get_device(self, pk: int):
         try:
             device = get_object_or_404(Device, pk=pk)
@@ -98,11 +95,9 @@ class DeviceDetailView(View):
         except Exception:
             return JsonResponse({"errors": "Device is not found!"}, status=404)
 
-
-    def get(self,request, pk: int):
+    def get(self, request, pk: int):
         device = self.get_device(pk)
         return JsonResponse(DeviceOutputSerializer().to_representation(instance=device))
-    
 
     def put(self, request, pk: int):
         device = self.get_device(pk)
@@ -128,23 +123,26 @@ class DeviceDetailView(View):
         canonical_data = serializer.to_canonical()
         print(canonical_data)
         device = DeviceService.update_device(instance=device, **canonical_data)
-        return JsonResponse(DeviceOutputSerializer().to_representation(instance=device), status=200)
-    
+        return JsonResponse(
+            DeviceOutputSerializer().to_representation(instance=device), status=200
+        )
 
-    def patch(self, request, pk:int):
+    def patch(self, request, pk: int):
         device = self.get_device(pk)
         data, error_response = self.parse_json_request(request.body)
         if error_response:
             return error_response
-        
+
         serializer = DeviceUpdateV1Serializer(data=data.get("device"), partial=True)
         if not serializer.is_valid():
             return JsonResponse({"errors": serializer.errors}, status=400)
-        
+
         canonical_data = serializer.to_canonical()
         device = DeviceService.update_device(instance=device, **serializer.validated_data)
-        return JsonResponse(DeviceOutputSerializer().to_representation(instance=device), status=200)
-    
+        return JsonResponse(
+            DeviceOutputSerializer().to_representation(instance=device), status=200
+        )
+
     def delete(self, request, pk: int):
         device = self.get_device(pk)
         DeviceService.delete_device(device)

@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from .models import User
 
+
 class UserService:
     @staticmethod
     def get_access_token(username: str, password: str) -> dict:

@@ -1,5 +1,6 @@
 from .base_device_serializer import BaseDeviceSerializer
 
+
 class DeviceUpdateV1Serializer(BaseDeviceSerializer):
     required_fields = ()
 

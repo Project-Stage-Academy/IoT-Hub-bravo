@@ -1,5 +1,6 @@
 from .base_device_serializer import BaseDeviceSerializer
 
+
 class DeviceCreateV1Serializer(BaseDeviceSerializer):
     required_fields = ("serial_id", "name", "user_id")
     FIELD_TYPES = {
