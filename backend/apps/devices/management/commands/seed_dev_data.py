@@ -9,7 +9,6 @@ from django.core.management import call_command
 from django.contrib.auth import get_user_model
 from apps.users.models import UserRole
 from django.apps import apps
-import sys
 
 User = get_user_model()
 
@@ -30,7 +29,7 @@ class Command(BaseCommand):
         {
             "username": "dev_admin",
             "email": "dev.admin@example.com",
-            "password": os.getenv("DEV_ADMIN_PASSWORD" ,"DevSecurePass"),
+            "password": os.getenv("DEV_ADMIN_PASSWORD", "DevSecurePass"),
             "is_staff": True,
             "is_superuser": True,
             "role": UserRole.ADMIN.value,
@@ -75,16 +74,20 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Dry-run mode enabled"))
 
         try:
-            with transaction.atomic():    
+            with transaction.atomic():
                 if not self._ensure_safe_to_seed():
                     return
-                
+
                 users = self._create_users()
                 self._load_fixtures(users)
 
                 if self.dry_run:
                     transaction.set_rollback(True)
-                    self.stdout.write(self.style.WARNING("\n[DRY-RUN] All database changes have been rolled back."))
+                    self.stdout.write(
+                        self.style.WARNING(
+                            "\n[DRY-RUN] All database changes have been rolled back."
+                        )
+                    )
         except CommandError:
             raise
         except Exception as e:
@@ -150,21 +153,21 @@ class Command(BaseCommand):
 
         try:
             with open(source, encoding="utf-8") as f:
-                    data = json.load(f)
-            
+                data = json.load(f)
+
             half = len(data) // 2
             for i, obj in enumerate(data):
                 obj["fields"]["user"] = clients[0].id if i < half else clients[1].id
 
             with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=True) as tmp:
                 json.dump(data, tmp, indent=2, ensure_ascii=False)
-                tmp.flush() 
-                
+                tmp.flush()
+
                 self._loaddata(tmp.name)
         except json.JSONDecodeError as exc:
             raise CommandError(f"Invalid JSON in {source.name}: {exc}")
         except OSError as exc:
-            raise CommandError(f"FileSystem error while processing {source.name}: {exc}") 
+            raise CommandError(f"FileSystem error while processing {source.name}: {exc}")
 
         self._loaddata("03_device_metrics.json")
         self._loaddata("04_telemetries.json")
@@ -187,12 +190,18 @@ class Command(BaseCommand):
         has_users = User.objects.exists()
         if has_users and not self.force:
             self.stdout.write(
-                self.style.WARNING("Database is not empty. Use --force to overwrite existing data.")
+                self.style.WARNING(
+                    "Database is not empty. Use --force to overwrite existing data."
+                )
             )
             if self.dry_run:
-                self.stdout.write(self.style.NOTICE("[DRY-RUN] Simulation ended: real execution would stop here."))
+                self.stdout.write(
+                    self.style.NOTICE(
+                        "[DRY-RUN] Simulation ended: real execution would stop here."
+                    )
+                )
             return False
-        
+
         if has_users and self.force:
             prefix = "[DRY-RUN] Would clean" if self.dry_run else "Cleaning"
             self.stdout.write(self.style.WARNING(f"{prefix} existing data due to --force..."))
