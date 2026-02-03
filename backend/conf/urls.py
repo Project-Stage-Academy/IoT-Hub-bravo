@@ -24,8 +24,7 @@ from apps.users.views import login
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/auth/login/", login, name="user-auth"),
-    path("api/devices/", views.DeviceView.as_view(), name="device-list-create"),
-    path("api/devices/<int:pk>/", views.DeviceDetailView.as_view(), name="device-detail"),
+    path("api/devices/", include("apps.devices.urls.device_urls")),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
