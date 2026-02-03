@@ -69,8 +69,6 @@ class Command(BaseCommand):
         self.force = options["force"]
         self.dry_run = options["dry_run"]
 
-        
-
         self.stdout.write(self.style.MIGRATE_HEADING("--- Dev Seeding Started ---"))
 
         if self.dry_run:
