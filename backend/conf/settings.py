@@ -1,29 +1,31 @@
-from pathlib import Path
-from decouple import config, Csv
+import json
 import os
+from pathlib import Path
+
+from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,web', cast=Csv())
 
-#Django apps
+# Django apps
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',    
+    'django.contrib.staticfiles',
 ]
 
-#Third party apps
+# Third party apps
 INSTALLED_APPS += [
     'corsheaders',
 ]
 
-#Local apps
+# Local apps
 INSTALLED_APPS += [
     'apps.devices',
     'apps.users',
@@ -39,6 +41,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'conf.middleware.rate_limit.RateLimitMiddleware',
 ]
 
 ROOT_URLCONF = 'conf.urls'
@@ -60,7 +63,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'conf.wsgi.application'
 
-#Databases
+# Databases
 IS_BUILD = os.environ.get('BUILD_TIME') == '1'
 
 if IS_BUILD:
@@ -108,15 +111,16 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'  
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', 
-    default=False, 
+CORS_ALLOW_ALL_ORIGINS = config(
+    'CORS_ALLOW_ALL_ORIGINS',
+    default=False,
     cast=bool
 )
 
@@ -168,3 +172,60 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
+# Rate limit: load from env JSON for scalability; defaults preserved when RATE_LIMIT_CONFIG_JSON unset
+_DEFAULT_RATE_LIMIT_CONFIG = {
+    "enabled": True,
+    "trusted_proxies": ["127.0.0.1/32", "10.0.0.0/8"],
+    "response": {"code": 429, "message": "Too many requests"},
+    "rules": {
+        "/api/login/": {"limit": 10, "window": 60},
+        "/api/": {"limit": 100, "window": 60},
+    },
+}
+_raw = os.environ.get("RATE_LIMIT_CONFIG_JSON") or "{}"
+try:
+    _env_config = json.loads(_raw) if isinstance(_raw, str) else _raw
+except (json.JSONDecodeError, TypeError):
+    _env_config = {}
+RATE_LIMIT_CONFIG = {
+    **_DEFAULT_RATE_LIMIT_CONFIG,
+    **_env_config,
+    "rules": {
+        **_DEFAULT_RATE_LIMIT_CONFIG.get("rules", {}),
+        **(_env_config.get("rules") or {}),
+    },
+}
+RATE_LIMIT_ENABLED = RATE_LIMIT_CONFIG.get("enabled", True)
+RATE_LIMIT_TRUSTED_PROXIES = RATE_LIMIT_CONFIG.get("trusted_proxies", _DEFAULT_RATE_LIMIT_CONFIG["trusted_proxies"])
+RATE_LIMIT_RESPONSE = RATE_LIMIT_CONFIG.get("response", _DEFAULT_RATE_LIMIT_CONFIG["response"])
+RATE_LIMIT_RULES = RATE_LIMIT_CONFIG.get("rules", _DEFAULT_RATE_LIMIT_CONFIG["rules"])
+
+# Celery configuration
+if USE_TZ:
+    CELERY_TIMEZONE = TIME_ZONE
+
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://127.0.0.1:6379/0')
+
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_SEND_SENT_EVENT = True
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_TASK_TIME_LIMIT = 2 * 60
+CELERY_TASK_SOFT_TIME_LIMIT = 60
+CELERY_TASK_DEFAULT_RETRY_DELAY = 5
+CELERY_TASK_MAX_RETRIES = 10
+
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_RESULT_EXPIRES = 60 * 60

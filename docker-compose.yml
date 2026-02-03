@@ -1,3 +1,20 @@
+name: ${COMPOSE_PROJECT_NAME:-iot-hub}
+
+x-django-base: &django_base
+  build:
+    context: .
+    dockerfile: ./docker/django/Dockerfile
+  restart: unless-stopped
+  env_file:
+    - ./.env
+  networks:
+    - backend
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
 services:
   swagger-ui:
     image: swaggerapi/swagger-ui
@@ -13,23 +30,13 @@ services:
       - backend
 
   web:
-    build:
-      context: .
-      dockerfile: ./docker/django/Dockerfile
+    <<: *django_base
     image: iot-hub-web
     container_name: web
-    restart: unless-stopped
     volumes:
       - media_data:/app/media
     ports:
       - "8000:8000"
-    env_file:
-      - ./.env
-    networks:
-      - backend
-    depends_on:
-      db:
-        condition: service_healthy
 
   db:
     image: timescale/timescaledb:latest-pg16
@@ -46,15 +53,64 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}"]
+      test: [ "CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}" ]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
 
+  redis:
+    image: redis:7.0-alpine3.19
+    command: redis-server --appendonly yes
+    container_name: redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  worker:
+    <<: *django_base
+    image: iot-hub-worker
+    container_name: worker
+    command: [ "celery", "-A", "conf.celery_app", "worker", "-l", "INFO", "--concurrency=${CELERY_CONCURRENCY:-2}" ]
+
+  flower:
+    image: mher/flower:2.0
+    container_name: flower
+    environment:
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_FLOWER_USER: ${CELERY_FLOWER_USER}
+      CELERY_FLOWER_PASSWORD: ${CELERY_FLOWER_PASSWORD}
+    command:
+      - "celery"
+      - "--broker=${CELERY_BROKER_URL}"
+      - "flower"
+      - "--port=5555"
+      - "--basic_auth=${CELERY_FLOWER_USER}:${CELERY_FLOWER_PASSWORD}"
+      - "--persistent=true"
+      - "--db=/data/flower.db"
+    volumes:
+      - flower_data:/data
+    ports:
+      - "5555:5555"
+    networks:
+      - backend
+    depends_on:
+      redis:
+        condition: service_healthy
+
 volumes:
   media_data:
   db_data:
+  redis_data:
+  flower_data:
 
 networks:
   backend:
