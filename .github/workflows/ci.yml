@@ -67,7 +67,7 @@ jobs:
 
       - name: Upload security report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: security-scan-report
           path: |
@@ -127,7 +127,7 @@ jobs:
         run: pytest -q --cov=. --cov-report=xml:coverage.xml
 
       - name: Upload coverage.xml
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-${{ matrix.python-version }}
           path: backend/coverage.xml
