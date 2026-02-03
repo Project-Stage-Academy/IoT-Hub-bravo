@@ -62,17 +62,17 @@ Use `-n N` to adjust the number of log lines returned by Docker.
 * Get the log level of the last 5 log entries:
 
 ```bash
-docker logs web -n 5 | jq '.level'
+docker logs web -n 5 2>&1 | jq -R 'fromjson? | .level'
 ```
 
 * Filter only WARNING logs from the last 10 entries:
 
 ```bash
-docker logs web -n 10 | jq 'select(.level == "WARNING")'
+docker logs web -n 10 2>&1 | jq -R 'fromjson? | select(.level == "WARNING")'
 ```
 
 * Extract only the message field from WARNING logs of the last 15 entries:
 
 ```bash
-docker logs web -n 15 | jq -r 'select(.level == "WARNING") | .message'
+docker logs web -n 15 2>&1 | jq -R 'fromjson? | select(.level == "WARNING") | .message'
 ```

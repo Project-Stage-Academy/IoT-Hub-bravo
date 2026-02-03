@@ -1,13 +1,11 @@
 import logging
-from django.http import HttpResponseServerError
+from django.http import JsonResponse
 
 logger = logging.getLogger("rules")  # logger.setLevel(logging.INFO) - is default
 
 
 def rules_index(request):
     """Home page for rules/"""
-    logger.warning(
-        "Platform is running at risk", extra={"context": {"user_id": 12, "smt": "1123"}}
-    )
+    logger.critical("Platform is running at risk", extra={"context": {"user_id": 12, "smt": "1123"}})
 
-    return HttpResponseServerError("grafana test")
+    return JsonResponse({"status": "ok", "message": "grafana test"})

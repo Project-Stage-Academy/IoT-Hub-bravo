@@ -13,7 +13,7 @@ class RequestContextFilter(logging.Filter):
         record.request_id = request_id.get()
         return True
 
-class CeleryContextFilter:
+class CeleryContextFilter(logging.Filter):
     """
     Add context for celery logging
     """

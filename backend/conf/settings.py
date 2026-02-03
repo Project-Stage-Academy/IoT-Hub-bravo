@@ -240,14 +240,12 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "filters": ["request_context"],
             "formatter": "json",   
-            "stream": "ext://sys.stdout", # 2>&1 stdout !stderr (just to not write 2>&1 in terminal)
         },
 
         "celery_console": {
             "class": "logging.StreamHandler",
             "filters": ["celery_context"],
             "formatter": "celery_json",
-            "stream": "ext://sys.stdout", # 2>&1 stdout !stderr (just to not write 2>&1 in terminal)
         },
     },
 

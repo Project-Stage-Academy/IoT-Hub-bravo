@@ -116,6 +116,12 @@ services:
       - backend
     depends_on:
       - redis
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://celery-exporter:9808/metrics')"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+      start_period: 10s  
 
   prometheus:
     image: prom/prometheus
@@ -125,7 +131,10 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - backend  
+      - backend
+    depends_on:
+      celery-exporter:
+        condition: service_healthy   
 
   grafana:
     image: grafana/grafana
