@@ -19,7 +19,7 @@ tags:
     description: CRUD operations for telemetry
 
 paths:
-  /api/auth/login:
+  /api/auth/login/:
     post:
       tags:
         - Authentication
@@ -38,8 +38,12 @@ paths:
             examples:
               valid_credentials:
                 value:
-                  username: test_user
-                  password: password
+                  username: testuser
+                  password: testpassword
+              admin_credentials:
+                value:
+                  username: adminuser
+                  password: adminpassword
       responses:
         '200':
           description: JWT token issued successfully
@@ -87,7 +91,7 @@ paths:
                 schema:
                   $ref: '#/components/schemas/ErrorResponse'
 
-  /api/devices:
+  /api/devices/:
     get:
       tags:
         - Devices
@@ -151,7 +155,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/devices/{id}:
+  /api/devices/{id}/:
     get:
       tags:
         - Devices
@@ -605,14 +609,14 @@ components:
       properties:
         schema_version:
           type: string
-          example: "v1.0"
+          example: "v1"
         device:
           $ref: '#/components/schemas/DevicePatch'
       required:
         - schema_version
         - device
       example:
-        schema_version: "1.1"
+        schema_version: "v1"
         device:
           name: "Updated smoke detector name."
           description: "Updated description."
@@ -724,17 +728,17 @@ components:
       properties:
         username:
           type: string
-          example: test_user
+          example: testuser
         password:
           type: string
           format: password
-          example: password
+          example: testpassword
       required:
         - username
         - password
       example:
-        username: test_user
-        password: password
+        username: testuser
+        password: testpassword
 
     AuthTokenResponse:
       type: object

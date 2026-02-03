@@ -10,7 +10,10 @@ from django.views.decorators.csrf import csrf_exempt
 def login(request):
     if request.method != "POST":
         return JsonResponse({"error": "Method not allowed"},status=405)
-    data_from_json = json.loads(request.body)
+    try:
+        return json.loads(request.body), None
+    except json.JSONDecodeError:
+        return None, JsonResponse({"error": "Invalid JSON"}, status=400)
 
     username = data_from_json.get("username")
     password = data_from_json.get("password")

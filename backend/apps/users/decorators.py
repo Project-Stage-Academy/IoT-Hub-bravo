@@ -36,7 +36,9 @@ def role_required(rules: dict):
         def wrapper(request, *args, **kwargs):
             allowed_roles = rules.get(request.method)
             if allowed_roles is None:
-                return JsonResponse({"error": "Method not allowed"}, status=405)
+                return JsonResponse({"error": "Forbidden"},status=403)
+            if isinstance(allowed_roles, str):
+                allowed_roles = [allowed_roles]
             if request.role not in allowed_roles:
                 return JsonResponse({"error": "Permission denied"}, status=403)
             return view_func(request, *args, **kwargs)

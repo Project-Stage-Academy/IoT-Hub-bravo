@@ -1,30 +1,57 @@
-from typing import Any, Dict
+from django.db import IntegrityError, DatabaseError
 from ..models import Device
-
 
 class DeviceService:
     @staticmethod
-    def create_device(validated_data: dict) -> Device:
+    def create_device(*, serial_id: str, name: str, user_id: int, description: str | None = None, is_active: bool = False,) -> Device:
         try:
-            device = Device.objects.create(**validated_data)
-            return device
-        except Exception as e:
-            raise RuntimeError(f"Device creation failed: {str(e)}")
+            return Device.objects.create(
+                serial_id=serial_id,
+                name=name,
+                description=description,
+                user_id=user_id,
+                is_active=is_active,
+            )
 
+        except IntegrityError as e:
+            raise RuntimeError("Device with the same serial_id already exists")
+        except DatabaseError as e:
+            raise RuntimeError("Database error occurred while creating device")
+        
     @staticmethod
-    def update_device(instance: Device, validated_data: dict) -> Device:
+    def update_device(*, instance: Device,serial_id: str | None = None, name: str | None = None, description: str | None = None,
+        is_active: bool | None = None,
+        user_id: int | None = None,
+    ) -> Device:
+        if serial_id is not None:
+            instance.serial_id = serial_id
+
+        if name is not None:
+            instance.name = name
+
+        if description is not None:
+            instance.description = description
+
+        if is_active is not None:
+            instance.is_active = is_active
+
+        if user_id is not None:
+            instance.user_id = user_id
         try:
-            for field, value in validated_data.items():
-                setattr(instance, field, value)
             instance.save()
             return instance
-        except Exception as e:
-            raise RuntimeError(f"Device update failed: {str(e)}")
+
+        except IntegrityError as e:
+            raise RuntimeError("Device update violates a data constraint")
+
+        except DatabaseError as e:
+            raise RuntimeError("Database error occurred while updating device")
 
 
     @staticmethod
     def delete_device(device: Device) -> None:
         try:
             device.delete()
-        except Exception as e:
-            raise RuntimeError(f"Delete failed: {e}")
+
+        except DatabaseError as e:
+            raise RuntimeError("Database error occurred while deleting device")

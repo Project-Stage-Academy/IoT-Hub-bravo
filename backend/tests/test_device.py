@@ -9,18 +9,11 @@ from django.core.exceptions import ValidationError
 
 from apps.devices.models import Device
 from apps.users.models import User
-from apps.devices.serializers.device_serializer import DeviceSerializer
+from apps.devices.serializers.device_serializers.base_device_serializer import BaseDeviceSerializer, DeviceOutputSerializer
+from apps.devices.serializers.device_serializers.create_device_serializer import DeviceCreateV1Serializer
+from apps.devices.serializers.device_serializers.update_device_serializer import DeviceUpdateV1Serializer
 
 pytestmark = pytest.mark.django_db
-
-@pytest.fixture
-def user1(db):
-    return User.objects.create(username="user1", email="user1@example.com", role="client")
-
-@pytest.fixture
-def user2(db):
-    return User.objects.create(username="user2", email="user2@example.com", role="client")
-
 @pytest.fixture
 def admin_user(db):
     return User.objects.create_user(
@@ -53,28 +46,28 @@ def auth_headers(token):
     return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
 @pytest.fixture
-def device_active(user1):
+def device_active(client_user):
     return Device.objects.create(
         serial_id="SN-123",
         name="Active Device",
-        user=user1,
+        user=client_user,
         is_active=True
     )
 
 @pytest.fixture
-def device_inactive(user2):
+def device_inactive(client_user):
     return Device.objects.create(
         serial_id="SN-999",
         name="Inactive Device",
-        user=user2,
+        user=client_user,
         is_active=False
     )
 @pytest.fixture
-def valid_device(user1):
+def valid_device(client_user):
     return Device(
         serial_id="SN-123",
         name="Active Device",
-        user=user1,
+        user=client_user,
         is_active=True
     )
 @pytest.fixture
@@ -89,12 +82,12 @@ def invalid_device():
 
 # Testing device creation with valid data
 @pytest.mark.django_db
-def test_device_model_valid(user1):
+def test_device_model_valid(client_user):
     device = Device(
         serial_id="SERIAL-123",
         name="Test Device",
         description="Some description",
-        user=user1,
+        user=client_user,
         is_active=True,
     )
 
@@ -102,11 +95,11 @@ def test_device_model_valid(user1):
 
 # Testing device creation without serial_id
 @pytest.mark.django_db
-def test_device_serial_id_required(user1):
+def test_device_serial_id_required(client_user):
     device = Device(
         serial_id=None,
         name="Device",
-        user=user1,
+        user=client_user,
     )
 
     with pytest.raises(ValidationError) as exc:
@@ -116,11 +109,11 @@ def test_device_serial_id_required(user1):
 
 # Testing device creation without name
 @pytest.mark.django_db
-def test_device_name_required(user1):
+def test_device_name_required(client_user):
     device = Device(
         serial_id="SER-1",
         name=None,
-        user=user1,
+        user=client_user,
     )
 
     with pytest.raises(ValidationError) as exc:
@@ -144,17 +137,17 @@ def test_device_user_required():
 
 # Testing devices creation with same serial_id 
 @pytest.mark.django_db
-def test_device_serial_id_unique(user2):
+def test_device_serial_id_unique(client_user):
     Device.objects.create(
         serial_id="UNIQUE-1",
         name="Device 1",
-        user=user2,
+        user=client_user,
     )
 
     device = Device(
         serial_id="UNIQUE-1",
         name="Device 2",
-        user=user2,
+        user=client_user,
     )
 
     with pytest.raises(ValidationError) as exc:
@@ -164,12 +157,12 @@ def test_device_serial_id_unique(user2):
 
 # Testing device creation without description
 @pytest.mark.django_db
-def test_device_description_optional(user2):
+def test_device_description_optional(client_user):
     device = Device(
         serial_id="SER-4",
         name="Device",
         description=None,
-        user=user2,
+        user=client_user,
     )
 
     device.full_clean()
@@ -179,7 +172,7 @@ def test_device_description_optional(user2):
 
 # Validating device with valid data
 def test_device_serializer_valid_data():
-    serializer = DeviceSerializer(data={
+    serializer = DeviceCreateV1Serializer(data={
         "serial_id": "SER-123",
         "name": "iPhone",
         "description": "Test device",
@@ -201,7 +194,7 @@ def test_device_serializer_valid_data():
 
 # Validating device with missing fields: serial_id, name, user_id
 def test_device_serializer_missing_required_fields():
-    serializer = DeviceSerializer(data={})
+    serializer = DeviceCreateV1Serializer(data={})
 
     assert serializer.is_valid() is False
 
@@ -211,7 +204,7 @@ def test_device_serializer_missing_required_fields():
 
 # Validating device data with wrong DataType
 def test_device_serializer_invalid_field_types():
-    serializer = DeviceSerializer(data={
+    serializer = DeviceCreateV1Serializer(data={
         "serial_id": 123,
         "name": True,
         "description": 999,
@@ -221,15 +214,15 @@ def test_device_serializer_invalid_field_types():
 
     assert serializer.is_valid() is False
 
-    assert serializer.errors["serial_id"] == "Must be <class 'str'>."
-    assert serializer.errors["name"] == "Must be <class 'str'>."
-    assert serializer.errors["description"] == "Must be (<class 'str'>, <class 'NoneType'>)."
-    assert serializer.errors["user_id"] == "Must be <class 'int'>."
-    assert serializer.errors["is_active"] == "Must be <class 'bool'>."
+    assert serializer.errors["serial_id"] == "'serial_id' must be a valid value."
+    assert serializer.errors["name"] == "'name' must be a valid value."
+    assert serializer.errors["description"] == "'description' must be a valid value."
+    assert serializer.errors["user_id"] == "'user_id' must be a valid value."
+    assert serializer.errors["is_active"] == "'is_active' must be a valid value."
 
 # Validating device data for PATCH method (required fields are ignored)
 def test_device_serializer_partial_update():
-    serializer = DeviceSerializer(
+    serializer = DeviceCreateV1Serializer(
         data={"name": "Updated name"},
         partial=True
     )
@@ -240,24 +233,23 @@ def test_device_serializer_partial_update():
 
 # Testing serialization method to_representation
 @pytest.mark.django_db
-def test_device_serializer_to_representation(user1):
+def test_device_serializer_to_representation(client_user):
     device = Device.objects.create(
         serial_id="SER-999",
         name="MacBook",
         description="Laptop",
-        user=user1,
+        user=client_user,
         is_active=True,
     )
 
-    serializer = DeviceSerializer()
-    data = serializer.to_representation(device)
+    data = DeviceOutputSerializer.to_representation(instance=device)
 
     assert data == {
         "id": device.id,
         "serial_id": "SER-999",
         "name": "MacBook",
         "description": "Laptop",
-        "user_id": user1.id,
+        "user_id": client_user.id,
         "is_active": True,
         "created_at": device.created_at.isoformat(),
     }
@@ -290,8 +282,16 @@ def test_get_devices_unauthenticated(client):
 # admin POST
 @pytest.mark.django_db
 def test_create_device_as_admin(client, admin_user, admin_token):
-    payload = {"serial_id": "SER-100", "name": "New Device", "user_id": admin_user.id}
-
+    payload = {
+    "schema_version": "v1",
+    "device": {
+        "serial_id": "SER-100",
+        "name": "New Device",
+        "description": None,
+        "user_id": admin_user.id,
+        "is_active": True
+        }
+    }
     response = client.post(
         "/api/devices/",
         data=json.dumps(payload),
@@ -306,34 +306,56 @@ def test_create_device_as_admin(client, admin_user, admin_token):
 # client POST
 @pytest.mark.django_db
 def test_create_device_as_client_forbidden(client, client_user, client_token):
-    payload = {"serial_id": "SER-101", "name": "Forbidden", "user_id": client_user.id}
+    payload = {
+        "serial_id": "SER-101",
+        "name": "Forbidden",
+        "user_id": client_user.id,
+    }
 
     response = client.post(
         "/api/devices/",
         data=json.dumps(payload),
         content_type="application/json",
-        **{"HTTP_AUTHORIZATION": f"Bearer {client_token}"}
+        HTTP_AUTHORIZATION=f"Bearer {client_token}",
     )
 
     assert response.status_code == 403
-    assert "Permission denied" in response.json()["error"]
+
+    body = response.json()
+    assert "error" in body
+    assert body["error"] == "Permission denied"
 
 # admin PATCH
 @pytest.mark.django_db
 def test_patch_device_as_admin(client, admin_user, admin_token):
-    device = Device.objects.create(serial_id="SER-200", name="Old Name", user=admin_user)
-    payload = {"name": "Updated Name"}
+    device = Device.objects.create(
+        serial_id="SER-200",
+        name="Old Name",
+        user=admin_user,
+        is_active=True,
+    )
+
+    payload = {
+    "schema_version": "v1",
+    "device":
+        {
+            "name": "Updated Name"
+        }
+    }
 
     response = client.patch(
         f"/api/devices/{device.id}/",
         data=json.dumps(payload),
         content_type="application/json",
-        **{"HTTP_AUTHORIZATION": f"Bearer {admin_token}"}
+        HTTP_AUTHORIZATION=f"Bearer {admin_token}",
     )
 
     assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "Updated Name"
+    body = response.json()
+    assert body["name"] == "Updated Name"
+
+    device.refresh_from_db()
+    assert device.name == "Updated Name"
 
 # admin DELETE
 @pytest.mark.django_db
