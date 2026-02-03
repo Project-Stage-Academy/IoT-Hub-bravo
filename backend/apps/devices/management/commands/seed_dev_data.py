@@ -144,27 +144,6 @@ class Command(BaseCommand):
         self._loaddata("01_metrics.json")
 
         # Devices (dynamic users)
-        devices_tmp = None
-        try:
-            devices_tmp = self._prepare_devices_fixture(clients)
-            self._loaddata(devices_tmp)
-
-            # Device_metrics & telemetries
-            self._loaddata("03_device_metrics.json")
-            self._loaddata("04_telemetries.json")
-
-            # Rules & events
-            self._loaddata("01_rules.json")
-            self._loaddata("02_events.json")
-
-        finally:
-            if devices_tmp:
-                Path(devices_tmp).unlink(missing_ok=True)
-
-    def _prepare_devices_fixture(self, clients) -> str:
-        """
-        Prepare a temporary devices fixture with assigned user IDs.
-        """
         devices_app = apps.get_app_config("devices")
         source = Path(devices_app.path) / "fixtures" / "02_devices.json"
 
@@ -173,19 +152,26 @@ class Command(BaseCommand):
 
         try:
             with open(source, encoding="utf-8") as f:
-                data = json.load(f)
+                    data = json.load(f)
+            
+            half = len(data) // 2
+            for i, obj in enumerate(data):
+                obj["fields"]["user"] = clients[0].id if i < half else clients[1].id
+
+            with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=True) as tmp:
+                json.dump(data, tmp, indent=2, ensure_ascii=False)
+                tmp.flush() 
+                
+                self._loaddata(tmp.name)
         except json.JSONDecodeError as exc:
-            raise CommandError("Invalid JSON in 02_devices.json") from exc
+            raise CommandError(f"Invalid JSON in {source.name}: {exc}")
+        except OSError as exc:
+            raise CommandError(f"FileSystem error while processing {source.name}: {exc}") 
 
-        half = len(data) // 2
-        for i, obj in enumerate(data):
-            obj["fields"]["user"] = clients[0].id if i < half else clients[1].id
-
-        tmp = tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False)
-        json.dump(data, tmp, indent=2, ensure_ascii=False)
-        tmp.flush()
-
-        return tmp.name
+        self._loaddata("03_device_metrics.json")
+        self._loaddata("04_telemetries.json")
+        self._loaddata("01_rules.json")
+        self._loaddata("02_events.json")
 
     def _loaddata(self, fixture):
         """Load a single fixture via Django loaddata."""
