@@ -257,3 +257,11 @@ Before contributing, review the [API Authentication & Style Guide](./docs/api-gu
 ## Grading
 
 Intern work is evaluated according to a measurable rubric. See the full details [here](docs/grading.md).
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+## Code of Conduct
+
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
