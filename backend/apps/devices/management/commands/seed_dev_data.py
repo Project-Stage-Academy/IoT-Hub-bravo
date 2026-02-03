@@ -1,5 +1,6 @@
 import json
 import tempfile
+import os
 from pathlib import Path
 
 from django.db import transaction
@@ -29,7 +30,7 @@ class Command(BaseCommand):
         {
             "username": "dev_admin",
             "email": "dev.admin@example.com",
-            "password": "DevSecurePass",
+            "password": os.getenv("DEV_ADMIN_PASSWORD" ,"DevSecurePass"),
             "is_staff": True,
             "is_superuser": True,
             "role": UserRole.ADMIN.value,
@@ -37,7 +38,7 @@ class Command(BaseCommand):
         {
             "username": "alex_client",
             "email": "alex.smith@example.com",
-            "password": "ClientAccess1",
+            "password": os.getenv("DEV_CLIENT_ALEX_PASSWORD", "ClientAccess1"),
             "is_staff": False,
             "is_superuser": False,
             "role": UserRole.CLIENT.value,
@@ -45,7 +46,7 @@ class Command(BaseCommand):
         {
             "username": "jordan_client",
             "email": "j.doe@example.com",
-            "password": "ClientAccess2",
+            "password": os.getenv("DEV_CLIENT_JORDAN_PASSWORD", "ClientAccess2!"),
             "is_staff": False,
             "is_superuser": False,
             "role": UserRole.CLIENT.value,
@@ -71,7 +72,8 @@ class Command(BaseCommand):
         if self.dry_run and self.force:
             self.stdout.write(self.style.WARNING("--force is ignored in dry-run mode"))
 
-        self._ensure_safe_to_seed()
+        if not self._ensure_safe_to_seed():
+            return
 
         self.stdout.write(self.style.MIGRATE_HEADING("--- Dev Seeding Started ---"))
 
@@ -109,8 +111,6 @@ class Command(BaseCommand):
 
     def _upsert_user(self, username, email, password, is_staff, is_superuser, role):
         """Create or update a single user."""
-        if self.force:
-            User.objects.filter(username=username).delete()
 
         user, created = User.objects.get_or_create(
             username=username,
@@ -123,10 +123,13 @@ class Command(BaseCommand):
             },
         )
 
-        user.set_password(password)
-        user.save()
+        if created:
+            user.set_password(password)
+            user.save()
+            status = "Created"
+        else:
+            status = "Already exists"
 
-        status = "Created" if created else "Updated"
         self.stdout.write(f"{status} user: {username}")
         return user
 
@@ -200,19 +203,20 @@ class Command(BaseCommand):
         Prevent accidental seeding into non-empty database.
         """
         if self.dry_run:
-            return
+            return True
 
         has_users = User.objects.exists()
         if has_users and not self.force:
             self.stdout.write(
-                self.style.ERROR("Database is not empty. Use --force to overwrite existing data.")
+                self.style.WARNING("Database is not empty. Use --force to overwrite existing data.")
             )
-            sys.exit(0)
+            return False
         elif has_users and self.force:
             self.stdout.write(
                 self.style.WARNING("Warning: Existing users will be deleted due to --force.")
             )
             self._cleanup_db()
+            return True
 
     def _cleanup_db(self):
         """
@@ -228,6 +232,7 @@ class Command(BaseCommand):
             "devices.DeviceMetric",
             "devices.Device",
             "devices.Metric",
+            "users.User",
         ]
 
         for model_path in models_to_clear:
