@@ -1,10 +1,8 @@
 from django.db import models
-import uuid
 from django.utils.timezone import now
 
-
 class Event(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
     timestamp = models.DateTimeField(default=now)
     rule = models.ForeignKey("rules.Rule", on_delete=models.CASCADE)
     acknowledged = models.BooleanField(default=False, db_index=True)
