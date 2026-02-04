@@ -112,6 +112,7 @@ services:
   
   celery-exporter:
     image: danihodovic/celery-exporter
+    platform: linux/amd64
     container_name: celery-exporter
     command: --broker-url=${CELERY_BROKER_URL}
     ports:

@@ -24,7 +24,7 @@ from apps.devices.views import ingest_telemetry
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/telemetry/', ingest_telemetry, name="ingest-telemetry")
+    path('api/telemetry/', ingest_telemetry, name="ingest-telemetry"),
     path('prometheus/', include('django_prometheus.urls')), # access metrics at "prometheus/metrics/" 
     path('rules/', include('apps.rules.urls')),
 
