@@ -22,20 +22,14 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture
 def admin_user(db):
     return User.objects.create_user(
-        username="admin",
-        email="admin@example.com",
-        password="password123",
-        role="admin",
+        username="admin", email="admin@example.com", password="password123", role="admin"
     )
 
 
 @pytest.fixture
 def client_user(db):
     return User.objects.create_user(
-        username="client",
-        email="client@example.com",
-        password="password123",
-        role="client",
+        username="client", email="client@example.com", password="password123", role="client"
     )
 
 
@@ -72,9 +66,7 @@ def device_inactive(client_user):
 
 @pytest.fixture
 def valid_device(client_user):
-    return Device(
-        serial_id="SN-123", name="Active Device", user=client_user, is_active=True
-    )
+    return Device(serial_id="SN-123", name="Active Device", user=client_user, is_active=True)
 
 
 @pytest.fixture
@@ -281,8 +273,7 @@ def test_get_devices_as_client(client, client_user, client_token):
     Device.objects.create(serial_id="SER-2", name="D2", user=client_user)
 
     response = client.get(
-        "/api/devices/?limit=10&offset=0",
-        **{"HTTP_AUTHORIZATION": f"Bearer {client_token}"},
+        "/api/devices/?limit=10&offset=0", **{"HTTP_AUTHORIZATION": f"Bearer {client_token}"}
     )
 
     assert response.status_code == 200
@@ -377,9 +368,7 @@ def test_patch_device_as_admin(client, admin_user, admin_token):
 # admin DELETE
 @pytest.mark.django_db
 def test_delete_device_as_admin(client, admin_user, admin_token):
-    device = Device.objects.create(
-        serial_id="SER-300", name="ToDelete", user=admin_user
-    )
+    device = Device.objects.create(serial_id="SER-300", name="ToDelete", user=admin_user)
 
     response = client.delete(
         f"/api/devices/{device.id}/", **{"HTTP_AUTHORIZATION": f"Bearer {admin_token}"}

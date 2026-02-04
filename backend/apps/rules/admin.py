@@ -23,12 +23,10 @@ class RuleAdmin(admin.ModelAdmin):
     def last_triggered(self, obj):
         from django.db.models import Max
 
-        latest = Event.objects.filter(rule=obj).aggregate(Max("timestamp"))[
-            "timestamp__max"
-        ]
+        latest = Event.objects.filter(rule=obj).aggregate(Max("timestamp"))["timestamp__max"]
         if latest:
             return latest
-        return format_html('<span style="color: gray;">{}</span>', "Never")
+        return format_html('<span style="color: gray;">{}</span>', 'Never')
 
 
 @admin.register(Event)
@@ -60,9 +58,7 @@ class EventAdmin(admin.ModelAdmin):
         try:
             updated = queryset.update(acknowledged=True)
         except Exception as exc:
-            self.message_user(
-                request, f"Failed to acknowledge events: {exc}", level="error"
-            )
+            self.message_user(request, f"Failed to acknowledge events: {exc}", level="error")
             return
 
         self.message_user(request, f"{updated} event(s) marked as acknowledged.")
@@ -76,9 +72,7 @@ class EventAdmin(admin.ModelAdmin):
         try:
             updated = queryset.update(acknowledged=False)
         except Exception as exc:
-            self.message_user(
-                request, f"Failed to unacknowledge events: {exc}", level="error"
-            )
+            self.message_user(request, f"Failed to unacknowledge events: {exc}", level="error")
             return
 
         self.message_user(request, f"{updated} event(s) marked as unacknowledged.")

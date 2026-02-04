@@ -6,15 +6,9 @@ from django.views import View
 from apps.users.decorators import jwt_required, role_required
 
 from .models import Device
-from .serializers.device_serializers.base_device_serializer import (
-    DeviceOutputSerializer,
-)
-from .serializers.device_serializers.create_device_serializer import (
-    DeviceCreateV1Serializer,
-)
-from .serializers.device_serializers.update_device_serializer import (
-    DeviceUpdateV1Serializer,
-)
+from .serializers.device_serializers.base_device_serializer import DeviceOutputSerializer
+from .serializers.device_serializers.create_device_serializer import DeviceCreateV1Serializer
+from .serializers.device_serializers.update_device_serializer import DeviceUpdateV1Serializer
 from .services.device_service import DeviceService
 
 import json
@@ -22,9 +16,7 @@ import json
 
 @method_decorator(csrf_exempt, name="dispatch")
 @method_decorator(jwt_required, name="dispatch")
-@method_decorator(
-    role_required({"GET": ["client", "admin"], "POST": ["admin"]}), name="dispatch"
-)
+@method_decorator(role_required({"GET": ["client", "admin"], "POST": ["admin"]}), name="dispatch")
 class DeviceView(View):
 
     def parse_json_request(self, body: bytes):
@@ -38,23 +30,17 @@ class DeviceView(View):
             limit = int(request.GET.get("limit", 5))
             offset = int(request.GET.get("offset", 0))
         except ValueError:
-            return JsonResponse(
-                {"error": "limit and offset must be integers"}, status=400
-            )
+            return JsonResponse({"error": "limit and offset must be integers"}, status=400)
 
         if limit <= 0:
             return JsonResponse({"error": "Limit must be greater than 0"}, status=400)
         if offset < 0:
-            return JsonResponse(
-                {"error": "Offset must be positive integer"}, status=400
-            )
+            return JsonResponse({"error": "Offset must be positive integer"}, status=400)
         devices_qs = Device.objects.select_related("user").all().order_by("id")
         total = devices_qs.count()
         devices = devices_qs[offset : offset + limit]
         data = [DeviceOutputSerializer().to_representation(instance=d) for d in devices]
-        return JsonResponse(
-            {"total": total, "limit": limit, "offset": offset, "items": data}
-        )
+        return JsonResponse({"total": total, "limit": limit, "offset": offset, "items": data})
 
     def post(self, request):
         data, error_response = self.parse_json_request(request.body)
@@ -87,18 +73,13 @@ class DeviceView(View):
         return HttpResponseNotAllowed(["GET", "POST"])
 
 
-@method_decorator(csrf_exempt, name="dispatch")
-@method_decorator(jwt_required, name="dispatch")
+@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(jwt_required, name='dispatch')
 @method_decorator(
     role_required(
-        {
-            "GET": ["client", "admin"],
-            "PUT": ["admin"],
-            "PATCH": ["admin"],
-            "DELETE": ["admin"],
-        }
+        {"GET": ["client", "admin"], "PUT": ["admin"], "PATCH": ["admin"], "DELETE": ["admin"]}
     ),
-    name="dispatch",
+    name='dispatch',
 )
 class DeviceDetailView(View):
     def parse_json_request(self, body: bytes):

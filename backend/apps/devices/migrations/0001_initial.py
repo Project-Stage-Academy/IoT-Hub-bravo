@@ -6,13 +6,14 @@ from django.contrib.postgres.operations import CreateCollation
 
 class Migration(migrations.Migration):
 
-    dependencies = []
+    dependencies = [
+    ]
 
     operations = [
         CreateCollation(
             "case_insensitive",
             provider="icu",
-            locale="en-u-ks-level2",
+            locale="en-u-ks-level2", 
             deterministic=False,
         ),
     ]

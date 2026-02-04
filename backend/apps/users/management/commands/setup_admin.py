@@ -43,9 +43,7 @@ class Command(BaseCommand):
             raise CommandError(f"Admin setup failed: {exc}") from exc
 
         self.stdout.write(self.style.SUCCESS("Admin setup completed successfully."))
-        self.stdout.write(
-            "Available users (passwords come from environment variables):"
-        )
+        self.stdout.write("Available users (passwords come from environment variables):")
         self.stdout.write("  - DEV_SUPERUSER_USERNAME (Superuser)")
         self.stdout.write("  - DEV_VIEWER_USERNAME (Viewer)")
         self.stdout.write("  - DEV_OPERATOR_USERNAME (Operator)")
@@ -75,9 +73,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"Updated '{username}' to superuser.")
             return
 
-        user_model.objects.create_superuser(
-            username=username, email=email, password=password
-        )
+        user_model.objects.create_superuser(username=username, email=email, password=password)
         self.stdout.write(self.style.SUCCESS(f"Created superuser: {username}"))
 
     def _create_role_users(self, user_model):
@@ -114,9 +110,7 @@ class Command(BaseCommand):
             password = os.getenv(item["password_env"])
 
             if not password:
-                self.stdout.write(
-                    f"Skipping user '{username}': missing {item['password_env']}."
-                )
+                self.stdout.write(f"Skipping user '{username}': missing {item['password_env']}.")
                 continue
 
             user, created = user_model.objects.get_or_create(
@@ -189,9 +183,7 @@ class Command(BaseCommand):
                     codename=codename, content_type=content_type
                 ).first()
                 if perm is None:
-                    missing.append(
-                        f"{codename} ({content_type.app_label}.{content_type.model})"
-                    )
+                    missing.append(f"{codename} ({content_type.app_label}.{content_type.model})")
                     continue
                 perms.append(perm)
 

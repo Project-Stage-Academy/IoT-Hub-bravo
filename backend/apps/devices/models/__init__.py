@@ -4,9 +4,9 @@ from .device_metric import DeviceMetric
 from .telemetry import Telemetry
 
 __all__ = [
-    "Device",
-    "Metric",
-    "DeviceMetric",
-    "Telemetry",
-    "MetricDataType",
+    'Device',
+    'Metric',
+    'DeviceMetric',
+    'Telemetry',
+    'MetricDataType',
 ]
