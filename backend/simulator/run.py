@@ -23,16 +23,18 @@ django.setup()
 
 from apps.devices.models import Device, DeviceMetric  # noqa
 
+
 def positive_int(value):
     """Check if the count is a positive integer > 0"""
     try:
         ivalue = int(value)
     except ValueError:
         raise argparse.ArgumentTypeError(f"{value} is not a valid integer")
-    
+
     if ivalue <= 0:
         raise argparse.ArgumentTypeError(f"{value} must be a positive integer greater than 0")
     return ivalue
+
 
 def positive_float(value):
     """Check if the rate is a positive float > 0"""
@@ -40,10 +42,11 @@ def positive_float(value):
         fvalue = float(value)
     except ValueError:
         raise argparse.ArgumentTypeError(f"{value} is not a valid float")
-    
+
     if fvalue <= 0:
         raise argparse.ArgumentTypeError(f"{value} must be greater than 0")
     return fvalue
+
 
 def prompt(msg):
     """Prompt dev for input and return the stripped string"""
@@ -56,15 +59,15 @@ def parse_value(value, data_type):
 
     if data_type == "numeric":
         return float(val_clean)
-    
+
     if data_type == "bool":
         if val_clean in ("true", "1"):
             return True
         if val_clean in ("false", "0"):
             return False
-        
+
         raise ValueError(f"Invalid boolean value: '{value}'. Use true/false or 1/0.")
-    
+
     return value
 
 
