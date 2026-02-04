@@ -1,26 +1,20 @@
-
 import json
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.dateparse import parse_datetime
 
 from apps.devices.models import Device, DeviceMetric, Telemetry
 
 
-from django.http import JsonResponse, HttpResponseNotAllowed
 from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
 from django.views import View
 from apps.users.decorators import jwt_required, role_required
 
-from .models import Device
 from .serializers.device_serializers.base_device_serializer import DeviceOutputSerializer
 from .serializers.device_serializers.create_device_serializer import DeviceCreateV1Serializer
 from .serializers.device_serializers.update_device_serializer import DeviceUpdateV1Serializer
 from .services.device_service import DeviceService
-
-import json
 
 
 @method_decorator(csrf_exempt, name="dispatch")
