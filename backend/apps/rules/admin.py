@@ -20,9 +20,7 @@ class RuleAdmin(admin.ModelAdmin):
     readonly_fields = ("id", "last_triggered")
 
     def get_queryset(self, request):
-        return super().get_queryset(request).annotate(
-            _last_triggered=Max("event_set__timestamp")
-        )
+        return super().get_queryset(request).annotate(_last_triggered=Max("event_set__timestamp"))
 
     @admin.display(description="Status", boolean=True)
     def rule_status(self, obj):
@@ -53,9 +51,7 @@ class EventAdmin(admin.ModelAdmin):
     actions = ["mark_acknowledged", "mark_unacknowledged"]
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            "rule__device_metric__device"
-        )
+        return super().get_queryset(request).select_related("rule__device_metric__device")
 
     @admin.display(description="Device")
     def rule_device(self, obj):
@@ -66,13 +62,8 @@ class EventAdmin(admin.ModelAdmin):
         if not obj.pk:
             return format_html('<span style="color: gray;">{}</span>', 'No rule')
         dm = obj.rule.device_metric
-        list_url = (
-            reverse("admin:devices_telemetry_changelist") + f"?device_metric__id={dm.id}"
-        )
-        recent = (
-            Telemetry.objects.filter(device_metric=dm)
-            .order_by("-ts")[:10]
-        )
+        list_url = reverse("admin:devices_telemetry_changelist") + f"?device_metric__id={dm.id}"
+        recent = Telemetry.objects.filter(device_metric=dm).order_by("-ts")[:10]
         lines = [format_html('<a href="{}">View all telemetry for this metric</a>', list_url)]
         for t in recent:
             change_url = reverse("admin:devices_telemetry_change", args=[t.pk])
