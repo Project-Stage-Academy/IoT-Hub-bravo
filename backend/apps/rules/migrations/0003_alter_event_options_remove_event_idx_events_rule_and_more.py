@@ -16,6 +16,10 @@ class Migration(migrations.Migration):
             name='event',
             options={'verbose_name': 'Event', 'verbose_name_plural': 'Events'},
         ),
+        migrations.AddIndex(
+            model_name='event',
+            index=models.Index(fields=['rule', 'acknowledged'], name='idx_events_rule_ack'),
+        ),
         migrations.RemoveIndex(
             model_name='event',
             name='idx_events_rule',
@@ -34,9 +38,5 @@ class Migration(migrations.Migration):
             model_name='event',
             name='timestamp',
             field=models.DateTimeField(default=django.utils.timezone.now),
-        ),
-        migrations.AddIndex(
-            model_name='event',
-            index=models.Index(fields=['rule', 'acknowledged'], name='idx_events_rule_ack'),
         ),
     ]

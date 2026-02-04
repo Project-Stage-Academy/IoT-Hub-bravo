@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.timezone import now
 
+
 class Event(models.Model):
     id = models.AutoField(primary_key=True)
     timestamp = models.DateTimeField(default=now)
@@ -13,6 +14,7 @@ class Event(models.Model):
         verbose_name_plural = "Events"
         db_table = "events"
         indexes = [
+            models.Index(fields=["rule"], name="idx_events_rule"),
             models.Index(fields=["rule", "acknowledged"], name="idx_events_rule_ack"),
             models.Index(fields=["timestamp"], name="idx_events_time"),
         ]

@@ -86,7 +86,6 @@ class EventAdmin(admin.ModelAdmin):
             )
         return format_html("{}", mark_safe("".join(lines)))
 
-
     @admin.action(description="Mark selected events as acknowledged")
     def mark_acknowledged(self, request, queryset):
         if not request.user.has_perm("rules.change_event"):
