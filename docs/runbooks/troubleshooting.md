@@ -154,13 +154,13 @@ docker compose exec web python manage.py seed_db
 * Logs:
 
 ```bash
-docker compose logs -f <service_name>
+docker logs <service_name> -n <Number of last entries>
 ```
 
 * Prometheus metrics:
 
 ```text
-http://localhost:9090/targets
+http://localhost:9090/prometheus/metrics
 ```
 
 * Grafana dashboards:
