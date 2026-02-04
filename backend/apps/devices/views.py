@@ -17,30 +17,46 @@ def ingest_telemetry(request):
         return JsonResponse({"error": "invalid json"}, status=400)
 
     required = {"device", "metrics", "ts"}
-    if not required.issubset(payload):
-        return JsonResponse({"error": "missing fields"}, status=400)
+    if not required.issubset(payload) or not isinstance(payload["metrics"], dict):
+        return JsonResponse({"error": "invalid payload structure"}, status=400)
 
     ts = parse_datetime(payload["ts"])
 
+    if ts is None:
+        return JsonResponse({"error": "invalid timestamp format."}, status=400)
+    
     try:
         device = Device.objects.get(serial_id=payload["device"])
     except Device.DoesNotExist:
         return JsonResponse({"error": "device not found"}, status=404)
 
-    created = []
+    metric_names = list(payload["metrics"].keys())
+    device_metrics = {
+        dm.metric.metric_type: dm 
+        for dm in DeviceMetric.objects.filter(
+            device=device, 
+            metric__metric_type__in=metric_names
+        ).select_related('metric')
+    }
+
+    telemetry_instances = []
 
     for name, value in payload["metrics"].items():
-        try:
-            metric = Metric.objects.get(metric_type=name)
-            dm = DeviceMetric.objects.get(device=device, metric=metric)
-        except (Metric.DoesNotExist, DeviceMetric.DoesNotExist):
-            continue
-
-        telemetry = Telemetry(
-            device_metric=dm, ts=ts, value_jsonb={"t": metric.data_type, "v": value}
+        dm = device_metrics.get(name)
+        if not dm:
+            continue 
+        
+        telemetry_instances.append(
+            Telemetry(
+                device_metric=dm, 
+                ts=ts, 
+                value_jsonb={"t": dm.metric.data_type, "v": value}
+            )
         )
+    
+    Telemetry.objects.bulk_create(
+        telemetry_instances, 
+        ignore_conflicts=True
+    )
 
-        telemetry.save()
-        created.append(telemetry.id)
-
-    return JsonResponse({"status": "ok", "created": len(created)}, status=201)
+    return JsonResponse({"status": "ok", "created": len(telemetry_instances)}, status=201)

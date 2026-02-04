@@ -23,6 +23,27 @@ django.setup()
 
 from apps.devices.models import Device, DeviceMetric  # noqa
 
+def positive_int(value):
+    """Check if the count is a positive integer > 0"""
+    try:
+        ivalue = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value} is not a valid integer")
+    
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError(f"{value} must be a positive integer greater than 0")
+    return ivalue
+
+def positive_float(value):
+    """Check if the rate is a positive float > 0"""
+    try:
+        fvalue = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value} is not a valid float")
+    
+    if fvalue <= 0:
+        raise argparse.ArgumentTypeError(f"{value} must be greater than 0")
+    return fvalue
 
 def prompt(msg):
     """Prompt dev for input and return the stripped string"""
@@ -31,10 +52,19 @@ def prompt(msg):
 
 def parse_value(value, data_type):
     """Convert input value to the correct data type"""
+    val_clean = str(value).strip().lower()
+
     if data_type == "numeric":
-        return float(value)
+        return float(val_clean)
+    
     if data_type == "bool":
-        return value.lower() in ("true", "false", "1", "0")
+        if val_clean in ("true", "1"):
+            return True
+        if val_clean in ("false", "0"):
+            return False
+        
+        raise ValueError(f"Invalid boolean value: '{value}'. Use true/false or 1/0.")
+    
     return value
 
 
@@ -123,9 +153,9 @@ def main():
         help="Data sending mode http/mqtt",
     )
     parser.add_argument("--device", required=True, help="Device serial ID")
-    parser.add_argument("--rate", type=float, default=1, help="Messages per second")
-    parser.add_argument("--count", type=int, default=1, help="Number of messages to send")
-    parser.add_argument("--schema-version", type=int, default=1, help="Message schema version")
+    parser.add_argument("--rate", type=positive_float, default=1, help="Messages per second")
+    parser.add_argument("--count", type=positive_int, default=1, help="Number of messages to send")
+    parser.add_argument("--schema-version", type=str, default="v1", help="Message schema version")
     parser.add_argument(
         "--value-generation",
         choices=["manual", "random", "non-interactive"],
@@ -134,8 +164,8 @@ def main():
     )
     parser.add_argument(
         "--http-url",
-        default="http://localhost:8000/api/telemetry/",
-        help="HTTP endpoint URL",
+        default=os.getenv("TELEMETRY_URL", "http://web:8000/api/telemetry/"),
+        help="HTTP endpoint URL (defaults to TELEMETRY_URL env or http://web:8000/...)",
     )
     parser.add_argument("--mqtt-broker", default="mosquitto", help="MQTT broker hostname")
     parser.add_argument("--mqtt-topic", default="telemetry", help="MQTT topic to publish to")
@@ -185,7 +215,7 @@ def main():
         metrics_payload = {name: provider.get() for name, provider in providers.items()}
 
         payload = {
-            "schema_version": 1,
+            "schema_version": args.schema_version,
             "device": device.serial_id,
             "ts": datetime.now(timezone.utc).isoformat(),
             "metrics": metrics_payload,
@@ -202,7 +232,8 @@ def main():
         except Exception as e:
             print(f"[{i+1}/{args.count}] failed: {e}")
 
-        time.sleep(delay)
+        if i < args.count - 1:
+            time.sleep(delay)
 
 
 if __name__ == "__main__":
