@@ -14,27 +14,22 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
-<<<<<<< us-2-1-device-model
-from django.urls import path,include
-=======
 from django.urls import path, include
 
->>>>>>> main
 from django.conf import settings
 from django.conf.urls.static import static
-from apps.users.views import login 
+from apps.users.views import login
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-<<<<<<< us-2-1-device-model
+    path("admin/", admin.site.urls),
     path("api/auth/login/", login, name="user-auth"),
     path("api/devices/", include("apps.devices.urls.device_urls")),
-=======
-    path('prometheus/', include('django_prometheus.urls')), # access metrics at "prometheus/metrics/" 
-    path('rules/', include('apps.rules.urls')),
-
->>>>>>> main
+    path(
+        "prometheus/", include("django_prometheus.urls")
+    ),  # access metrics at "prometheus/metrics/"
+    path("rules/", include("apps.rules.urls")),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

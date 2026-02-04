@@ -1,7 +1,7 @@
 from django.conf import settings
 import logging
 
-import ipaddress 
+import ipaddress
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
@@ -31,7 +31,7 @@ def _compile_rules():
     prefix = []
 
     for path, config in rules.items():
-        if path.endswith('/'):
+        if path.endswith("/"):
             prefix.append((path, config))
         else:
             exact[path] = config
@@ -45,19 +45,20 @@ def _compile_rules():
 ClientIpResolver is a class that resolves the client IP address from the request.
 """
 
+
 class ClientIPResolver:
 
     @staticmethod
     def get_ip(request):
-        remote_addr = request.META.get('REMOTE_ADDR')
+        remote_addr = request.META.get("REMOTE_ADDR")
 
         if not remote_addr:
-            return '127.0.0.1'
+            return "127.0.0.1"
 
         if not ClientIPResolver._is_trusted_proxy(remote_addr):
             return remote_addr
 
-        forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
+        forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
 
         if not forwarded:
             return remote_addr
@@ -94,9 +95,11 @@ class ClientIPResolver:
         except ValueError:
             return False
 
+
 """
 RateLimiter is a class that checks if a request is limited.
 """
+
 
 class RateLimiter:
 
@@ -114,10 +117,12 @@ class RateLimiter:
             return False
 
         return current > limit
-            
+
+
 """
 RateLimitResponseFactory is a class that builds the response for a rate limit exceeded.
 """
+
 
 class RateLimitResponseFactory:
 
@@ -141,13 +146,14 @@ class RateLimitResponseFactory:
 RateLimitRuleResolver is a class that resolves the rate limit rule for a given path.
 """
 
+
 class RateLimitRuleResolver:
 
     @staticmethod
     def _normalize_path(path):
         """Add trailing slash for consistent matching with rules like /api/ and /api/login/."""
-        if path and not path.endswith('/'):
-            return path + '/'
+        if path and not path.endswith("/"):
+            return path + "/"
         return path
 
     @staticmethod
@@ -155,7 +161,7 @@ class RateLimitRuleResolver:
         _compile_rules()
         path = RateLimitRuleResolver._normalize_path(path)
 
-        rule = EXACT_RULES.get(path) or EXACT_RULES.get(path.rstrip('/'))
+        rule = EXACT_RULES.get(path) or EXACT_RULES.get(path.rstrip("/"))
         if rule:
             return rule
 
@@ -170,6 +176,7 @@ class RateLimitRuleResolver:
 RateLimitMiddleware is a class that is the main middleware for rate limiting.
 """
 
+
 class RateLimitMiddleware(MiddlewareMixin):
 
     def process_request(self, request):
@@ -182,7 +189,7 @@ class RateLimitMiddleware(MiddlewareMixin):
 
         identifier = self._get_identifier(request)
 
-        normalized = RateLimitRuleResolver._normalize_path(request.path).rstrip('/')
+        normalized = RateLimitRuleResolver._normalize_path(request.path).rstrip("/")
         key = f"rl:{normalized}:{request.method}:{identifier}"
 
         if RateLimiter.is_limited(key, rule["limit"], rule["window"]):
