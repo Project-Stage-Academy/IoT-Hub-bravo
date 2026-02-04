@@ -1,0 +1,38 @@
+---
+name: Lint Observability Configs
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  lint-observability:
+    name: Lint Prometheus & Grafana
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint Prometheus YAML
+        run: yamllint devops/prometheus.yml
+
+      - name: Lint Grafana YAML
+        run: |
+          find grafana -type f \( -name "*.yml" -o -name "*.yaml" \) -exec yamllint {} +
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install jsonlint
+        run: npm install -g jsonlint
+
+      - name: Lint Grafana JSON
+        run: |
+          find grafana -type f -name "*.json" -exec jsonlint -q {} \;
