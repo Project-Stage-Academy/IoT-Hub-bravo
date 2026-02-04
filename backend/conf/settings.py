@@ -233,8 +233,6 @@ CELERY_TASK_MAX_RETRIES = 10
 
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_RESULT_EXPIRES = 60 * 60
-<<<<<<< us-2-1-device-model
-=======
 
 # LOGGING configuration for django and celery
 DJANGO_LOG_LEVEL = config('DJANGO_LOG_LEVEL', default = 'INFO')
@@ -309,4 +307,3 @@ LOGGING = {
     },
 }
 
->>>>>>> main
