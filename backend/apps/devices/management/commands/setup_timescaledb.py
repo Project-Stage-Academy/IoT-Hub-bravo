@@ -8,23 +8,23 @@ import sys
 
 
 class Command(BaseCommand):
-    help = 'Setup TimescaleDB for telemetry table (hypertable, compression, retention)'
+    help = "Setup TimescaleDB for telemetry table (hypertable, compression, retention)"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--force',
-            action='store_true',
-            help='Force setup even if already configured as hypertable',
+            "--force",
+            action="store_true",
+            help="Force setup even if already configured as hypertable",
         )
         parser.add_argument(
-            '--dry-run',
-            action='store_true',
-            help='Show what would be executed without making any changes',
+            "--dry-run",
+            action="store_true",
+            help="Show what would be executed without making any changes",
         )
 
     def handle(self, *args, **options):
-        force = options['force']
-        dry_run = options['dry_run']
+        force = options["force"]
+        dry_run = options["dry_run"]
 
         if dry_run:
             self.stdout.write(self.style.NOTICE("DRY-RUN mode: no changes will be applied"))

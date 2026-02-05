@@ -14,6 +14,8 @@ x-django-base: &django_base
       condition: service_healthy
     redis:
       condition: service_healthy
+    mosquitto:
+      condition: service_healthy
 
 services:
   swagger-ui:
@@ -37,6 +39,7 @@ services:
       - media_data:/app/media
     ports:
       - "8000:8000"
+
 
   db:
     image: timescale/timescaledb:latest-pg16
@@ -75,6 +78,7 @@ services:
       retries: 5
       start_period: 10s
 
+
   worker:
     <<: *django_base
     image: iot-hub-worker
@@ -108,6 +112,7 @@ services:
   
   celery-exporter:
     image: danihodovic/celery-exporter
+    platform: linux/amd64
     container_name: celery-exporter
     command: --broker-url=${CELERY_BROKER_URL}
     ports:
@@ -149,6 +154,21 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     networks:
       - backend
+
+  mosquitto:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+    networks:
+      - backend
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    healthcheck:
+      test: ["CMD-SHELL", "exit 0"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   media_data:
