@@ -17,17 +17,15 @@ rules:
     message: "Server entry must have a non-empty url"
     severity: error
 
-  schema-should-have-example-or-examples:
-    description: "Every schema should have at least one example (example or examples)"
+  schema-should-have-example:
+    description: "Every schema should have an example"
     given: "$.components.schemas[*]"
     then:
-      - field: example
-        function: defined
-      - field: examples
-        function: defined
-        anyOf: true
-    message: "Schema '{{path}}' should have 'example' or 'examples'"
+      field: example
+      function: defined
+    message: "Schema '{{path}}' should have 'example'"
     severity: error
+
 
   operation-description:
     given: "$.paths[*][get,post,put,patch,delete,options,head]"
@@ -74,13 +72,14 @@ rules:
     description: "Operation should define at least one 2xx response"
     given: "$.paths[*][get,post,put,patch,delete,options,head].responses"
     then:
-    - field: "200"
-      function: defined
-    - field: "201"
-      function: defined
-    - field: "204"
-      function: defined
-      anyOf: true
+      function: schema
+      functionOptions:
+        schema:
+          anyOf:
+            - required: ["200"]
+            - required: ["201"]
+            - required: ["202"]
+            - required: ["204"]
     message: "Operation should have at least one successful (2xx) response"
     severity: error
 
