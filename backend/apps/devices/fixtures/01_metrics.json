@@ -1,0 +1,58 @@
+[
+  {
+    "model": "devices.metric",
+    "pk": 1,
+    "fields": {
+      "metric_type": "temperature",
+      "data_type": "numeric"
+    }
+  },
+  {
+    "model": "devices.metric",
+    "pk": 2,
+    "fields": {
+      "metric_type": "humidity",
+      "data_type": "numeric"
+    }
+  },
+  {
+    "model": "devices.metric",
+    "pk": 3,
+    "fields": {
+      "metric_type": "pressure",
+      "data_type": "numeric"
+    }
+  },
+  {
+    "model": "devices.metric",
+    "pk": 4,
+    "fields": {
+      "metric_type": "status",
+      "data_type": "str"
+    }
+  },
+  {
+    "model": "devices.metric",
+    "pk": 5,
+    "fields": {
+      "metric_type": "firmware_version",
+      "data_type": "str"
+    }
+  },
+  {
+    "model": "devices.metric",
+    "pk": 6,
+    "fields": {
+      "metric_type": "motion_detected",
+      "data_type": "bool"
+    }
+  },
+  {
+    "model": "devices.metric",
+    "pk": 7,
+    "fields": {
+      "metric_type": "online",
+      "data_type": "bool"
+    }
+  }
+]

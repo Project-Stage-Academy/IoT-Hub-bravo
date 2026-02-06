@@ -373,7 +373,44 @@ To automate backups on a server, add the script to the system's `crontab`.
 
 ### Overview
 
-The `seed_db` management command populates the database with fixture data for development and testing. It is **idempotent**, meaning it can be safely run multiple times without corrupting data.
+The `seed_dev_data` management command populates the database with fixture data for development and testing. It is **idempotent**, meaning it can be safely run multiple times without corrupting data.
+
+Specifically, it does the following:
+
+* **Default Users & Roles:**
+Creates predefined users with assigned roles and passwords:
+
+> dev_admin – Admin role (UserRole.ADMIN), password: DevSecurePass
+
+> alex_client – Client role (UserRole.CLIENT), password: ClientAccess1
+
+> jordan_client – Client role (UserRole.CLIENT), password: ClientAccess2
+
+These users are created or updated depending on the current state of the database.
+
+* **Sample Devices:**
+Registers initial IoT devices for testing. Devices are dynamically assigned to client users (alex_client and jordan_client) to simulate realistic ownership.
+
+* **Metrics & Bindings:**
+Sets up device metrics (e.g., temperature, humidity, battery level) and binds them to devices. Metrics are loaded in the correct dependency order to ensure consistency.
+
+* **Telemetry Data:**
+Populates sample telemetry readings for devices, providing realistic time-series data that can be used for testing dashboards, rules, and aggregations.
+
+* **Initial Rules & Events:**
+Defines default business logic rules and populates sample events to simulate triggers and actions within the system.
+
+* **Execution Options:**
+
+```--force```: Clears existing seeded data and recreates it from fixtures. Ensures a clean state for development testing.
+
+```--dry-run```: Simulates the seeding process without writing anything to the database. Useful for verifying fixture validity and sequence order.
+
+**Notes:**
+
+* The devices fixture is generated dynamically to assign users correctly; a temporary JSON file is created for this purpose and automatically cleaned up after loading.
+
+* This command is safe to run multiple times; --force ensures a full refresh, while running without it will fail if seeded data already exists.
 
 ### Automatic Seeding
 
@@ -393,7 +430,7 @@ ENABLE_SEED_DATA=false
 To manually trigger data seeding:
 
 ```bash
-docker compose exec web python manage.py seed_db
+docker compose exec web python manage.py seed_dev_data
 ```
 
 ### Resetting Seeded Data
@@ -405,7 +442,7 @@ To clear all seeded data and start fresh:
 docker compose exec web python manage.py flush
 
 # Then re-seed
-docker compose exec web python manage.py seed_db
+docker compose exec web python manage.py seed_dev_data
 ```
 
 > ⚠️ **WARNING**: `flush` removes **all** database data, including any data you've manually created. Use only in development environments.

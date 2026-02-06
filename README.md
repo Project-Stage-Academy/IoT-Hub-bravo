@@ -190,16 +190,26 @@ If you modify `models.py` files or need to trigger database tasks manually, use 
 
 #### **Initial Data Population (Seed)**
 
-The `seed_db` command is **idempotent** (safe to run multiple times). It populates the database with essential development objects:
+The `seed_dev_data` command is **idempotent** (safe to run multiple times). It populates the database with essential development objects:
 
-* **Default Users & Roles:** Creates a `testuser` (Client role) and an `adminuser` (Admin role) with pre-configured passwords.
-* **Sample Devices:** Registers initial IoT devices for testing.
-* **Metrics & Bindings:** Sets up device-metric associations (e.g., temperature, humidity, battery level).
-* **Initial Rules & Events:** Defines default logic rules and populates sample event data.
+* **Default Users & Roles:**
+
+> dev_admin – Admin role (UserRole.ADMIN), password: DevSecurePass
+
+> alex_client – Client role (UserRole.CLIENT), password: ClientAccess1
+
+> jordan_client – Client role (UserRole.CLIENT), password: ClientAccess2
+
+* **Sample Devices:**
+* **Metrics & Bindings:**
+* **Telemetry Data:**
+* **Initial Rules & Events:**
+* **Execution Options:**
+
 
 To manually refresh or verify the initial state:
 ```bash
-docker compose exec web python manage.py seed_db
+docker compose exec web python manage.py seed_dev_data
 ```
 
 For more details on seed data fixtures and structure, see [docs/schema.md](./docs/schema.md#data-seeding).
