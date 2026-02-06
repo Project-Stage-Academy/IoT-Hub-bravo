@@ -19,7 +19,7 @@ class RuleProcessor:
         rules = Rule.objects.filter(is_active=True, device_metric=telemetry.device_metric)
 
         for rule in rules:
-            if ConditionEvaluator.evaluate_condition(rule.condition, telemetry):
+            if ConditionEvaluator.evaluate_condition(rule, telemetry):
                 Action.dispatch_action(rule)
                 
 
