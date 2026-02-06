@@ -10,17 +10,18 @@ class Action:
     def __init__(self):
         pass
 
-    def notify(self):
+    def _notify(self): # underscore??????
         pass
 
-    def webhook(self):
+    def _webhook(self): # underscore??????
         pass
     
-    def archieve(self):
+    def _archieve(self): # underscore??????
         pass
     
     def dispatch_action(self) -> Event:
-        pass
+        logger.info("some action")
+        return None
 
 
 # def dispatch_action(action_name, event):
