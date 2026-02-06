@@ -2,7 +2,7 @@ from django.db import models
 
 
 class Rule(models.Model):
-    id = models.AutoField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=255, null=False)
     description = models.TextField(blank=True, null=True)
     condition = models.JSONField(null=False)

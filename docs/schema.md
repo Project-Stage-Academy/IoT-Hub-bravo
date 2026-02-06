@@ -4,6 +4,7 @@
 ## Table of Contents
 - [Entity Relationship Diagram](#entity-relationship-diagram)
 - [Recommended Indexes](#recommended-indexes)
+- [Event Model Semantics](#event-model-semantics)
 - [TimescaleDB Hypertable Setup](#timescaledb-hypertable-setup)
 - [Query Optimization Examples](#query-optimization-examples)
 - [Database Backup and Recovery](#database-backup-and-recovery)
@@ -74,10 +75,11 @@ erDiagram
     }
 
     EVENTS {
-        bigint    id         PK "bigserial, auto-increment"
-        timestamp timestamp
-        int       rule_id    FK "→ rules.id, not null"
-        timestamp created_at "default: CURRENT_TIMESTAMP, not null"
+        int       id            PK "serial, auto-increment"
+        timestamp timestamp    "default: now()"
+        int       rule_id       FK "→ rules.id, not null"
+        boolean   acknowledged  "default: false, not null, indexed"
+        timestamp created_at    "default: CURRENT_TIMESTAMP, not null"
     }
 ```
 
@@ -93,11 +95,26 @@ erDiagram
 | device_metrics   | idx_device_metrics_metric           | metric_id                        | normal     | Quick access to devices measuring a specific metric                |
 | rules            | idx_rules_device_metric             | device_metric_id                 | normal     | Find rules for specific device+metric                              |
 | rules            | idx_rules_is_active                 | is_active                        | normal     | Filter active rules quickly                                        |
-| events           | idx_events_timestamp                | timestamp                        | normal     | Time-range queries, sorting events by time                         |
-| events           | idx_events_rule                     | rule_id                          | normal     | Find all events triggered by a rule                                |
+| events           | idx_events_time                     | timestamp                        | normal     | Time-range queries, sorting events by time                         |
+| events           | idx_events_rule_ack                 | rule_id, acknowledged            | normal     | Find events by rule and filter by acknowledged status              |
 | telemetries      | unique_telemetry_per_metric_time    | device_metric_id, ts             | **unique** | Prevent duplicate measurements at same timestamp                   |
 | telemetries      | idx_telemetries_metric_time         | device_metric_id, ts             | normal     | Fast time-series queries per metric (most frequent access pattern) |
 | telemetries      | idx_telemetries_timestamp           | ts                               | normal     | Global time-range queries across all telemetry                     |
+
+
+## Event Model Semantics
+
+**Event** is a record emitted when a rule condition is satisfied (rule "fires"). Each row represents one occurrence of a rule trigger.
+
+| Field | Meaning |
+|-------|--------|
+| **id** | Primary key (serial). May be migrated to bigint if event volume grows. |
+| **timestamp** | When the rule actually fired (time of the triggering condition). Set at event creation. |
+| **rule_id** | The rule that generated this event. Required; cascade delete when rule is removed. |
+| **acknowledged** | Whether an operator has acknowledged the event (e.g. in Admin). Default `false`; set to `true` when reviewed. |
+| **created_at** | When the event row was inserted into the database. Use for ordering/audit; use `timestamp` for "when it happened". |
+
+Typical use: list recent events by `timestamp`, filter by `rule_id` and `acknowledged` (index `idx_events_rule_ack`), and sort by time (`idx_events_time`).
 
 
 ## DBML LINK
