@@ -11,6 +11,7 @@ Before starting, ensure the following are installed:
 * Docker Desktop (macOS/Windows) or Docker Engine (Linux)
 * Docker Compose
 * Git
+* Python 3.10, Django
 
 ---
 
@@ -90,7 +91,7 @@ docker compose exec web python manage.py makemigrations
 docker compose exec web python manage.py migrate
 
 # Seed database manually
-docker compose exec web python manage.py seed_db
+docker compose exec web python manage.py seed_dev_data
 ```
 
 ---
@@ -110,7 +111,7 @@ docker compose exec web python manage.py createsuperuser
 Ensure code is working correctly:
 
 ```bash
-docker compose exec web python manage.py test
+docker compose exec web pytest
 ```
 
 All tests should pass.

@@ -3,9 +3,9 @@
 ## Running the stack
 1. Make sure Docker and Docker Compose are installed.
 2. Start the stack:
-   ```bash
+```bash
    docker compose up -d --build
-````
+```
 
 3. Verify that the services are running:
 
@@ -38,8 +38,6 @@
    ```
 2. Restart the container so that the metric appears in Prometheus.
 3. Add a panel in Grafana → Add Panel → Query → select the new metric.
-
-````
 
 ---
 
