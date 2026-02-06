@@ -1,37 +1,25 @@
 import logging
+from django.utils import timezone
 
-from models.rule import Rule
-from models.event import Event
+from apps.rules.models.event import Event
 
 logger = logging.getLogger(__name__)
 
 
 class Action:
-    def __init__(self):
+    def _notify(self):
         pass
 
-    def _notify(self): # underscore??????
-        pass
-
-    def _webhook(self): # underscore??????
+    def _webhook(self):
         pass
     
-    def _archieve(self): # underscore??????
+    def _archieve(self):
         pass
     
-    def dispatch_action(self) -> Event:
-        logger.info("some action")
-        return None
-
-
-# def dispatch_action(action_name, event):
-#     """
-
-#     """
-
-#     if action_name == "notify":
-#         logger.info(f"Notify action for event {event.id}")
-#     elif action_name == "webhook":
-#         logger.info(f"Webhook stub called for event {event.id}")
-#     elif action_name == "archive":
-#         logger.info(f"Archive action for event {event.id}")
+    @staticmethod
+    def dispatch_action(rule) -> Event:
+        logger.info("crete event on action")
+        event = Event.objects.create(rule=rule,
+                                    timestamp=timezone.now(),
+                                    )
+        return event

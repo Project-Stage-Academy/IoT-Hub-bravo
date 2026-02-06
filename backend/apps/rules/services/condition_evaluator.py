@@ -2,7 +2,7 @@ import logging
 import operator
 # add time for eval
 
-from devices.models.telemetry import Telemetry
+from apps.devices.models.telemetry import Telemetry
 
 logger = logging.getLogger(__name__)
 
