@@ -2,7 +2,7 @@ from celery import shared_task
 import logging
 
 from apps.rules.models.rule import Rule
-from apps.rules.models.event import Event
+from apps.devices.models.telemetry import Telemetry 
 from apps.rules.services.action import Action
 from apps.rules.services.condition_evaluator import ConditionEvaluator
 
@@ -24,8 +24,9 @@ class RuleProcessor:
                 
 
 @shared_task
-def run_rule_processor_task(telemetry):
+def run_rule_processor_task(telemetry_id: int):
     """
-    Celery task to run RuleProcessor asynchronously on the given telemetry.
+    Celery task to run RuleProcessor asynchronously on the given telemetry
     """
-    RuleProcessor.run(telemetry)
+    telemetry = Telemetry.objects.get(id=telemetry_id)
+    RuleProcessor().run(telemetry)

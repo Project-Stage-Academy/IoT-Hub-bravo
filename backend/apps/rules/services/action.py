@@ -18,7 +18,7 @@ class Action:
     
     @staticmethod
     def dispatch_action(rule) -> Event:
-        logger.info("crete event on action")
+        logger.info("create event on action")
         event = Event.objects.create(rule=rule,
                                     timestamp=timezone.now(),
                                     )

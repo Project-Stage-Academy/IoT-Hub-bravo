@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-
+from celery.schedules import crontab
 from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -232,6 +232,13 @@ CELERY_TASK_MAX_RETRIES = 10
 
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_RESULT_EXPIRES = 60 * 60
+
+CELERY_BEAT_SCHEDULE = {
+    "run-rule-processor-every-minute": {
+        "task": "app.tasks.run_rule_processor",
+        "schedule": crontab(minute="*/1"),
+    },
+}
 
 # LOGGING configuration for django and celery
 DJANGO_LOG_LEVEL = config('DJANGO_LOG_LEVEL', default = 'INFO')

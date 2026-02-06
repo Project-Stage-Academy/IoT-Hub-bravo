@@ -17,10 +17,7 @@ COMPARISON_OPERATORS = {
 }
 
 
-class ConditionEvaluator:
-    def __init__(self):
-        pass
-    
+class ConditionEvaluator:    
     @staticmethod
     def _evaluate_threshold(rule: Rule, telemetry: Telemetry):
         """eval rule for 'threshold' type"""
