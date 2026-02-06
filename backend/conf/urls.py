@@ -21,8 +21,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 from apps.users.views import login 
 
+from apps.devices.views import ingest_telemetry
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/telemetry/', ingest_telemetry, name="ingest-telemetry"),
     path("api/auth/login/", login, name="user-auth"),
     path("api/devices/", include("apps.devices.urls.device_urls")),
     path('prometheus/', include('django_prometheus.urls')), # access metrics at "prometheus/metrics/" 
