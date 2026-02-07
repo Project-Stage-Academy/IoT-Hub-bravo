@@ -14,25 +14,64 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: |
+          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+
+      - name: Get changed observability files
+        id: changed-files
+        run: |
+          CHANGED_YAML=$(git diff --name-only --diff-filter=ACMRT origin/${{ github.base_ref }}...HEAD | grep -E '(devops/prometheus\.yml|grafana/.*\.(yml|yaml))' || true)
+          CHANGED_JSON=$(git diff --name-only --diff-filter=ACMRT origin/${{ github.base_ref }}...HEAD | grep 'grafana/.*\.json' || true)
+          
+          echo "Changed YAML files:"
+          echo "$CHANGED_YAML"
+          echo "Changed JSON files:"
+          echo "$CHANGED_JSON"
+          
+          echo "yaml_files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED_YAML" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "json_files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          if [ -z "$CHANGED_YAML" ] && [ -z "$CHANGED_JSON" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Install yamllint
+        if: steps.changed-files.outputs.has_changes == 'true'
         run: pip install yamllint
 
-      - name: Lint Prometheus YAML
-        run: yamllint devops/prometheus.yml
-
-      - name: Lint Grafana YAML
+      - name: Lint Prometheus & Grafana YAML
+        if: steps.changed-files.outputs.has_changes == 'true'
         run: |
-          find grafana -type f \( -name "*.yml" -o -name "*.yaml" \) -exec yamllint {} +
+          CHANGED_YAML="${{ steps.changed-files.outputs.yaml_files }}"
+          if [ -n "$CHANGED_YAML" ]; then
+            echo "$CHANGED_YAML" | xargs yamllint
+          fi
 
       - name: Set up Node.js
+        if: steps.changed-files.outputs.has_changes == 'true'
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
       - name: Install jsonlint
+        if: steps.changed-files.outputs.has_changes == 'true'
         run: npm install -g jsonlint
 
       - name: Lint Grafana JSON
+        if: steps.changed-files.outputs.has_changes == 'true'
         run: |
-          find grafana -type f -name "*.json" -exec jsonlint -q {} \;
+          CHANGED_JSON="${{ steps.changed-files.outputs.json_files }}"
+          if [ -n "$CHANGED_JSON" ]; then
+            echo "$CHANGED_JSON" | xargs -I {} jsonlint -q {}
+          fi
