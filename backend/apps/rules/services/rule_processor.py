@@ -2,7 +2,7 @@ from celery import shared_task
 import logging
 
 from apps.rules.models.rule import Rule
-from apps.devices.models.telemetry import Telemetry 
+from apps.devices.models.telemetry import Telemetry
 from apps.rules.services.action import Action
 from apps.rules.services.condition_evaluator import ConditionEvaluator
 
@@ -21,7 +21,7 @@ class RuleProcessor:
         for rule in rules:
             if ConditionEvaluator.evaluate_condition(rule, telemetry):
                 Action.dispatch_action(rule)
-                
+
 
 @shared_task
 def run_rule_processor_task(telemetry_id: int):

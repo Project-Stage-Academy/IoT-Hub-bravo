@@ -14,9 +14,7 @@ class Command(BaseCommand):
         # telemetry last min
         since = timezone.now() - timezone.timedelta(minutes=1)
 
-        telemetry_qs = Telemetry.objects.filter(
-            created_at__gte=since
-        ).order_by("created_at")
+        telemetry_qs = Telemetry.objects.filter(created_at__gte=since).order_by("created_at")
 
         count = 0
         processor = RuleProcessor()
@@ -25,6 +23,4 @@ class Command(BaseCommand):
             processor.run(telemetry)
             count += 1
 
-        self.stdout.write(
-            self.style.SUCCESS(f"Processed {count} telemetry events")
-        )
+        self.stdout.write(self.style.SUCCESS(f"Processed {count} telemetry events"))
