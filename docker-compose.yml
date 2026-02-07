@@ -20,7 +20,7 @@ x-django-base: &django_base
 services:
   swagger-ui:
     image: swaggerapi/swagger-ui
-    container_name: openAPI_specification
+    container_name: swagger-ui
     restart: always
     ports:
       - "5433:8080"

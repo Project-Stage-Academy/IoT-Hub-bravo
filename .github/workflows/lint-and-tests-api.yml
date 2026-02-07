@@ -1,0 +1,36 @@
+name: API Contract Tests
+
+on:
+  push:
+    branches: [ main]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  contract-testing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (for Prism & Spectral)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Python (for Schemathesis)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          npm install -g @stoplight/prism-cli @stoplight/spectral-cli
+          pip install schemathesis
+
+      - name: Make scripts executable
+        run: chmod +x scripts/*.sh
+
+      - name: Run OpenAPI Validation (Lint + Mock + Contract Tests)
+        run: ./scripts/validate-openapi.sh

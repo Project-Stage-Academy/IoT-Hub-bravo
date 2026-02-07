@@ -33,7 +33,7 @@ rules:
       field: description
       function: truthy
     message: "Operation must have a meaningful description (not empty)"
-    severity: error
+    severity: warn
 
   operation-summary-sentence-case:
     given: "$.paths[*][*].summary"

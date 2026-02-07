@@ -9,6 +9,7 @@ info:
 
 servers:
   - url: http://localhost:8000
+    description: Local development server
 
 tags:
   - name: Authentication
@@ -124,6 +125,12 @@ paths:
                 $ref: '#/components/schemas/PaginatedDevices'
         '404':
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
