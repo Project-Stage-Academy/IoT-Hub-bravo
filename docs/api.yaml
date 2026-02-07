@@ -19,7 +19,7 @@ tags:
     description: CRUD operations for telemetry
 
 paths:
-  /api/auth/login/:
+  /api/auth/login:
     post:
       tags:
         - Authentication
@@ -91,7 +91,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/devices/:
+  /api/devices:
     get:
       tags:
         - Devices
@@ -155,7 +155,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/devices/{id}/:
+  /api/devices/{id}:
     get:
       tags:
         - Devices
@@ -377,7 +377,6 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/TelemetryIngestSingleResponse"
                   - $ref: "#/components/schemas/TelemetryIngestBatchResponse"
-                  - $ref: "#/components/schemas/TelemetryIngestAsyncResponse"
               examples:
                 single_ok:
                   summary: Single payload accepted
@@ -401,14 +400,8 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    enum: [ "accepted" ]
-                    example: "accepted"
-                required:
-                  - status
+                $ref: "#/components/schemas/TelemetryIngestAsyncResponse"
+
         '400':
           description: Invalid request
           content:
@@ -698,6 +691,7 @@ components:
           example: 21.5
         - type: string
           example: "ok"
+      example: 21.5
 
     Telemetry:
       type: object
@@ -757,6 +751,14 @@ components:
         - device
         - metrics
         - ts
+      example:
+        schema_version: 1
+        device: "DEV-001"
+        ts: "2026-02-04T12:00:00Z"
+        metrics:
+          temperature: 21.5
+          door_open: false
+          status: "ok"
 
     TelemetryIngestBatch:
       type: array
@@ -778,6 +780,7 @@ components:
 
     TelemetryIngestSingleResponse:
       type: object
+      additionalProperties: false
       properties:
         status:
           type: string
@@ -794,9 +797,14 @@ components:
         - status
         - created
         - errors
+      example:
+        status: "ok"
+        created: 3
+        errors: { }
 
     TelemetryIngestBatchItemResult:
       type: object
+      additionalProperties: false
       properties:
         created:
           type: integer
@@ -808,6 +816,9 @@ components:
       required:
         - created
         - errors
+      example:
+        created: 2
+        errors: { }
 
     TelemetryIngestBatchResponse:
       type: object
@@ -835,6 +846,15 @@ components:
         - created
         - items
         - errors
+      example:
+        status: "ok"
+        created: 4
+        items:
+          - created: 2
+            errors: { }
+          - created: 2
+            errors: { }
+        errors: { }
 
     TelemetryIngestAsyncResponse:
       type: object
@@ -845,6 +865,8 @@ components:
           example: "accepted"
       required:
         - status
+      example:
+        status: "accepted"
 
     TelemetryPatch:
       type: object
