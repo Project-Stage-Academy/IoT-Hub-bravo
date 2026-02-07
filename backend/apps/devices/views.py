@@ -1,20 +1,25 @@
 import json
+
+from django.conf import settings
 from django.http import JsonResponse, HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
-from django.utils.dateparse import parse_datetime
-
-from apps.devices.models import Device, DeviceMetric, Telemetry
-
-
+from django.views.decorators.http import require_http_methods
 from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404
 from django.views import View
-from apps.users.decorators import jwt_required, role_required
 
+from apps.devices.models import Device
+from apps.users.decorators import jwt_required, role_required
 from .serializers.device_serializers.base_device_serializer import DeviceOutputSerializer
 from .serializers.device_serializers.create_device_serializer import DeviceCreateV1Serializer
 from .serializers.device_serializers.update_device_serializer import DeviceUpdateV1Serializer
+from .serializers.telemetry_serializers import (
+    TelemetryCreateSerializer,
+    TelemetryBatchCreateSerializer,
+)
 from .services.device_service import DeviceService
+from .services.telemetry_services import telemetry_create
+from .tasks import ingest_telemetry_payload
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -153,48 +158,85 @@ class DeviceDetailView(View):
 
 
 @csrf_exempt
+@require_http_methods(['POST'])
 def ingest_telemetry(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "method not allowed"}, status=405)
-
     try:
         payload = json.loads(request.body)
     except json.JSONDecodeError:
-        return JsonResponse({"error": "invalid json"}, status=400)
+        return JsonResponse({'errors': {'json': 'Invalid json.'}}, status=400)
 
-    required = {"device", "metrics", "ts"}
-    if not required.issubset(payload) or not isinstance(payload["metrics"], dict):
-        return JsonResponse({"error": "invalid payload structure"}, status=400)
+    if _should_ingest_async(request, payload):
+        ingest_telemetry_payload.delay(payload)
+        return JsonResponse({'status': 'accepted'}, status=202)
 
-    ts = parse_datetime(payload["ts"])
+    if isinstance(payload, dict):
+        return _ingest_telemetry_single(payload)
 
-    if ts is None:
-        return JsonResponse({"error": "invalid timestamp format."}, status=400)
+    if isinstance(payload, list):
+        return _ingest_telemetry_batch(payload)
 
-    try:
-        device = Device.objects.get(serial_id=payload["device"])
-    except Device.DoesNotExist:
-        return JsonResponse({"error": "device not found"}, status=404)
+    return JsonResponse(
+        {'errors': {'json': 'Payload must be a JSON object or a JSON array.'}},
+        status=400,
+    )
 
-    metric_names = list(payload["metrics"].keys())
-    device_metrics = {
-        dm.metric.metric_type: dm
-        for dm in DeviceMetric.objects.filter(
-            device=device, metric__metric_type__in=metric_names
-        ).select_related('metric')
-    }
 
-    telemetry_instances = []
+def _should_ingest_async(request, payload) -> bool:
+    header_name = getattr(settings, 'TELEMETRY_ASYNC_HEADER', 'Ingest-Async')
+    threshold = getattr(settings, 'TELEMETRY_ASYNC_BATCH_THRESHOLD', 50)
 
-    for name, value in payload["metrics"].items():
-        dm = device_metrics.get(name)
-        if not dm:
-            continue
+    if request.headers.get(header_name) == '1':
+        return True
+    return isinstance(payload, list) and len(payload) > threshold
 
-        telemetry_instances.append(
-            Telemetry(device_metric=dm, ts=ts, value_jsonb={"t": dm.metric.data_type, "v": value})
+
+def _ingest_telemetry_single(payload: dict) -> JsonResponse:
+    serializer = TelemetryCreateSerializer(payload)
+    if not serializer.is_valid():
+        return JsonResponse({'errors': serializer.errors}, status=400)
+
+    result = telemetry_create(**serializer.validated_data)
+
+    status_code = 201 if result.created_count > 0 else 400
+    status_text = 'ok' if result.created_count > 0 else 'rejected'
+
+    return JsonResponse(
+        {
+            'status': status_text,
+            'created': result.created_count,
+            'errors': result.errors,
+        },
+        status=status_code,
+    )
+
+
+def _ingest_telemetry_batch(payload: list) -> JsonResponse:
+    serializer = TelemetryBatchCreateSerializer(payload)
+    if not serializer.is_valid():
+        return JsonResponse({'errors': serializer.errors}, status=400)
+
+    total_created = 0
+    items = []
+
+    for item in serializer.validated_data:
+        result = telemetry_create(**item)
+        total_created += result.created_count
+        items.append(
+            {
+                'created': result.created_count,
+                'errors': result.errors,
+            }
         )
 
-    Telemetry.objects.bulk_create(telemetry_instances, ignore_conflicts=True)
+    status_code = 201 if total_created > 0 else 400
+    status_text = 'ok' if total_created > 0 else 'rejected'
 
-    return JsonResponse({"status": "ok", "created": len(telemetry_instances)}, status=201)
+    return JsonResponse(
+        {
+            'status': status_text,
+            'created': total_created,
+            'items': items,
+            'errors': serializer.item_errors,
+        },
+        status=status_code,
+    )
