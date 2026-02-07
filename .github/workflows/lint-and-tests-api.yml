@@ -2,7 +2,7 @@ name: API Contract Tests
 
 on:
   push:
-    branches: [ main]
+    branches: [ main, "us-2-7-api_documentation"]
   pull_request:
     branches: [ main ]
 
