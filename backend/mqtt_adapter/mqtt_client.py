@@ -18,6 +18,7 @@ class MqttCallbacks:
     Decodes JSON payloads and pass them to `handle_payload`;
     Rejects malformed/non-JSON messages.
     """
+
     config: MqttConfig
     handle_payload: Callable
 
