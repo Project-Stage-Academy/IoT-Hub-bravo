@@ -170,15 +170,6 @@ services:
       timeout: 5s
       retries: 5
 
-  cron:
-    <<: *django_base
-    command: >
-      sh -c "
-      echo '* * * * * python manage.py run_rule_processor' | crontab -
-      && crond -f
-      "
-
-
 volumes:
   media_data:
   db_data:
