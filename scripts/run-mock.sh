@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
+# Exit immediately if a command exits with a non-zero status,
+# treat unset variables as an error, and propagate errors in pipelines
+set -euo pipefail  
 
 # =============================================================================
 #   Local Mock Server using Prism for OpenAPI specification
 # =============================================================================
+
 
 # ────────────────────────────────────────────────
 # Configuration (change here if needed)
@@ -13,21 +17,29 @@ HOST=${MOCK_HOST:-"0.0.0.0"}                      # 0.0.0.0 allows access from t
 
 # ────────────────────────────────────────────────
 
-# Check if the spec file exists
+# Check if a command exists
+check_command() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "ERROR: Required command '$1' is not installed. Please install it before running this script."
+    exit 1
+  }
+}
+
+# Ensure spec file exists
 if [[ ! -f "$SPEC_FILE" ]]; then
-  echo "Error: specification file not found"
+  echo "ERROR: OpenAPI specification file not found"
   echo "  Path: $SPEC_FILE"
-  echo "Please check the file name or path in the script."
+  echo "Please check the path or file name."
   exit 1
 fi
 
-# Check if npx is available
-if ! command -v npx &> /dev/null; then
-  echo "Error: npx not found."
-  echo "Please install Node.js[](https://nodejs.org)"
-  exit 1
-fi
+# Ensure Node.js/npm is installed
+check_command node
+check_command npx
 
+# ────────────────────────────────────────────────
+# Start Mock Server
+# ────────────────────────────────────────────────
 echo ""
 echo "Starting mock server (Prism)"
 echo "  Spec file:   $SPEC_FILE"
