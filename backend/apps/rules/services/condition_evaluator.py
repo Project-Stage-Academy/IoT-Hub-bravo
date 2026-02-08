@@ -16,6 +16,9 @@ COMPARISON_OPERATORS = {
     "<=": operator.le,
 }
 
+DEFAULT_DURATION_MINUTES = 5
+
+
 def _extract_telemetry_value(telemetry: Telemetry):
         """Extract value from telemetry regardless of type"""
         if telemetry.value_numeric is not None:
@@ -78,7 +81,7 @@ class ThresholdEvaluator:
             return False
         
         # time window
-        duration_minutes = condition.get("duration_minutes", 5)  # default 5 min
+        duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
         reference_time = telemetry.created_at
         window_start = reference_time - timedelta(minutes=duration_minutes)
 
@@ -131,8 +134,8 @@ class RateEvaluator:
         in the past `duration_minutes` meets or exceeds `count`.
         """
         condition = rule.condition
-        count_required = condition.get("count")
-        duration_minutes = condition.get("duration_minutes")
+        count_required = condition.get("count") # is there should be a default count???
+        duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
 
         if count_required is None or duration_minutes is None:
             logger.error("Rate rule missing 'count' or 'duration_minutes'")
