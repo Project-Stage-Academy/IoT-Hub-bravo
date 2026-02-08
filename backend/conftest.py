@@ -1,11 +1,7 @@
 """
 Pytest configuration and shared fixtures for the IoT Hub test suite.
 
-This module provides reusable fixtures for:
-- Database access and test client
-- User fixtures (admin, staff, regular users)
-- Device, Metric, DeviceMetric fixtures
-- Telemetry, Rule, Event fixtures
+This module provides reusable fixtures using factory_boy factories.
 """
 
 import os
@@ -42,154 +38,120 @@ def api_client():
 
 
 # =============================================================================
-# User Fixtures
+# User Fixtures (using factories)
 # =============================================================================
-
-
-@pytest.fixture
-def superuser(db):
-    """Create a superuser for admin tests."""
-    from apps.users.models import User
-
-    return User.objects.create_superuser(
-        email="admin@example.com",
-        password="adminpass123",
-        first_name="Admin",
-        last_name="User",
-    )
-
-
-@pytest.fixture
-def staff_user(db):
-    """Create a staff user (non-superuser)."""
-    from apps.users.models import User
-
-    user = User.objects.create_user(
-        email="staff@example.com",
-        password="staffpass123",
-        first_name="Staff",
-        last_name="User",
-    )
-    user.is_staff = True
-    user.save()
-    return user
 
 
 @pytest.fixture
 def regular_user(db):
     """Create a regular user (client role)."""
-    from apps.users.models import User
+    from tests.fixtures.factories import UserFactory
 
-    return User.objects.create_user(
-        email="user@example.com",
-        password="userpass123",
-        first_name="Regular",
-        last_name="User",
-    )
+    return UserFactory(password="testpass123")
+
+
+@pytest.fixture
+def staff_user(db):
+    """Create a staff user (non-superuser)."""
+    from tests.fixtures.factories import StaffUserFactory
+
+    return StaffUserFactory(password="testpass123")
+
+
+@pytest.fixture
+def superuser(db):
+    """Create a superuser for admin tests."""
+    from tests.fixtures.factories import AdminUserFactory
+
+    return AdminUserFactory(password="adminpass123")
 
 
 @pytest.fixture
 def authenticated_client(client, regular_user):
     """Django test client logged in as regular user."""
-    client.login(email="user@example.com", password="userpass123")
+    client.login(username=regular_user.username, password="testpass123")
     return client
 
 
 @pytest.fixture
 def admin_client(client, superuser):
     """Django test client logged in as superuser."""
-    client.login(email="admin@example.com", password="adminpass123")
+    client.login(username=superuser.username, password="adminpass123")
     return client
 
 
 # =============================================================================
-# Device Fixtures
+# Device Fixtures (using factories)
 # =============================================================================
 
 
 @pytest.fixture
 def metric(db):
     """Create a basic numeric metric."""
-    from apps.devices.models import Metric
+    from tests.fixtures.factories import MetricFactory
 
-    return Metric.objects.create(
-        metric_type="temperature",
-        data_type="NUMERIC",
-    )
+    return MetricFactory(metric_type="temperature", data_type="NUMERIC")
 
 
 @pytest.fixture
 def metric_boolean(db):
     """Create a boolean metric."""
-    from apps.devices.models import Metric
+    from tests.fixtures.factories import BooleanMetricFactory
 
-    return Metric.objects.create(
-        metric_type="is_online",
-        data_type="BOOLEAN",
-    )
+    return BooleanMetricFactory(metric_type="is_online")
 
 
 @pytest.fixture
 def metric_string(db):
     """Create a string metric."""
-    from apps.devices.models import Metric
+    from tests.fixtures.factories import StringMetricFactory
 
-    return Metric.objects.create(
-        metric_type="status_message",
-        data_type="STRING",
-    )
+    return StringMetricFactory(metric_type="status_message")
 
 
 @pytest.fixture
 def device(db, regular_user):
     """Create a basic device."""
-    from apps.devices.models import Device
+    from tests.fixtures.factories import DeviceFactory
 
-    return Device.objects.create(
+    return DeviceFactory(
         serial_id="TEST-001",
         name="Test Device",
-        description="A test device",
         user=regular_user,
-        is_active=True,
     )
 
 
 @pytest.fixture
 def inactive_device(db, regular_user):
     """Create an inactive device."""
-    from apps.devices.models import Device
+    from tests.fixtures.factories import InactiveDeviceFactory
 
-    return Device.objects.create(
+    return InactiveDeviceFactory(
         serial_id="TEST-002",
         name="Inactive Device",
-        description="An inactive test device",
         user=regular_user,
-        is_active=False,
     )
 
 
 @pytest.fixture
 def device_metric(db, device, metric):
     """Create a device-metric relationship."""
-    from apps.devices.models import DeviceMetric
+    from tests.fixtures.factories import DeviceMetricFactory
 
-    return DeviceMetric.objects.create(
-        device=device,
-        metric=metric,
-    )
+    return DeviceMetricFactory(device=device, metric=metric)
 
 
 # =============================================================================
-# Telemetry Fixtures
+# Telemetry Fixtures (using factories)
 # =============================================================================
 
 
 @pytest.fixture
 def telemetry(db, device_metric):
     """Create a single telemetry record with numeric value."""
-    from apps.devices.models import Telemetry
+    from tests.fixtures.factories import TelemetryFactory
 
-    return Telemetry.objects.create(
+    return TelemetryFactory(
         device_metric=device_metric,
         value_jsonb={"value": 25.5},
     )
@@ -198,71 +160,49 @@ def telemetry(db, device_metric):
 @pytest.fixture
 def telemetry_batch(db, device_metric):
     """Create a batch of telemetry records."""
-    from apps.devices.models import Telemetry
+    from tests.fixtures.factories import TelemetryFactory
 
-    records = []
-    for i in range(5):
-        records.append(
-            Telemetry.objects.create(
-                device_metric=device_metric,
-                value_jsonb={"value": 20.0 + i},
-            )
-        )
-    return records
+    return TelemetryFactory.create_batch(5, device_metric=device_metric)
 
 
 # =============================================================================
-# Rule and Event Fixtures
+# Rule and Event Fixtures (using factories)
 # =============================================================================
 
 
 @pytest.fixture
 def rule(db, device_metric):
     """Create a basic threshold rule."""
-    from apps.rules.models import Rule
+    from tests.fixtures.factories import RuleFactory
 
-    return Rule.objects.create(
+    return RuleFactory(
         name="High Temperature Alert",
-        description="Alert when temperature exceeds 30°C",
-        condition={"type": "threshold", "operator": ">", "value": 30},
-        action={"type": "notify", "channel": "email"},
         device_metric=device_metric,
-        is_active=True,
     )
 
 
 @pytest.fixture
 def inactive_rule(db, device_metric):
     """Create an inactive rule."""
-    from apps.rules.models import Rule
+    from tests.fixtures.factories import InactiveRuleFactory
 
-    return Rule.objects.create(
+    return InactiveRuleFactory(
         name="Disabled Rule",
-        description="This rule is disabled",
-        condition={"type": "threshold", "operator": "<", "value": 10},
-        action={"type": "notify", "channel": "sms"},
         device_metric=device_metric,
-        is_active=False,
     )
 
 
 @pytest.fixture
 def event(db, rule):
     """Create a single event."""
-    from apps.rules.models import Event
+    from tests.fixtures.factories import EventFactory
 
-    return Event.objects.create(
-        rule=rule,
-        acknowledged=False,
-    )
+    return EventFactory(rule=rule)
 
 
 @pytest.fixture
 def acknowledged_event(db, rule):
     """Create an acknowledged event."""
-    from apps.rules.models import Event
+    from tests.fixtures.factories import AcknowledgedEventFactory
 
-    return Event.objects.create(
-        rule=rule,
-        acknowledged=True,
-    )
+    return AcknowledgedEventFactory(rule=rule)
