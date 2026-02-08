@@ -38,7 +38,7 @@ class EventAdmin(admin.ModelAdmin):
         "acknowledged",
         "timestamp",
         "created_at",
-        "trigger_event",
+        "trigger_telemetry",
     )
     list_filter = ("timestamp", "created_at", "rule", "acknowledged")
     search_fields = ("rule__name",)
