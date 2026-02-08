@@ -74,21 +74,21 @@ class MetricFactory(DjangoModelFactory):
         model = Metric
 
     metric_type = factory.Sequence(lambda n: f"metric_{n}")
-    data_type = "NUMERIC"
+    data_type = "numeric"
 
 
 class BooleanMetricFactory(MetricFactory):
     """Factory for creating boolean metrics."""
 
     metric_type = factory.Sequence(lambda n: f"bool_metric_{n}")
-    data_type = "BOOLEAN"
+    data_type = "bool"
 
 
 class StringMetricFactory(MetricFactory):
     """Factory for creating string metrics."""
 
     metric_type = factory.Sequence(lambda n: f"str_metric_{n}")
-    data_type = "STRING"
+    data_type = "str"
 
 
 class DeviceFactory(DjangoModelFactory):
