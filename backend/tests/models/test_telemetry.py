@@ -1,7 +1,6 @@
 """Unit tests for Telemetry model."""
 
 import pytest
-from decimal import Decimal
 from django.db import IntegrityError
 from django.utils import timezone
 

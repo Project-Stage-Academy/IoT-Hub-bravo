@@ -80,7 +80,6 @@ class TestDeviceMetricRelationships:
     def test_cascade_delete_on_device(self):
         """Test that deleting device cascades to device_metric."""
         device_metric = DeviceMetricFactory()
-        device_id = device_metric.device.id
         device_metric_id = device_metric.id
 
         device_metric.device.delete()

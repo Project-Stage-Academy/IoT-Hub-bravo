@@ -1,7 +1,6 @@
 """Unit tests for Rule model."""
 
 import pytest
-from django.db import IntegrityError
 
 from apps.rules.models import Rule
 from tests.fixtures.factories import RuleFactory, DeviceMetricFactory
