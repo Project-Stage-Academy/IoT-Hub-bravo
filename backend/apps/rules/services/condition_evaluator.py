@@ -24,12 +24,12 @@ class ConditionEvaluator:
         condition = rule.condition
         condition_metric = (
             rule.device_metric.metric.metric_type
-        )  # condition.get("metric", None) # get metric from "condition" / None is default in get()
+        )
         duration_minutes = condition.get("duration_minutes")
 
         if condition_metric is None:
-            logger.error("there is no metric in rule.condition")
-            raise ValueError
+            logger.error("Rule must contain a 'metric' field")
+            raise ValueError("Rule must contain a 'metric' field")
         if condition_metric != telemetry.device_metric.metric.metric_type:
             logger.debug(
                 "rule metric does not match telemetry metric",
@@ -44,22 +44,22 @@ class ConditionEvaluator:
             "value", None
         )  # get condition value / None is default in get()
         if condition_value is None:
-            logger.error("no value in condition")
-            raise ValueError
+            logger.error("Rule condition does not contain a value")
+            raise ValueError("Rule condition does not contain a value")
 
         condition_operator = condition.get(
             "operator", None
         )  # get  operator from rule.condition / None is default in get()
         if condition_operator is None:
-            logger.error("there is no operator in rule.condition")
-            raise ValueError
+            logger.error("No operator is defined in rule.condition")
+            raise ValueError("No operator is defined in rule.condition")
 
         comparator = COMPARISON_OPERATORS.get(
             condition_operator, None
         )  # get operator from comparison operators / None is default in get()
         if comparator is None:
-            logger.error("there is no operator in comparison operators")
-            raise ValueError
+            logger.error("No valid comparison operator specified")
+            raise ValueError("No valid comparison operator specified")
 
         # determine actual value
         if telemetry.value_numeric is not None:
@@ -69,7 +69,7 @@ class ConditionEvaluator:
         elif telemetry.value_str is not None:
             telemetry_value = telemetry.value_str
         else:
-            logger.warning("no value in telemetry")
+            logger.warning("No value present in telemetry")
             return False  # telemetry without value
 
         # time window
@@ -193,7 +193,7 @@ class ConditionEvaluator:
         """
         # add time
         condition = rule.condition
-        rule_type = condition['type']
+        rule_type = condition.get('type')
 
         if rule_type == 'threshold':
             return ConditionEvaluator._evaluate_threshold(rule, telemetry)
