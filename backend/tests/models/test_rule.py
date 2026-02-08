@@ -6,7 +6,6 @@ from django.db import IntegrityError
 from apps.rules.models import Rule
 from tests.fixtures.factories import RuleFactory, DeviceMetricFactory
 
-
 pytestmark = pytest.mark.django_db
 
 
@@ -75,7 +74,7 @@ class TestRuleConditionAndAction:
             "conditions": [
                 {"field": "value", "operator": ">", "threshold": 25},
                 {"field": "value", "operator": "<", "threshold": 100},
-            ]
+            ],
         }
         rule = RuleFactory(condition=condition)
 

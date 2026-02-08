@@ -24,7 +24,6 @@ from apps.users.models import User
 from apps.devices.models import Device, Metric, DeviceMetric, Telemetry
 from apps.rules.models import Rule, Event
 
-
 # =============================================================================
 # User Factories
 # =============================================================================
@@ -139,7 +138,10 @@ class TelemetryNumericFactory(TelemetryFactory):
     """Factory for telemetry with random numeric values."""
 
     value_jsonb = factory.LazyAttribute(
-        lambda _: {"t": "numeric", "v": str(round(factory.Faker._get_faker().pyfloat(min_value=0, max_value=100), 2))}
+        lambda _: {
+            "t": "numeric",
+            "v": str(round(factory.Faker._get_faker().pyfloat(min_value=0, max_value=100), 2)),
+        }
     )
 
 
@@ -176,12 +178,8 @@ class RuleFactory(DjangoModelFactory):
 
     name = factory.Sequence(lambda n: f"Rule {n}")
     description = factory.Faker("sentence", nb_words=8)
-    condition = factory.LazyFunction(
-        lambda: {"type": "threshold", "operator": ">", "value": 30}
-    )
-    action = factory.LazyFunction(
-        lambda: {"type": "notify", "channel": "email"}
-    )
+    condition = factory.LazyFunction(lambda: {"type": "threshold", "operator": ">", "value": 30})
+    action = factory.LazyFunction(lambda: {"type": "notify", "channel": "email"})
     device_metric = factory.SubFactory(DeviceMetricFactory)
     is_active = True
 
