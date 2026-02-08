@@ -132,14 +132,14 @@ class TelemetryFactory(DjangoModelFactory):
         model = Telemetry
 
     device_metric = factory.SubFactory(DeviceMetricFactory)
-    value_jsonb = factory.LazyFunction(lambda: {"value": 25.5})
+    value_jsonb = factory.LazyFunction(lambda: {"t": "numeric", "v": "25.5"})
 
 
 class TelemetryNumericFactory(TelemetryFactory):
     """Factory for telemetry with random numeric values."""
 
     value_jsonb = factory.LazyAttribute(
-        lambda _: {"value": factory.Faker._get_faker().pyfloat(min_value=0, max_value=100)}
+        lambda _: {"t": "numeric", "v": str(round(factory.Faker._get_faker().pyfloat(min_value=0, max_value=100), 2))}
     )
 
 
@@ -150,7 +150,7 @@ class TelemetryBooleanFactory(TelemetryFactory):
         DeviceMetricFactory,
         metric=factory.SubFactory(BooleanMetricFactory),
     )
-    value_jsonb = factory.LazyFunction(lambda: {"value": True})
+    value_jsonb = factory.LazyFunction(lambda: {"t": "bool", "v": "true"})
 
 
 class TelemetryStringFactory(TelemetryFactory):
@@ -160,7 +160,7 @@ class TelemetryStringFactory(TelemetryFactory):
         DeviceMetricFactory,
         metric=factory.SubFactory(StringMetricFactory),
     )
-    value_jsonb = factory.LazyFunction(lambda: {"value": "status_ok"})
+    value_jsonb = factory.LazyFunction(lambda: {"t": "str", "v": "status_ok"})
 
 
 # =============================================================================
