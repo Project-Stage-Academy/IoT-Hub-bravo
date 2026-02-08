@@ -16,8 +16,18 @@ COMPARISON_OPERATORS = {
     "<=": operator.le,
 }
 
+def _extract_telemetry_value(telemetry: Telemetry):
+        """Extract value from telemetry regardless of type"""
+        if telemetry.value_numeric is not None:
+            return telemetry.value_numeric
+        elif telemetry.value_bool is not None:
+            return telemetry.value_bool
+        elif telemetry.value_str is not None:
+            return telemetry.value_str
+        return None
 
-class ConditionEvaluator:
+
+class ThresholdEvaluator:
     @staticmethod
     def _evaluate_threshold(rule: Rule, telemetry: Telemetry):
         """eval rule for 'threshold' type"""
@@ -25,7 +35,6 @@ class ConditionEvaluator:
         condition_metric = (
             rule.device_metric.metric.metric_type
         )
-        duration_minutes = condition.get("duration_minutes")
 
         if condition_metric is None:
             logger.error("Rule must contain a 'metric' field")
@@ -42,14 +51,15 @@ class ConditionEvaluator:
 
         condition_value = condition.get(
             "value", None
-        )  # get condition value / None is default in get()
+        )
         if condition_value is None:
             logger.error("Rule condition does not contain a value")
             raise ValueError("Rule condition does not contain a value")
 
         condition_operator = condition.get(
             "operator", None
-        )  # get  operator from rule.condition / None is default in get()
+        ) 
+
         if condition_operator is None:
             logger.error("No operator is defined in rule.condition")
             raise ValueError("No operator is defined in rule.condition")
@@ -61,17 +71,12 @@ class ConditionEvaluator:
             logger.error("No valid comparison operator specified")
             raise ValueError("No valid comparison operator specified")
 
-        # determine actual value
-        if telemetry.value_numeric is not None:
-            telemetry_value = telemetry.value_numeric
-        elif telemetry.value_bool is not None:
-            telemetry_value = telemetry.value_bool
-        elif telemetry.value_str is not None:
-            telemetry_value = telemetry.value_str
-        else:
+        # if telemetry doesnt has a value but we have window sooo what - ?????????
+        telemetry_value = _extract_telemetry_value(telemetry)
+        if telemetry_value is None:
             logger.warning("No value present in telemetry")
-            return False  # telemetry without value
-
+            return False
+        
         # time window
         duration_minutes = condition.get("duration_minutes", 5)  # default 5 min
         reference_time = telemetry.created_at
@@ -92,13 +97,9 @@ class ConditionEvaluator:
         # Count how many meet threshold
         matching_count = 0
         for t in telemetries_in_window:
-            if t.value_numeric is not None:
-                telemetry_value = t.value_numeric
-            elif t.value_bool is not None:
-                telemetry_value = t.value_bool
-            elif t.value_str is not None:
-                telemetry_value = t.value_str
-            else:
+            telemetry_value = _extract_telemetry_value(t)
+            if telemetry_value is None:
+                logger.warning(f"No value present in telemetry telemtry_id: {t.id}")
                 continue
 
             try:
@@ -118,8 +119,10 @@ class ConditionEvaluator:
             f"Threshold check: {matching_count} out of {telemetries_in_window.count()} events meet {condition_operator} {condition_value}"
         )
 
-        return matching_count == total_count  # True if eq to total count
+        return matching_count == total_count  # True if eq to total count # ADD SOME THRESHOLD NOT ONE FOR ALL
 
+
+class RateEvaluator:
     @staticmethod
     def _evaluate_rate(rule: Rule, telemetry: Telemetry) -> bool:
         """
@@ -149,6 +152,8 @@ class ConditionEvaluator:
 
         return event_count >= count_required
 
+
+class CompositeEvaluator:
     @staticmethod
     def _evaluate_composite(rule: Rule, telemetry: Telemetry) -> bool:
         """
@@ -184,6 +189,8 @@ class ConditionEvaluator:
             logger.warning(f"Unknown operator in composite rule: {operator_type}")
             return False
 
+
+class ConditionEvaluator:
     @staticmethod
     def evaluate_condition(rule: Rule, telemetry: Telemetry) -> bool:
         """
