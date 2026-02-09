@@ -21,7 +21,7 @@ tags:
     description: Business logic rules and event management
 
 paths:
-  /api/auth/login/:
+  /api/auth/login:
     post:
       tags:
         - Authentication
@@ -93,7 +93,7 @@ paths:
                 schema:
                   $ref: '#/components/schemas/ErrorResponse'
 
-  /api/devices/:
+  /api/devices:
     get:
       tags:
         - Devices
@@ -157,7 +157,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/devices/{id}/:
+  /api/devices/{id}:
     get:
       tags:
         - Devices
@@ -482,6 +482,10 @@ paths:
         - Rules
       operationId: listRules
       summary: List rules with pagination and filters
+      description: |
+        Returns a paginated list of rules.
+        Supports filtering by activation status and action type.
+        Used to browse, search, and manage existing rules.
       security:
         - BearerAuth: []
       parameters:
@@ -530,7 +534,8 @@ paths:
         - Rules
       operationId: createRule
       summary: Create a new rule
-      description: Creates a rule
+      description:  |
+        Creates a new rule and persists it for future evaluation.
       security:
         - BearerAuth: []
       requestBody:
@@ -550,6 +555,7 @@ paths:
                     type: "threshold"
                     operator: ">"
                     value: 30
+                    device_metric: "123e4567-e89b-12d3-a456-426614174000"
                   action: "notify"
               rate_rule:
                 summary: Event rate rule
@@ -573,11 +579,11 @@ paths:
                     operator: "AND"
                     conditions:
                       - type: "threshold"
-                        metric: "temperature"
                         operator: ">"
                         value: 35
+                        device_metric: "123e4567-e89b-12d3-a456-426614174000"
                       - type: "threshold"
-                        metric: "humidity"
+                        device_metric: "123e4567-e89b-12d3-a456-426614174111"
                         operator: "<"
                         value: 20
                   action: "notify"
@@ -601,6 +607,9 @@ paths:
         - Rules
       operationId: getRuleById
       summary: Get rule by ID
+      description: |
+        Returns full rule details by its unique identifier.
+        Includes condition definition, action configuration, and current state.
       security:
         - BearerAuth: []
       parameters:
@@ -629,6 +638,10 @@ paths:
         - Rules
       operationId: replaceRule
       summary: Replace rule completely
+      description: |
+        Replaces the entire rule definition.
+        All rule fields must be provided in the request body.
+        Missing fields will be overwritten with new values.
       security:
         - BearerAuth: []
       parameters:
@@ -667,6 +680,9 @@ paths:
       tags:
         - Rules
       summary: Partially update rule
+      description: |
+        Updates one or more fields of an existing rule.
+        Only provided fields are modified; all others remain unchanged.
       operationId: patchRule
       security:
         - BearerAuth: []
@@ -706,6 +722,9 @@ paths:
       tags:
         - Rules
       summary: Delete rule
+      description: |
+        Permanently deletes a rule.
+        Deleted rules are no longer evaluated and cannot be restored.
       operationId: deleteRule
       security:
         - BearerAuth: []
@@ -1539,3 +1558,93 @@ components:
               type: "notify"
               message: "User_1 temperature is overwhelming"
             device_metric: "123e4567-e89b-12d3-a456-426614174000"
+    Event:
+      type: object
+      description: Rule evaluation event (rule firing)
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        rule_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        acknowledged:
+          type: boolean
+          example: false
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-22T16:30:00Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-22T16:31:00Z"
+        trigger_telemetry_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        trigger_value:
+          type: object
+          nullable: true
+          description: Copy of telemetry value at trigger time
+          example:
+            metric_value: 35.2
+        trigger_device_metric_id:
+          type: integer
+          nullable: true
+          example: 5
+      required:
+        - id
+        - rule_id
+        - timestamp
+        - created_at
+      example:
+        id: "550e8400-e29b-41d4-a716-446655440001"
+        rule_id: "550e8400-e29b-41d4-a716-446655440001"
+        acknowledged: false
+        timestamp: "2026-01-22T16:30:00Z"
+        created_at: "2026-01-22T16:31:00Z"
+        trigger_telemetry_id: "550e8400-e29b-41d4-a716-446655440001"
+        trigger_value:
+          metric_value: 35.2
+        trigger_device_metric_id: 5
+
+    PaginatedEvents:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 50
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+      required:
+        - total
+        - limit
+        - offset
+        - items
+      example:
+        total: 50
+        limit: 20
+        offset: 0
+        items:
+          - id: "550e8400-e29b-41d4-a716-446655440001"
+            rule_id: "550e8400-e29b-41d4-a716-446655440001"
+            acknowledged: false
+            timestamp: "2026-01-22T16:30:00Z"
+            created_at: "2026-01-22T16:31:00Z"
+            trigger_telemetry_id: "550e8400-e29b-41d4-a716-446655440001"
+            trigger_value:
+              metric_value: 35.2
+            trigger_device_metric_id: 5
+          
