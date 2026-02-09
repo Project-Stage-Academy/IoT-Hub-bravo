@@ -1,12 +1,15 @@
 from unittest.mock import patch
 
+import pytest
+
 from apps.devices.tasks import ingest_telemetry_payload
 
 
 @patch('apps.devices.tasks.telemetry_create')
 def test_task_rejects_invalid_payload_type(telemetry_create_mock):
     """Test task rejects non-dict/non-list payload and does not call service."""
-    ingest_telemetry_payload(payload='invalid-payload')
+    with pytest.raises(TypeError):
+        ingest_telemetry_payload(payload='invalid-payload')
     telemetry_create_mock.assert_not_called()
 
 

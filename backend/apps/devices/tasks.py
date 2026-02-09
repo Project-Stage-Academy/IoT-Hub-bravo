@@ -20,14 +20,15 @@ logger = logging.getLogger(__name__)
 def ingest_telemetry_payload(self, payload: dict | list) -> None:
     if isinstance(payload, dict):
         payload = [payload]
-    elif not isinstance(payload, list):
-        logger.warning('Telemetry ingestion task rejected: payload must be of type dict or list')
-        return
+    elif isinstance(payload, list):
+        pass
+    else:
+        raise TypeError(f'payload must be of type dict or list, got {type(payload).__name__}')
 
     serializer = TelemetryBatchCreateSerializer(payload)
 
     if not serializer.is_valid() and not serializer.valid_items:
-        logger.warning(f'Telemetry ingestion task rejected: errors={len(serializer.errors)}')
+        logger.warning('Telemetry ingestion task rejected: errors=%s', len(serializer.errors))
         return
 
     total_created = 0
@@ -42,10 +43,11 @@ def ingest_telemetry_payload(self, payload: dict | list) -> None:
     invalid_count = len(invalid_items) if invalid_items else 0
 
     logger.info(
-        f'Telemetry task ingested batch: '
-        f'received={len(payload)}, '
-        f'valid={len(serializer.valid_items)}, '
-        f'invalid={invalid_count}, '
-        f'created={total_created}, '
-        f'item_errors={total_errors}.'
+        'Telemetry task ingested batch: '
+        'received=%s, valid=%s, invalid=%s, created=%s, item_errors=%s.',
+        len(payload),
+        len(serializer.valid_items),
+        invalid_count,
+        total_created,
+        total_errors,
     )
