@@ -212,13 +212,13 @@ def _ingest_telemetry_single(payload: dict) -> JsonResponse:
 
 def _ingest_telemetry_batch(payload: list) -> JsonResponse:
     serializer = TelemetryBatchCreateSerializer(payload)
-    if not serializer.is_valid():
+    if not serializer.is_valid() and not serializer.valid_items:
         return JsonResponse({'errors': serializer.errors}, status=400)
 
     total_created = 0
     items = []
 
-    for item in serializer.validated_data:
+    for item in serializer.valid_items:
         result = telemetry_create(**item)
         total_created += result.created_count
         items.append(

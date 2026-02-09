@@ -26,14 +26,14 @@ def ingest_telemetry_payload(self, payload: dict | list) -> None:
 
     serializer = TelemetryBatchCreateSerializer(payload)
 
-    if not serializer.is_valid():
+    if not serializer.is_valid() and not serializer.valid_items:
         logger.warning(f'Telemetry ingestion task rejected: errors={len(serializer.errors)}')
         return
 
     total_created = 0
     total_errors = 0
 
-    for item in serializer.validated_data:
+    for item in serializer.valid_items:
         r = telemetry_create(**item)
         total_created += r.created_count
         total_errors += len(r.errors)
@@ -44,7 +44,7 @@ def ingest_telemetry_payload(self, payload: dict | list) -> None:
     logger.info(
         f'Telemetry task ingested batch: '
         f'received={len(payload)}, '
-        f'valid={len(serializer.validated_data)}, '
+        f'valid={len(serializer.valid_items)}, '
         f'invalid={invalid_count}, '
         f'created={total_created}, '
         f'item_errors={total_errors}.'

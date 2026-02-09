@@ -14,7 +14,7 @@ class BaseSerializer:
     @property
     def validated_data(self):
         if self._validated_data is None:
-            raise AssertionError('Call is_valid() first.')
+            raise ValueError('Call is_valid() before accessing validated_data.')
         return self._validated_data
 
     @property
@@ -136,31 +136,38 @@ class TelemetryBatchCreateSerializer(BaseSerializer):
     def __init__(self, data: Any):
         super().__init__(data)
         self._validated_data: Optional[list[dict[str, Any]]] = None
+        self._valid_items: list[dict[str, Any]] = []
         self._item_errors: dict[int, Any] = {}
 
     @property
     def item_errors(self) -> dict[int, Any]:
         return self._item_errors
 
+    @property
+    def valid_items(self) -> list[dict[str, Any]]:
+        return self._valid_items
+
     def _validate(self, data: Any) -> Optional[list[dict[str, Any]]]:
         if not isinstance(data, list):
             self._errors['non_field_errors'] = 'Payload must be a JSON array.'
             return None
 
+        if not data:
+            self._errors['items'] = {'non_field_errors': 'Empty batch.'}
+            return None
+
         self._item_errors: dict[int, Any] = {}
-        items: list[dict[str, Any]] = []
+        self._valid_items: list[dict[str, Any]] = []
 
         for index, raw_item in enumerate(data):
             serializer = TelemetryCreateSerializer(raw_item)
-            if not serializer.is_valid():
-                self.item_errors[index] = serializer.errors
-                continue
-            items.append(serializer.validated_data)
+            if serializer.is_valid():
+                self._valid_items.append(serializer.validated_data)
+            else:
+                self._item_errors[index] = serializer.errors
 
-        # if any valid items -> is_valid() == True
-        if items:
-            return items
+        if self.item_errors:
+            self._errors['items'] = self._item_errors
+            return None
 
-        # if no valid items -> is_valid() == False
-        self._errors['items'] = self._item_errors or {'non_field_errors': 'Empty batch.'}
-        return None
+        return self._valid_items

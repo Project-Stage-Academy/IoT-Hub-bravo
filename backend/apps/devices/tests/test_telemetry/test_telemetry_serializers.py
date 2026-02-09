@@ -154,11 +154,11 @@ def test_batch_serializer_accepts_mixed_valid_and_invalid_items(valid_telemetry_
     payload = [valid_telemetry_payload, invalid_item, valid_telemetry_payload]
 
     s = TelemetryBatchCreateSerializer(payload)
-    assert s.is_valid() is True
+    assert s.is_valid() is False
 
-    assert len(s.validated_data) == 2
-    assert s.validated_data[0]['device_serial_id'] == 'DEV-001'
-    assert s.validated_data[1]['device_serial_id'] == 'DEV-001'
+    assert len(s.valid_items) == 2
+    assert s.valid_items[0]['device_serial_id'] == 'DEV-001'
+    assert s.valid_items[1]['device_serial_id'] == 'DEV-001'
 
     assert s.item_errors
     assert 1 in s.item_errors
