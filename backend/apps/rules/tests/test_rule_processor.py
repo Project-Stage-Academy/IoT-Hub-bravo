@@ -33,7 +33,7 @@ def test_rule_processor_creates_event_real():
     processor = RuleProcessor()
 
     # Mock the condition evaluator to always return True
-    with patch.object(ConditionEvaluator, "evaluate_condition", return_value=True):
+    with patch.object(ConditionEvaluator, "evaluate", return_value=True):
         processor.run(telemetry)
 
     # Verify event was created
