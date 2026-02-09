@@ -18,25 +18,23 @@ COMPARISON_OPERATORS = {
     "<=": operator.le,
 }
 
-DEFAULT_DURATION_MINUTES = 5 # default value for time window
-DEFAULT_THRESHOLD_PERCENTAGE = 0.8 # default value for meet "threshold"
+DEFAULT_DURATION_MINUTES = 5  # default value for time window
+DEFAULT_THRESHOLD_PERCENTAGE = 0.8  # default value to meet "threshold"
 
 
 def _extract_telemetry_value(telemetry: Telemetry) -> float | bool | str | None:
-        """Extract value from telemetry regardless of type"""
-
-        if telemetry.value_numeric is not None:
-            return telemetry.value_numeric
-        elif telemetry.value_bool is not None:
-            return telemetry.value_bool
-        elif telemetry.value_str is not None:
-            return telemetry.value_str
-        return None
+    """Extract value from telemetry regardless of type"""
+    if telemetry.value_numeric is not None:
+        return telemetry.value_numeric
+    elif telemetry.value_bool is not None:
+        return telemetry.value_bool
+    elif telemetry.value_str is not None:
+        return telemetry.value_str
+    return None
 
 
 def _get_window(telemetry: Telemetry, minutes: int) -> Tuple[datetime, datetime]:
     """Returns the start and end of the time window for the given telemetry"""
-
     end = telemetry.created_at
     start = end - timedelta(minutes=minutes)
     return start, end
@@ -44,7 +42,6 @@ def _get_window(telemetry: Telemetry, minutes: int) -> Tuple[datetime, datetime]
 
 def _get_comparator(condition: str) -> operator:
     """Returns the comparison operator for the condition"""
-
     op = condition.get("operator")
     if not op:
         raise ValueError("No operator")
@@ -56,13 +53,11 @@ def _get_comparator(condition: str) -> operator:
 
 def _compare_safe(comparator: operator, telemetry_value: Any, condition_value: Any) -> bool:
     """Compare values"""
-
     return comparator(telemetry_value, condition_value)
 
 
-def _get_value(condition: dict, key: str) -> Any:
+def _get_value(condition: dict, key: str = 'value') -> Any:
     """Extract value from condition dictionary"""
-
     value = condition.get(key)
     if value is None:
         logger.error(f"Missing required field '{key}' in condition")
@@ -85,37 +80,32 @@ def _validate_metric(rule: Rule, telemetry: Telemetry) -> bool:
             },
         )
         raise TypeError("Rule metric must match a telemetry metric field")
-    # return True
+
+
+def _get_telemetries_in_window(telemetry: Telemetry, minutes: int):
+    """Return all Telemetry objects for the same device_metric within the past `minutes` minutes"""
+    start, end = _get_window(telemetry, minutes)
+    return Telemetry.objects.filter(
+        device_metric=telemetry.device_metric, created_at__gte=start, created_at__lte=end
+    )
 
 
 class ThresholdEvaluator:
     @staticmethod
     def evaluate(rule: Rule, telemetry: Telemetry) -> bool:
         """Evaluate rule for 'threshold' type"""
-
         _validate_metric(rule, telemetry)
-
         condition = rule.condition
         condition_value = _get_value(condition)
         comparator = _get_comparator(condition)
-        
-        # time window
         duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
-        window_start, reference_time = _get_window(telemetry, duration_minutes)
-
-        # all telemetries in window
-        telemetries_in_window = Telemetry.objects.filter(
-            device_metric=telemetry.device_metric,
-            created_at__gte=window_start,
-            created_at__lte=reference_time,
-        )
+        telemetries_in_window = _get_telemetries_in_window(telemetry, duration_minutes)
 
         total_count = telemetries_in_window.count()
         if total_count == 0:
             logger.info("No telemetries in window")
             return False
 
-        # Count how many meet threshold
         matching_count = 0
         for t in telemetries_in_window:
             value = _extract_telemetry_value(t)
@@ -132,7 +122,7 @@ class ThresholdEvaluator:
 
         threshold_percentage = condition.get("threshold_percentage", DEFAULT_THRESHOLD_PERCENTAGE)
         match_ratio = matching_count / total_count
-        
+
         return match_ratio >= threshold_percentage
 
 
@@ -145,20 +135,14 @@ class RateEvaluator:
         in the past `duration_minutes` meets or exceeds `count`.
         """
         condition = rule.condition
-        count_required = condition.get("count") # is there should be a default count???
+        count_required = condition.get("count")
         duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
 
         if count_required is None or duration_minutes is None:
             logger.error("Rate rule missing 'count' or 'duration_minutes'")
             return False
 
-        now = telemetry.created_at
-        window_start = now - timedelta(minutes=duration_minutes)
-
-        # Count telemetry for the same device_metric in the time window
-        event_count = Telemetry.objects.filter(
-            device_metric=telemetry.device_metric, created_at__gte=window_start
-        ).count()
+        event_count = _get_telemetries_in_window(telemetry, duration_minutes).count()
 
         logger.info(
             f"Rate rule check: {event_count} events in last {duration_minutes} min, need {count_required}"
@@ -183,10 +167,7 @@ class CompositeEvaluator:
 
         results = []
         for i, subcondition in enumerate(subconditions):
-            # Create temp rule for subcondition
             temp_rule = Rule(device_metric=rule.device_metric, condition=subcondition)
-
-            # Use evaluate_condition for recursion (handles all types)
             result = ConditionEvaluator.evaluate(temp_rule, telemetry)
             logger.info(f"Subcondition {i} (type={subcondition.get('type')}): {result}")
             results.append(result)
@@ -220,9 +201,11 @@ class ConditionEvaluator:
     def evaluate(rule: Rule, telemetry: Telemetry) -> bool:
         """Evaluate rule"""
         rule_type = rule.condition.get("type")
+        if not rule_type:
+            raise ValueError(f"Missing 'type' in rule.condition: {rule.condition}")
         evaluator = ConditionEvaluator._evaluators.get(rule_type)
+
         if evaluator is None:
             logger.warning(f"Unknown condition type: {rule_type}")
             return False
         return evaluator(rule, telemetry)
-

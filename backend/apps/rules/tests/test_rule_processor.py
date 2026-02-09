@@ -318,10 +318,7 @@ def test_rule_processor_unknown_rule_type():
     device = Device.objects.create(user=user, serial_id="dev1", name="Device 1")
     metric = Metric.objects.create(metric_type="temperature", data_type="numeric")
     device_metric = DeviceMetric.objects.create(device=device, metric=metric)
-
-    now = timezone.now()
-
-    # Telemetry for rate (only 2 events, less than count=3)
+    
     telemetry = Telemetry.objects.create(
         device_metric=device_metric, value_jsonb={"t": "numeric", "v": 111}
     )
@@ -337,4 +334,4 @@ def test_rule_processor_unknown_rule_type():
     processor.run(telemetry)
 
     events = Event.objects.filter(rule=rule)
-    assert events.count() == 0, "Event should NOT be created when composite AND condition fails"
+    assert events.count() == 0, "Event should NOT be created with unregistered rule type"
