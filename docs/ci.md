@@ -17,7 +17,7 @@ The CI workflow runs on:
 
 The pipeline is split into four jobs with strict ordering:
 
-1. `lint` + `security-scan` (parallel) → 2. `test` → 3. `build`
+1. `lint`  `security-scan` (parallel) → 2. `test` → 3. `build`
 
 The dependency chain is enforced with `needs`:
 
@@ -348,6 +348,53 @@ updates:
 3. **Monitor**: Subscribe to security advisories for critical packages
 4. **Document**: Record vulnerability fixes in commit messages and PR descriptions
 5. **Automate**: Consider enabling Dependabot for low-effort security updates
+
+## Test Flakiness
+ 
+Flaky tests are tests that pass or fail inconsistently without code changes. They undermine CI reliability and developer trust.
+ 
+### Common Causes
+ 
+| Cause | Example | Solution |
+|-------|---------|----------|
+| **Time-dependent** | `assert event.timestamp == timezone.now()` | Use `refresh_from_db()` or fixed timestamps |
+| **Database ordering** | Tests assume query order | Add explicit `.order_by()` |
+| **Shared state** | Tests modify global/class state | Use `pytest` fixtures with proper scope |
+| **Race conditions** | Async operations not awaited | Add proper waits or use `pytest-asyncio` |
+| **External services** | Tests hit real APIs | Mock external calls with `responses` |
+ 
+### Prevention Guidelines
+ 
+1. **Isolate tests**: Each test should create its own data using factories
+2. **Use transactions**: `pytest-django` wraps each test in a transaction by default
+3. **Avoid `sleep()`**: Use proper synchronization or mocking instead
+4. **Pin random seeds**: If using random data, set `Faker.seed()` in conftest
+5. **Refresh from DB**: After creating objects with DB defaults, call `refresh_from_db()`
+ 
+### Debugging Flaky Tests
+ 
+Run test multiple times to reproduce:
+ 
+```bash
+pytest tests/path/test_file.py::test_name --count=10
+```
+ 
+(Requires `pytest-repeat`: `pip install pytest-repeat`)
+ 
+### Marking Known Flaky Tests
+ 
+If a test is flaky and cannot be fixed immediately:
+ 
+```python
+@pytest.mark.flaky(reruns=3)
+def test_sometimes_fails():
+    ...
+```
+ 
+(Requires `pytest-rerunfailures`: `pip install pytest-rerunfailures`)
+ 
+**Note**: This is a temporary measure. All flaky tests should be fixed or removed.
+
 
 ## Secrets and extension points
 
