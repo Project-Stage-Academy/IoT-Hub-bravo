@@ -39,19 +39,20 @@ def telemetry_create(
         return result
 
     # collect Metric and DeviceMetric objects for passed metrics
-    metrics_names = [name.strip() for name in metrics.keys()]
-    if not metrics_names:
+    normalized_metrics = _normalize_metrics(metrics)
+    if not normalized_metrics:
         result.errors['metrics'] = 'No valid metric names.'
         return result
 
+    metrics_names = list(normalized_metrics.keys())
     metrics_by_name = _get_metrics_by_names(metrics_names)
     device_metrics = _get_device_metrics_by_names(device, metrics_names)
 
     # initialize Telemetry objects for every valid matric-value pair
     to_create: list[Telemetry] = []
 
-    for name, value in metrics.items():
-        metric = metrics_by_name.get(name.strip())
+    for name, value in normalized_metrics.items():
+        metric = metrics_by_name.get(name)
         if metric is None:
             result.errors[name] = 'metric does not exist.'
             continue
@@ -84,6 +85,16 @@ def telemetry_create(
     result.created_count = len(created)
 
     return result
+
+
+def _normalize_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
+    """Utility function to normalize metric-value dictionary keys."""
+    normalized = {}
+    for name, value in metrics.items():
+        name = name.strip()
+        if name:
+            normalized[name] = value
+    return normalized
 
 
 def _get_metrics_by_names(metrics_names: list[str]) -> dict[str, Metric]:
