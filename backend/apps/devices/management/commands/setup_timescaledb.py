@@ -117,10 +117,10 @@ class Command(BaseCommand):
                 "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;",
                 "TimescaleDB extension enabled.",
             ),
-            (
-                "ALTER TABLE telemetries DROP CONSTRAINT IF EXISTS telemetries_pkey;",
-                "Dropped old primary key constraint (if existed).",
-            ),
+            # (
+            #     "ALTER TABLE telemetries DROP CONSTRAINT IF EXISTS telemetries_pkey;",
+            #     "Dropped old primary key constraint (if existed).",
+            # ),
             (
                 """
                 SELECT create_hypertable(
