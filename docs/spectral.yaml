@@ -26,6 +26,33 @@ rules:
     message: "Schema '{{path}}' should have 'example'"
     severity: error
 
+  request-body-examples-required:
+    description: "Every requestBody must define example or examples"
+    message: "Add example(s) for requestBody (example/examples)"
+    severity: error
+    given: "$.paths[*][*].requestBody.content[*]"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          anyOf:
+            - required: ["example"]
+            - required: ["examples"]
+  
+  response-body-examples-required:
+    description: "Every response must define example or examples"
+    message: "Add example(s) for response body (example/examples)"
+    severity: error
+    given: "$.paths[*][*].responses[*].content[*]"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          anyOf:
+            - required: ["example"]
+            - required: ["examples"]
 
   operation-description:
     given: "$.paths[*][get,post,put,patch,delete,options,head]"

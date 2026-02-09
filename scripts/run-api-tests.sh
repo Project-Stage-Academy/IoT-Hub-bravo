@@ -45,7 +45,6 @@ st run "$SPEC_FILE" \
   --url "$BASE_URL" \
   --header "Authorization: Bearer $TOKEN" \
   --phases examples \
-  --checks all \
   --exclude-checks unsupported_method \
   --force-color
 

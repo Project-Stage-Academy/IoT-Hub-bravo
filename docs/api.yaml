@@ -1,7 +1,7 @@
 openapi: 3.0.3
 
 info:
-  title: Devices & Telemetry API
+  title: IoT Hub API
   version: "1.4.1"
   description: |
     API for managing devices and their telemetry, with full CRUD support, JWT authentication,
@@ -20,7 +20,7 @@ tags:
     description: CRUD operations for telemetry
 
 paths:
-  /api/auth/login/:
+  /api/auth/login:
     post:
       tags:
         - Authentication
@@ -32,16 +32,19 @@ paths:
       security: []
       requestBody:
         required: true
+        description: User credentials
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AuthLoginRequest'
             examples:
               valid_credentials:
+                summary: Valid user credentials
                 value:
                   username: testuser
                   password: testpassword
               admin_credentials:
+                summary: Valid admin credentials
                 value:
                   username: adminuser
                   password: adminpassword
@@ -52,18 +55,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthTokenResponse'
+              examples:
+                success:
+                  summary: Access token response
+                  value:
+                    access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    token_type: bearer
+                    expires_in: "2026-01-22T17:00:00Z"
+        '400':
+          description: Invalid JSON or invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_json:
+                  summary: Invalid JSON
+                  value:
+                    code: 400
+                    message: "Malformed JSON payload."
         '401':
           description: Invalid credentials
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_credentials:
+                  summary: Username or password is incorrect
+                  value:
+                    code: 401
+                    message: "Invalid username or password."
+        '422':
+          description: Validation error (missing or invalid fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_password:
+                  summary: Password is missing
+                  value:
+                    code: 422
+                    message: "password: This field is required."
 
   /api/auth/refresh:
     post:
       tags:
         - Authentication
       summary: Refresh access token
+      description: |
+        Exchanges a valid refresh token for a new access token.
       operationId: refreshToken
       security: []
       requestBody:
@@ -71,13 +113,16 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                refresh_token:
-                  type: string
-                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-              required:
-                - refresh_token
+              $ref: '#/components/schemas/AuthRefreshRequest'
+            examples:
+              valid_refresh:
+                summary: Valid refresh token
+                value:
+                  refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              empty_refresh:
+                summary: Empty refresh token (invalid)
+                value:
+                  refresh_token: ""
       responses:
         '200':
           description: Access token refreshed
@@ -85,19 +130,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthTokenResponse'
+              examples:
+                success:
+                  value:
+                    access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    token_type: bearer
+                    expires_in: "2026-04-28T16:15:01Z"
         '400':
-            description: Invalid request
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_refresh:
+                  value:
+                    detail: "Invalid refresh token."
+        '401':
+          description: Unauthorized (refresh token expired or revoked)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                expired:
+                  value:
+                    detail: "Token is expired."
 
-  /api/devices/:
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validation_error:
+                  value:
+                    detail: "refresh_token is required."
+
+  /api/devices:
     get:
       tags:
         - Devices
       operationId: listDevices
       summary: List devices with pagination
+      description: Retrieve a paginated list of devices in the system.
       security:
         - BearerAuth: []
       parameters:
@@ -123,23 +200,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedDevices'
+              examples:
+                sample:
+                  value:
+                    total: 2
+                    limit: 5
+                    offset: 0
+                    items:
+                      - id: 1
+                        serial_id: "ABC12345"
+                        name: "Smoke detector"
+                        description: "A device that monitors smoke levels"
+                        user_id: 1
+                        is_active: true
+                        created_at: "2026-01-22T12:00:00Z"
+                      - id: 2
+                        serial_id: "QWE12345"
+                        name: "Humidity meter"
+                        description: "A device that monitors humidity levels"
+                        user_id: 1
+                        is_active: false
+                        created_at: "2026-01-22T14:32:54Z"
         '404':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    code: 404
+                    message: "Devices not found"
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  value:
+                    code: 401
+                    message: "Unauthorized"
     post:
       tags:
         - Devices
       operationId: createDevice
       summary: Create a new device
+      description: Create a new device with the provided data. The device must include required fields and schema version.
       security:
         - BearerAuth: []
       requestBody:
@@ -148,6 +257,16 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/VersionedDeviceCreate'
+            examples:
+              new_device:
+                value:
+                  schema_version: "v1"
+                  device:
+                    serial_id: "DEF12345"
+                    name: "Digital thermometer"
+                    description: "Monitors indoor temperature"
+                    user_id: 1
+                    is_active: false
       responses:
         '201':
           description: Device created
@@ -155,19 +274,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Device'
+              examples:
+                created:
+                  value:
+                    id: 3
+                    serial_id: "DEF12345"
+                    name: "Digital thermometer"
+                    description: "Monitors indoor temperature"
+                    user_id: 1
+                    is_active: false
+                    created_at: "2026-02-09T16:00:00Z"
         '400':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                bad_request:
+                  value:
+                    code: 400
+                    message: "Invalid device data"
 
-  /api/devices/{id}/:
+  /api/devices/{id}:
     get:
       tags:
         - Devices
       operationId: getDeviceById
       summary: Get device by id
+      description: Returns a single device by its unique identifier.
       security:
         - BearerAuth: []
       parameters:
@@ -176,6 +311,7 @@ paths:
           required: true
           schema:
             type: integer
+            example: 1
       responses:
         '200':
           description: Device found
@@ -183,17 +319,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Device'
+              examples:
+                example_device:
+                  value:
+                    id: 1
+                    serial_id: "ABC12345"
+                    name: "Smoke detector"
+                    description: "Monitors CO2 levels."
+                    user_id: 1
+                    is_active: true
+                    created_at: "2026-01-22T12:00:00Z"
         '404':
           description: Device not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    code: 404
+                    message: "Device not found."
     put:
       tags:
         - Devices
       operationId: replaceDevice
       summary: Replace device
+      description: Fully replaces an existing device with the provided payload.
       security:
         - BearerAuth: []
       parameters:
@@ -202,12 +354,23 @@ paths:
           required: true
           schema:
             type: integer
+            example: 1
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/VersionedDeviceCreate'
+            examples:
+              replace_example:
+                value:
+                  schema_version: "v1"
+                  device:
+                    serial_id: "DEF12345"
+                    name: "Digital thermometer"
+                    description: "Monitors indoor temperature."
+                    user_id: 1
+                    is_active: false
       responses:
         '200':
           description: Device updated
@@ -215,22 +378,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Device'
+              examples:
+                updated_device:
+                  value:
+                    id: 1
+                    serial_id: "DEF12345"
+                    name: "Digital thermometer"
+                    description: "Monitors indoor temperature."
+                    user_id: 1
+                    is_active: false
+                    created_at: "2026-01-22T12:00:00Z"
         '400':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_request:
+                  value:
+                    code: 400
+                    message: "Invalid device payload."
         '404':
           description: Device not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    code: 404
+                    message: "Device not found."
     patch:
       tags:
         - Devices
       summary: Partially update device
+      description: Update one or more fields of an existing device.
       operationId: patchDevice
       security:
         - BearerAuth: []
@@ -240,12 +424,20 @@ paths:
           required: true
           schema:
             type: integer
+            example: 1
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/VersionedDevicePatch'
+            examples:
+              patch_example:
+                value:
+                  schema_version: "v1"
+                  device:
+                    name: "Updated smoke detector"
+                    is_active: true
       responses:
         '200':
           description: Device updated
@@ -253,22 +445,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Device'
+              examples:
+                patched_device:
+                  value:
+                    id: 1
+                    serial_id: "ABC12345"
+                    name: "Updated smoke detector"
+                    description: "Monitors CO2 levels."
+                    user_id: 1
+                    is_active: true
+                    created_at: "2026-01-22T12:00:00Z"
         '400':
           description: Invalid patch
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_patch:
+                  value:
+                    code: 400
+                    message: "Invalid fields for patch."
         '404':
           description: Device not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    code: 404
+                    message: "Device not found."
     delete:
       tags:
         - Devices
       summary: Delete device
+      description: Deletes a device by its ID.
       operationId: deleteDevice
       security:
         - BearerAuth: []
@@ -278,208 +491,286 @@ paths:
           required: true
           schema:
             type: integer
+            example: 1
       responses:
         '204':
-          description: Device deleted
+          description: Device deleted successfully
         '404':
           description: Device not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    code: 404
+                    message: "Device not found."
 
-  /api/telemetry:
-    get:
-      tags:
-        - Telemetry
-      summary: List telemetry records by device_id with pagination
-      operationId: listTelemetry
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: device_id
-          in: query
-          required: true
-          schema:
-            type: integer
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 5
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-      responses:
-        '200':
-          description: List of telemetry records
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedTelemetry'
-        '404':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    post:
-      tags:
-        - Telemetry
-      summary: Create telemetry record
-      operationId: createTelemetry
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VersionedTelemetryCreate'
-      responses:
-        '201':
-          description: Telemetry created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Telemetry'
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+  # /api/telemetry:
+  #   get:
+  #     tags:
+  #       - Telemetry
+  #     summary: List telemetry records by device_id with pagination
+  #     description: Returns a paginated list of telemetry records for a given device.
+  #     operationId: listTelemetry
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: device_id
+  #         in: query
+  #         required: true
+  #         schema:
+  #           type: integer
+  #           example: 1
+  #       - name: limit
+  #         in: query
+  #         schema:
+  #           type: integer
+  #           minimum: 1
+  #           maximum: 100
+  #           default: 5
+  #       - name: offset
+  #         in: query
+  #         schema:
+  #           type: integer
+  #           minimum: 0
+  #           default: 0
+  #     responses:
+  #       '200':
+  #         description: List of telemetry records
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/PaginatedTelemetry'
+  #             examples:
+  #               example_page:
+  #                 value:
+  #                   total: 2
+  #                   limit: 5
+  #                   offset: 0
+  #                   items:
+  #                     - id: 1
+  #                       device_id: 1
+  #                       value: 23.5
+  #                       timestamp: "2026-02-09T12:00:00Z"
+  #                     - id: 2
+  #                       device_id: 1
+  #                       value: 24.0
+  #                       timestamp: "2026-02-09T12:05:00Z"
+  #       '404':
+  #         description: Invalid request
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #             examples:
+  #               not_found:
+  #                 value:
+  #                   code: 404
+  #                   message: "No telemetry records found."
+  #   post:
+  #     tags:
+  #       - Telemetry
+  #     summary: Create telemetry record
+  #     description: Adds a new telemetry record for a device.
+  #     operationId: createTelemetry
+  #     security:
+  #       - BearerAuth: []
+  #     requestBody:
+  #       required: true
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/VersionedTelemetryCreate'
+  #           examples:
+  #             valid_telemetry:
+  #               value:
+  #                 schema_version: "v1"
+  #                 telemetry:
+  #                   device_id: 1
+  #                   value: 23.5
+  #     responses:
+  #       '201':
+  #         description: Telemetry created
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Telemetry'
+  #             examples:
+  #               created_telemetry:
+  #                 value:
+  #                   id: 1
+  #                   device_id: 1
+  #                   value: 23.5
+  #                   timestamp: "2026-02-09T12:00:00Z"
+  #       '400':
+  #         description: Invalid request
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #             examples:
+  #               invalid_request:
+  #                 value:
+  #                   code: 400
+  #                   message: "Invalid telemetry payload."
 
-  /api/telemetry/{id}:
-    get:
-      tags:
-        - Telemetry
-      summary: Get telemetry by id
-      operationId: getTelemetryById
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Telemetry found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Telemetry'
-        '404':
-          description: Telemetry not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    put:
-      tags:
-        - Telemetry
-      summary: Replace telemetry
-      operationId: replaceTelemetry
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VersionedTelemetryCreate'
-      responses:
-        '200':
-          description: Telemetry updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Telemetry'
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Telemetry not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    patch:
-      tags:
-        - Telemetry
-      summary: Partially update telemetry
-      operationId: patchTelemetry
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VersionedTelemetryPatch'
-      responses:
-        '200':
-          description: Telemetry updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Telemetry'
-        '400':
-          description: Invalid patch
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Telemetry not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    delete:
-      tags:
-        - Telemetry
-      summary: Delete telemetry
-      operationId: deleteTelemetry
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '204':
-          description: Telemetry deleted
-        '404':
-          description: Telemetry not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+  # /api/telemetry/{id}:
+  #   get:
+  #     tags:
+  #       - Telemetry
+  #     summary: Get telemetry by id
+  #     description: Returns a telemetry record by its unique ID.
+  #     operationId: getTelemetryById
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: integer
+  #           example: 1
+  #     responses:
+  #       '200':
+  #         description: Telemetry found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Telemetry'
+  #             examples:
+  #               example_telemetry:
+  #                 value:
+  #                   id: 1
+  #                   device_id: 1
+  #                   value: 23.5
+  #                   timestamp: "2026-02-09T12:00:00Z"
+  #       '404':
+  #         description: Telemetry not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #             examples:
+  #               not_found:
+  #                 value:
+  #                   code: 404
+  #                   message: "Telemetry record not found."
+  #   # put:
+  #   #   tags:
+  #   #     - Telemetry
+  #   #   summary: Replace telemetry
+  #   #   description: Fully replaces an existing telemetry record.
+  #   #   operationId: replaceTelemetry
+  #   #   security:
+  #   #     - BearerAuth: []
+  #   #   parameters:
+  #   #     - name: id
+  #   #       in: path
+  #   #       required: true
+  #   #       schema:
+  #   #         type: integer
+  #   #         example: 1
+  #   #   requestBody:
+  #   #     required: true
+  #   #     content:
+  #   #       application/json:
+  #   #         schema:
+  #   #           $ref: '#/components/schemas/VersionedTelemetryCreate'
+  #   #         examples:
+  #   #           replace_telemetry:
+  #   #             value:
+  #   #               schema_version: "v1"
+  #   #               telemetry:
+  #   #                 device_id: 1
+  #   #                 value: 24.0
+  #   #   responses:
+  #   #     '200':
+  #   #       description: Telemetry updated
+  #   #       content:
+  #   #         application/json:
+  #   #           schema:
+  #   #             $ref: '#/components/schemas/Telemetry'
+  #   #     '400':
+  #   #       description: Invalid request
+  #   #       content:
+  #   #         application/json:
+  #   #           schema:
+  #   #             $ref: '#/components/schemas/ErrorResponse'
+  #   #     '404':
+  #   #       description: Telemetry not found
+  #   #       content:
+  #   #         application/json:
+  #   #           schema:
+  #   #             $ref: '#/components/schemas/ErrorResponse'
+  #   # patch:
+  #   #   tags:
+  #   #     - Telemetry
+  #   #   summary: Partially update telemetry
+  #   #   operationId: patchTelemetry
+  #   #   security:
+  #   #     - BearerAuth: []
+  #   #   parameters:
+  #   #     - name: id
+  #   #       in: path
+  #   #       required: true
+  #   #       schema:
+  #   #         type: integer
+  #   #   requestBody:
+  #   #     required: true
+  #   #     content:
+  #   #       application/json:
+  #   #         schema:
+  #   #           $ref: '#/components/schemas/VersionedTelemetryPatch'
+  #   #   responses:
+  #   #     '200':
+  #   #       description: Telemetry updated
+  #   #       content:
+  #   #         application/json:
+  #   #           schema:
+  #   #             $ref: '#/components/schemas/Telemetry'
+  #   #     '400':
+  #   #       description: Invalid patch
+  #   #       content:
+  #   #         application/json:
+  #   #           schema:
+  #   #             $ref: '#/components/schemas/ErrorResponse'
+  #   #     '404':
+  #   #       description: Telemetry not found
+  #   #       content:
+  #   #         application/json:
+  #   #           schema:
+  #   #             $ref: '#/components/schemas/ErrorResponse'
+  #   delete:
+  #     tags:
+  #       - Telemetry
+  #     summary: Delete telemetry
+  #     description: Deletes a telemetry record by ID.
+  #     operationId: deleteTelemetry
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: integer
+  #           example: 1 
+  #     responses:
+  #       '204':
+  #         description: Telemetry deleted successfully
+  #       '404':
+  #         description: Telemetry not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #             examples:
+  #               not_found:
+  #                 value:
+  #                   code: 404
+  #                   message: "Telemetry record not found."
 
 components:
   securitySchemes:
@@ -769,6 +1060,17 @@ components:
         token_type: bearer
         expires_in: "2026-01-22T17:00:00Z"
 
+    AuthRefreshRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+          description: JWT refresh token
+      example:
+        refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        
     ErrorResponse:
       type: object
       properties:
