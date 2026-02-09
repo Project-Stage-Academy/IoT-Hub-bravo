@@ -523,12 +523,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedRules'
+              examples:
+                default:
+                  summary: Paginated list of rules
+                  value:
+                    total: 3
+                    limit: 20
+                    offset: 0
+                    items:
+                      - id: "550e8400-e29b-41d4-a716-446655440000"
+                        name: "High Temperature Alert"
+                        description: "Alert when temperature exceeds 30°C"
+                        is_active: true
+                        condition:
+                          type: "threshold"
+                          operator: ">"
+                          value: 30
+                        action:
+                          type: "notify"
+                        device_metric: "123e4567-e89b-12d3-a456-426614174000"
+                      - id: "660e8400-e29b-41d4-a716-446655440111"
+                        name: "Low Humidity Alert"
+                        description: "Alert when humidity drops below 20%"
+                        is_active: true
+                        condition:
+                          type: "threshold"
+                          operator: "<"
+                          value: 20
+                        action:
+                          type: "notify"
+                        device_metric: "123e4567-e29b-12d3-a456-426614174001"
         '400':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_filter:
+                  summary: Invalid query parameters
+                  value:
+                    code: 400
+                    message: "Invalid filter parameters"
     post:
       tags:
         - Rules
@@ -555,8 +591,8 @@ paths:
                     type: "threshold"
                     operator: ">"
                     value: 30
-                    device_metric: "123e4567-e89b-12d3-a456-426614174000"
                   action: "notify"
+                  device_metric: "123e4567-e89b-12d3-a456-426614174000"
               rate_rule:
                 summary: Event rate rule
                 value:
@@ -568,6 +604,7 @@ paths:
                     count: 10
                     minutes: 300
                   action: "webhook"
+                  device_metric: "123e4567-e89b-12d3-a456-426614174000"
               composite_rule:
                 summary: Composite AND rule
                 value:
@@ -587,6 +624,7 @@ paths:
                         operator: "<"
                         value: 20
                   action: "notify"
+                  device_metric: "123e4567-e89b-12d3-a456-426614174000"
       responses:
         '201':
           description: Rule created successfully
@@ -594,12 +632,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Rule'
+              examples:
+                created:
+                  summary: Created rule with full schema
+                value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "High Temperature Alert"
+                    description: "Alert when temperature exceeds 30°C"
+                    is_active: true
+                    condition:
+                      type: "threshold"
+                      operator: ">"
+                      value: 30
+                    action:
+                      type: "notify"
+                      message: "User_1 temperature is overwhelming"
+                    device_metric: "123e4567-e89b-12d3-a456-426614174000"  
         '400':
           description: Invalid rule definition
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_condition:
+                  summary: Invalid condition definition
+                  value:
+                    error: "Invalid rule condition"
+                    details:
+                      condition: "Unsupported operator"        
 
   /api/rules/{id}:
     get:
@@ -619,7 +680,7 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Rule UUID
+          description: Rule UUID   
       responses:
         '200':
           description: Rule found
@@ -627,12 +688,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Rule'
+              examples:
+                updated:
+                  summary: Updated rule
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Updated Rule"
+                    is_active: false
+                    action: "notify"  
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_payload:
+                  summary: Invalid rule payload
+                  value:
+                    error: "Invalid rule definition"       
         '404':
           description: Rule not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Rule not found
+                  value:
+                    error: "Rule not found"  
     put:
       tags:
         - Rules
@@ -664,18 +749,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Rule'
+              examples:
+                updated:
+                  summary: Updated rule
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Updated Rule"
+                    is_active: false
+                    action: "notify"
         '400':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_payload:
+                  summary: Invalid rule payload
+                  value:
+                    error: "Invalid rule definition"
         '404':
           description: Rule not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Rule not found
+                  value:
+                    error: "Rule not found"
     patch:
       tags:
         - Rules
@@ -699,6 +802,18 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RulePatch'
+            examples:
+              replace_rule:
+                summary: Full rule replacement
+                value:
+                  name: "Updated Rule"
+                  is_active: false
+                  condition:
+                    type: "threshold"
+                    operator: "<"
+                    value: 10
+                    device_metric: "123e4567-e89b-12d3-a456-426614174000"
+                  action: "notify"
       responses:
         '200':
           description: Rule updated
@@ -706,18 +821,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Rule'
+              examples:
+                updated:
+                  summary: Updated rule
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Updated Rule"
+                    is_active: false
+                    action: "notify"
         '400':
-          description: Invalid patch
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_payload:
+                  summary: Invalid rule payload
+                  value:
+                    error: "Invalid rule definition"
         '404':
           description: Rule not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Rule not found
+                  value:
+                    error: "Rule not found"
     delete:
       tags:
         - Rules
@@ -738,12 +871,24 @@ paths:
       responses:
         '204':
           description: Rule deleted
+          content:
+            application/json:
+              examples:
+                no_content:
+                  summary: No response body
+                  value: {}
         '404':
           description: Rule not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Rule does not exist
+                  value:
+                    code: 404
+                    message: "Rule not found"
 
   /api/rules/{id}/enable:
     post:
@@ -763,17 +908,29 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Rule enabled successfully
+          description: Rule state changed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Rule'
+              examples:
+                enabled:
+                  summary: Rule enabled
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    is_active: true
         '404':
           description: Rule not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Rule not found
+                  value:
+                    code: 404
+                    message: "Rule not found"
 
   /api/rules/{id}/disable:
     post:
@@ -793,17 +950,29 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Rule disabled successfully
+          description: Rule state changed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Rule'
+              examples:
+                enabled:
+                  summary: Rule enabled
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    is_active: true
         '404':
           description: Rule not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Rule not found
+                  value:
+                    code: 404
+                    message: "Rule not found"
 
   /api/rules/evaluate:
     post:
@@ -821,43 +990,42 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                rule_id:
-                  type: string
-                  format: uuid
-                  description: Optional - evaluate only this specific rule
-                device_id:
-                  type: integer
-                  description: Optional - evaluate rules only for this device
+              $ref: '#/components/schemas/RuleEvaluateRequest'
+            examples:
+              evaluate_example:
+                summary: Evaluate telemetry data against rules
+                value:
+                  device_id: "device-123"
+                  metric: "temperature"
+                  value: 75     
       responses:
         '200':
-          description: Evaluation completed
+          description: Evaluation results
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  rules_evaluated:
-                    type: integer
-                    example: 15
-                  events_created:
-                    type: integer
-                    example: 3
-                  evaluation_time_ms:
-                    type: integer
-                    example: 245
-                  events:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Event'
+                $ref: '#/components/schemas/RuleEvaluateResponse'
+              examples:
+                success:
+                  summary: Rules matched
+                  value:
+                    matched_rules:
+                      - id: "550e8400-e29b-41d4-a716-446655440000"
+                        name: "High Temperature Alert"
+                        action: "notify"
         '400':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              examples:
+                invalid_request:
+                  summary: Invalid telemetry payload
+                  value:
+                    code: 400
+                    message: "Telemetry value missing"
+  
   /api/rules/{id}/events:
     get:
       tags:
@@ -906,12 +1074,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedEvents'
+              examples:
+                success:
+                  summary: Rule events
+                  value:
+                    total: 1
+                    limit: 20
+                    offset: 0
+                    items:
+                      - id: 1
+                        rule_id: 1
+                        timestamp: "2026-01-22T16:30:00Z"
         '404':
           description: Rule not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Rule not found
+                  value:
+                    code: 404
+                    message: "Rule not found"
 
 components:
   securitySchemes:
