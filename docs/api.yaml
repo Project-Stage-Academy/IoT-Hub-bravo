@@ -1,8 +1,8 @@
 openapi: 3.0.3
 
 info:
-  title: Devices & Telemetry API
-  version: "1.4.2"
+  title: Devices & Telemetry & Rules API
+  version: "1.5.0"
   description: |
     API for managing devices, telemetry, and rules with full CRUD support, JWT authentication,
     pagination, schema versioning, and example payloads for testing.
