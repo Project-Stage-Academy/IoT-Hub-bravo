@@ -703,7 +703,11 @@ paths:
                     is_active: false
                     action: 
                       type: "notify"
-                      message: "some info"  
+                      message: "some info" 
+                    condition:
+                      type: "threshold"
+                      operator: ">"
+                      value: 13   
         '400':
           description: Invalid request
           content:
@@ -767,6 +771,10 @@ paths:
                     action: 
                       type: "notify"
                       message: "some message"
+                    condition:
+                      type: "threshold"
+                      operator: ">"
+                      value: 13     
         '400':
           description: Invalid request
           content:
@@ -843,6 +851,10 @@ paths:
                     action: 
                       type: "notify"
                       message: "info"
+                    condition:
+                      type: "threshold"
+                      operator: ">"
+                      value: 13     
         '400':
           description: Invalid request
           content:
@@ -932,6 +944,7 @@ paths:
                   summary: Rule enabled
                   value:
                     id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Rule name"
                     is_active: true
         '404':
           description: Rule not found
@@ -974,6 +987,7 @@ paths:
                   summary: Rule enabled
                   value:
                     id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Rule name"
                     is_active: true
         '404':
           description: Rule not found
@@ -1757,6 +1771,33 @@ components:
               type: "notify"
               message: "User_1 temperature is overwhelming"
             device_metric: "123e4567-e89b-12d3-a456-426614174000"
+    
+    RuleEvaluateRequest:
+      type: object
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        telemetry_value:
+          type: number
+      required:
+        - rule_id
+        - telemetry_value
+    
+    RuleEvaluateResponse:
+      type: object
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        triggered:
+          type: boolean
+        message:
+          type: string
+      required:
+        - rule_id
+        - trigger_telemetry_id
+    
     Event:
       type: object
       description: Rule evaluation event (rule firing)
