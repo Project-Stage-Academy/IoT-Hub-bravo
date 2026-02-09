@@ -318,7 +318,7 @@ def test_rule_processor_unknown_rule_type():
     device = Device.objects.create(user=user, serial_id="dev1", name="Device 1")
     metric = Metric.objects.create(metric_type="temperature", data_type="numeric")
     device_metric = DeviceMetric.objects.create(device=device, metric=metric)
-    
+
     telemetry = Telemetry.objects.create(
         device_metric=device_metric, value_jsonb={"t": "numeric", "v": 111}
     )
