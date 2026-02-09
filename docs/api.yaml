@@ -591,7 +591,9 @@ paths:
                     type: "threshold"
                     operator: ">"
                     value: 30
-                  action: "notify"
+                  action: 
+                    type: "nootify"
+                    message: "some info"
                   device_metric: "123e4567-e89b-12d3-a456-426614174000"
               rate_rule:
                 summary: Event rate rule
@@ -603,7 +605,9 @@ paths:
                     type: "rate"
                     count: 10
                     minutes: 300
-                  action: "webhook"
+                  action: 
+                    type: "webhook"
+                    message: "some info"
                   device_metric: "123e4567-e89b-12d3-a456-426614174000"
               composite_rule:
                 summary: Composite AND rule
@@ -623,7 +627,9 @@ paths:
                         device_metric: "123e4567-e89b-12d3-a456-426614174111"
                         operator: "<"
                         value: 20
-                  action: "notify"
+                  action:
+                    type: "notify"
+                    message: "some info"
                   device_metric: "123e4567-e89b-12d3-a456-426614174000"
       responses:
         '201':
@@ -635,7 +641,7 @@ paths:
               examples:
                 created:
                   summary: Created rule with full schema
-                value:
+                  value:
                     id: "550e8400-e29b-41d4-a716-446655440000"
                     name: "High Temperature Alert"
                     description: "Alert when temperature exceeds 30°C"
@@ -695,7 +701,9 @@ paths:
                     id: "550e8400-e29b-41d4-a716-446655440000"
                     name: "Updated Rule"
                     is_active: false
-                    action: "notify"  
+                    action: 
+                      type: "notify"
+                      message: "some info"  
         '400':
           description: Invalid request
           content:
@@ -756,7 +764,9 @@ paths:
                     id: "550e8400-e29b-41d4-a716-446655440000"
                     name: "Updated Rule"
                     is_active: false
-                    action: "notify"
+                    action: 
+                      type: "notify"
+                      message: "some message"
         '400':
           description: Invalid request
           content:
@@ -813,7 +823,9 @@ paths:
                     operator: "<"
                     value: 10
                     device_metric: "123e4567-e89b-12d3-a456-426614174000"
-                  action: "notify"
+                  action: 
+                    type: "notify"
+                    message: "info"
       responses:
         '200':
           description: Rule updated
@@ -828,7 +840,9 @@ paths:
                     id: "550e8400-e29b-41d4-a716-446655440000"
                     name: "Updated Rule"
                     is_active: false
-                    action: "notify"
+                    action: 
+                      type: "notify"
+                      message: "info"
         '400':
           description: Invalid request
           content:
