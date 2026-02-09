@@ -118,12 +118,8 @@ class Command(BaseCommand):
                 "TimescaleDB extension enabled.",
             ),
             (
-                "ALTER TABLE telemetries DROP CONSTRAINT IF EXISTS telemetries_pkey;",
+                "ALTER TABLE telemetries DROP CONSTRAINT IF EXISTS telemetries_pkey CASCADE;",
                 "Dropped old primary key constraint (if existed).",
-            ),
-            (
-                "ALTER TABLE telemetries ADD PRIMARY KEY (id, ts);",
-                "Added composite primary key (id, ts).",
             ),
             (
                 """
