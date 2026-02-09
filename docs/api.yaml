@@ -476,7 +476,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/rules/:
+  /api/rules:
     get:
       tags:
         - Rules
@@ -511,7 +511,7 @@ paths:
             type: object
           description: Filter by action type in JSON format
           example:
-          type: "notify"
+            type: "notify"
       responses:
         '200':
           description: List of rules
@@ -595,7 +595,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/rules/{id}/:
+  /api/rules/{id}:
     get:
       tags:
         - Rules
@@ -726,7 +726,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/rules/{id}/enable/:
+  /api/rules/{id}/enable:
     post:
       tags:
         - Rules
@@ -756,7 +756,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/rules/{id}/disable/:
+  /api/rules/{id}/disable:
     post:
       tags:
         - Rules
@@ -786,7 +786,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/rules/evaluate/:
+  /api/rules/evaluate:
     post:
       tags:
         - Rules
@@ -839,7 +839,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/rules/{id}/events/:
+  /api/rules/{id}/events:
     get:
       tags:
         - Rules
@@ -1432,7 +1432,6 @@ components:
           example: 30
       required:
         - type
-        - metric
         - operator
         - value
       example:
@@ -1536,5 +1535,7 @@ components:
               type: "threshold"
               operator: ">"
               value: 30
-            action: "notify"
+            action:
+              type: "notify"
+              message: "User_1 temperature is overwhelming"
             device_metric: "123e4567-e89b-12d3-a456-426614174000"
