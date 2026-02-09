@@ -309,3 +309,32 @@ def test_rule_processor_creates_event_when_condition_composite_false():
 
     events = Event.objects.filter(rule=rule)
     assert events.count() == 0, "Event should NOT be created when composite AND condition fails"
+
+
+@pytest.mark.django_db
+def test_rule_processor_unknown_rule_type():
+    """Event should NOT be created when composite AND condition fails"""
+    user = User.objects.create(username="test", email="a@b.com")
+    device = Device.objects.create(user=user, serial_id="dev1", name="Device 1")
+    metric = Metric.objects.create(metric_type="temperature", data_type="numeric")
+    device_metric = DeviceMetric.objects.create(device=device, metric=metric)
+
+    now = timezone.now()
+
+    # Telemetry for rate (only 2 events, less than count=3)
+    telemetry = Telemetry.objects.create(
+        device_metric=device_metric, value_jsonb={"t": "numeric", "v": 111}
+    )
+
+    rule = Rule.objects.create(
+        device_metric=device_metric,
+        condition={"type": "custom", "operator": ">", "value": 100},
+        action="notify",
+        is_active=True,
+    )
+
+    processor = RuleProcessor()
+    processor.run(telemetry)
+
+    events = Event.objects.filter(rule=rule)
+    assert events.count() == 0, "Event should NOT be created when composite AND condition fails"

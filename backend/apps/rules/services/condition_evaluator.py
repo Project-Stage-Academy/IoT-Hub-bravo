@@ -2,7 +2,7 @@ import logging
 import operator
 from datetime import timedelta
 from datetime import datetime
-from typing import Tuple
+from typing import Tuple, Any
 
 from apps.devices.models.telemetry import Telemetry
 from apps.rules.models.rule import Rule
@@ -24,8 +24,8 @@ DEFAULT_THRESHOLD_PERCENTAGE = 0.8 # default value for meet "threshold"
 
 def _extract_telemetry_value(telemetry: Telemetry) -> float | bool | str | None:
         """Extract value from telemetry regardless of type"""
+
         if telemetry.value_numeric is not None:
-            print(telemetry.value_numeric)
             return telemetry.value_numeric
         elif telemetry.value_bool is not None:
             return telemetry.value_bool
@@ -35,11 +35,7 @@ def _extract_telemetry_value(telemetry: Telemetry) -> float | bool | str | None:
 
 
 def _get_window(telemetry: Telemetry, minutes: int) -> Tuple[datetime, datetime]:
-    """
-    Returns the start and end of the time window for the given telemetry.
-    `end` is the telemetry.created_at (reference time),
-    `start` is `minutes` before `end`.
-    """
+    """Returns the start and end of the time window for the given telemetry"""
 
     end = telemetry.created_at
     start = end - timedelta(minutes=minutes)
@@ -47,6 +43,8 @@ def _get_window(telemetry: Telemetry, minutes: int) -> Tuple[datetime, datetime]
 
 
 def _get_comparator(condition: str) -> operator:
+    """Returns the comparison operator for the condition"""
+
     op = condition.get("operator")
     if not op:
         raise ValueError("No operator")
@@ -56,48 +54,50 @@ def _get_comparator(condition: str) -> operator:
     return comparator
 
 
-def _compare_safe(comparator, telemetry_value, condition_value) -> bool:
-    if type(telemetry_value) is not type(condition_value):
-        return False
+def _compare_safe(comparator: operator, telemetry_value: Any, condition_value: Any) -> bool:
+    """Compare values"""
+
     return comparator(telemetry_value, condition_value)
+
+
+def _get_value(condition: dict, key: str) -> Any:
+    """Extract value from condition dictionary"""
+
+    value = condition.get(key)
+    if value is None:
+        logger.error(f"Missing required field '{key}' in condition")
+        raise ValueError(f"Missing required field '{key}' in condition")
+    return value
+
+
+def _validate_metric(rule: Rule, telemetry: Telemetry) -> bool:
+    """Checks that the rule has a metric and it matches the telemetry metric"""
+    condition_metric = rule.device_metric.metric.metric_type
+    if condition_metric is None:
+        logger.error("Rule must contain a 'metric' field")
+        raise ValueError("Rule must contain a 'metric' field")
+    if condition_metric != telemetry.device_metric.metric.metric_type:
+        logger.debug(
+            "Rule metric does not match telemetry metric",
+            extra={
+                "condition_metric": condition_metric,
+                "telemetry_metric": telemetry.device_metric.metric.metric_type,
+            },
+        )
+        raise TypeError("Rule metric must match a telemetry metric field")
+    # return True
 
 
 class ThresholdEvaluator:
     @staticmethod
-    def evaluate(rule: Rule, telemetry: Telemetry):
+    def evaluate(rule: Rule, telemetry: Telemetry) -> bool:
         """Evaluate rule for 'threshold' type"""
+
+        _validate_metric(rule, telemetry)
+
         condition = rule.condition
-        condition_metric = (
-            rule.device_metric.metric.metric_type
-        )
-
-        if condition_metric is None:
-            logger.error("Rule must contain a 'metric' field")
-            raise ValueError("Rule must contain a 'metric' field")
-        if condition_metric != telemetry.device_metric.metric.metric_type:
-            logger.debug(
-                "Rule metric does not match telemetry metric",
-                extra={
-                    "condition_metric": condition_metric,
-                    "telemetry_metric": telemetry.device_metric.metric.metric_type,
-                },
-            )
-            return False
-
-        condition_value = condition.get(
-            "value", None
-        )
-        if condition_value is None:
-            logger.error("Rule condition does not contain a value")
-            raise ValueError("Rule condition does not contain a value")
-
+        condition_value = _get_value(condition)
         comparator = _get_comparator(condition)
-
-        # if telemetry doesnt has a value but we have window sooo what - ?????????
-        telemetry_value = _extract_telemetry_value(telemetry)
-        if telemetry_value is None:
-            logger.warning("No value present in telemetry")
-            return False
         
         # time window
         duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
@@ -117,12 +117,12 @@ class ThresholdEvaluator:
 
         # Count how many meet threshold
         matching_count = 0
-        matching_count = 0
         for t in telemetries_in_window:
             value = _extract_telemetry_value(t)
             if value is None:
                 logger.warning(f"No value present in telemetry id={t.id}")
                 continue
+
             if _compare_safe(comparator, value, condition_value):
                 matching_count += 1
 
@@ -205,26 +205,24 @@ class CompositeEvaluator:
 
 
 class ConditionEvaluator:
+    _evaluators = {
+        "threshold": ThresholdEvaluator.evaluate,
+        "rate": RateEvaluator.evaluate,
+        "composite": CompositeEvaluator.evaluate,
+    }
+
+    @staticmethod
+    def register(rule_type: str, evaluator_callable):
+        """Register a new evaluator for a custom rule type"""
+        ConditionEvaluator._evaluators[rule_type] = evaluator_callable
+
     @staticmethod
     def evaluate(rule: Rule, telemetry: Telemetry) -> bool:
-        """
-        simple evaluator for rule
-        return true if telemetry.value satisfies rule.condition
-        condition = {"metric": "temperature", "operator": ">", "value": 100}
-        """
-        # add time
-        condition = rule.condition
-        rule_type = condition.get('type')
-
-        if rule_type == 'threshold':
-            return ThresholdEvaluator.evaluate(rule, telemetry)
-
-        elif rule_type == 'rate':
-            return RateEvaluator.evaluate(rule, telemetry)
-
-        elif rule_type == 'composite':
-            return CompositeEvaluator.evaluate(rule, telemetry)
-
-        else:
+        """Evaluate rule"""
+        rule_type = rule.condition.get("type")
+        evaluator = ConditionEvaluator._evaluators.get(rule_type)
+        if evaluator is None:
             logger.warning(f"Unknown condition type: {rule_type}")
             return False
+        return evaluator(rule, telemetry)
+
