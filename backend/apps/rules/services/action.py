@@ -24,6 +24,6 @@ class Action:
         event = Event.objects.create(
             rule=rule,
             timestamp=timezone.now(),
-            trigger_telemetry=telemetry,
+            trigger_telemetry_id=telemetry.id,
         )
         return event
