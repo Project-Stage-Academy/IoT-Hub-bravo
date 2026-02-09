@@ -592,7 +592,7 @@ paths:
                     operator: ">"
                     value: 30
                   action: 
-                    type: "nootify"
+                    type: "notify"
                     message: "some info"
                   device_metric: "123e4567-e89b-12d3-a456-426614174000"
               rate_rule:
@@ -664,9 +664,8 @@ paths:
                 invalid_condition:
                   summary: Invalid condition definition
                   value:
-                    error: "Invalid rule condition"
-                    details:
-                      condition: "Unsupported operator"        
+                    code: 400
+                    message: "Invalid rule condition: Unsupported operator"     
 
   /api/rules/{id}:
     get:
@@ -707,7 +706,8 @@ paths:
                     condition:
                       type: "threshold"
                       operator: ">"
-                      value: 13   
+                      value: 13
+                    device_metric: "550e8400-e29b-41d4-a716-446655440000"     
         '400':
           description: Invalid request
           content:
@@ -718,7 +718,8 @@ paths:
                 invalid_payload:
                   summary: Invalid rule payload
                   value:
-                    error: "Invalid rule definition"       
+                    message: "Invalid rule definition"
+                    code: 400   
         '404':
           description: Rule not found
           content:
@@ -729,7 +730,8 @@ paths:
                 not_found:
                   summary: Rule not found
                   value:
-                    error: "Rule not found"  
+                    message: "Rule not found"
+                    code: 404
     put:
       tags:
         - Rules
@@ -765,7 +767,7 @@ paths:
                 updated:
                   summary: Updated rule
                   value:
-                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    id: "550e8411-e29b-41d4-a716-446655440000"
                     name: "Updated Rule"
                     is_active: false
                     action: 
@@ -774,7 +776,8 @@ paths:
                     condition:
                       type: "threshold"
                       operator: ">"
-                      value: 13     
+                      value: 13
+                    device_metric: "550e8412-e29b-41d4-a716-446655440000"       
         '400':
           description: Invalid request
           content:
@@ -785,7 +788,8 @@ paths:
                 invalid_payload:
                   summary: Invalid rule payload
                   value:
-                    error: "Invalid rule definition"
+                    message: "Invalid rule definition"
+                    code: 400
         '404':
           description: Rule not found
           content:
@@ -796,7 +800,8 @@ paths:
                 not_found:
                   summary: Rule not found
                   value:
-                    error: "Rule not found"
+                    message: "Rule not found"
+                    code: 404
     patch:
       tags:
         - Rules
@@ -830,10 +835,11 @@ paths:
                     type: "threshold"
                     operator: "<"
                     value: 10
-                    device_metric: "123e4567-e89b-12d3-a456-426614174000"
+                  device_metric: "123e4567-e89b-12d3-a456-426614174000"
                   action: 
                     type: "notify"
                     message: "info"
+  
       responses:
         '200':
           description: Rule updated
@@ -854,7 +860,8 @@ paths:
                     condition:
                       type: "threshold"
                       operator: ">"
-                      value: 13     
+                      value: 13
+                    device_metric: "550e8400-e29b-41d4-a716-446655440000"    
         '400':
           description: Invalid request
           content:
@@ -865,7 +872,8 @@ paths:
                 invalid_payload:
                   summary: Invalid rule payload
                   value:
-                    error: "Invalid rule definition"
+                    message: "Invalid rule definition"
+                    code: 400
         '404':
           description: Rule not found
           content:
@@ -876,7 +884,8 @@ paths:
                 not_found:
                   summary: Rule not found
                   value:
-                    error: "Rule not found"
+                    message: "Rule not found"
+                    code: 404
     delete:
       tags:
         - Rules
@@ -943,9 +952,17 @@ paths:
                 enabled:
                   summary: Rule enabled
                   value:
-                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    id: "550e8400-e29b-41d4-a716-446655448000"
                     name: "Rule name"
                     is_active: true
+                    condition:
+                      type: "threshold"
+                      operator: ">"
+                      value: 13
+                    device_metric: "550e8400-e29b-41d4-a716-446655440900"
+                    action:
+                      type: "notify"
+                      message: "123"
         '404':
           description: Rule not found
           content:
@@ -989,6 +1006,14 @@ paths:
                     id: "550e8400-e29b-41d4-a716-446655440000"
                     name: "Rule name"
                     is_active: true
+                    condition:
+                      type: "threshold"
+                      operator: ">"
+                      value: 13
+                    device_metric: "550e8400-e29b-41d4-a716-446655440000"
+                    action:
+                      type: "notify"
+                      message: "123" 
         '404':
           description: Rule not found
           content:
@@ -1023,9 +1048,7 @@ paths:
               evaluate_example:
                 summary: Evaluate telemetry data against rules
                 value:
-                  device_id: "device-123"
-                  metric: "temperature"
-                  value: 75     
+                  device_id: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
           description: Evaluation results
@@ -1037,10 +1060,8 @@ paths:
                 success:
                   summary: Rules matched
                   value:
-                    matched_rules:
-                      - id: "550e8400-e29b-41d4-a716-446655440000"
-                        name: "High Temperature Alert"
-                        action: "notify"
+                    device_id: "550e8400-e29b-41d4-a716-446655440000"
+                    trigger_telemetry_id: "123e4567-e89b-12d3-a456-426614174000"
         '400':
           description: Invalid request
           content:
@@ -1110,9 +1131,15 @@ paths:
                     limit: 20
                     offset: 0
                     items:
-                      - id: 1
-                        rule_id: 1
+                      - id: "550e8400-e29b-41d4-a716-446655440001"
+                        rule_id: "550e8400-e29b-41d4-a716-446655440002"
+                        acknowledged: false
                         timestamp: "2026-01-22T16:30:00Z"
+                        created_at: "2026-01-22T16:31:00Z"
+                        trigger_telemetry_id: "550e8400-e29b-41d4-a716-446655440003"
+                        trigger_value:
+                          metric_value: 35.2
+                        trigger_device_metric_id: "550e8400-e29b-41d4-a716-446655440001"
         '404':
           description: Rule not found
           content:
@@ -1585,6 +1612,19 @@ components:
         - condition
         - action
         - device_metric
+      example:
+        id: "550e8400-e29b-41d4-a716-446655440000"
+        name: "High Temperature Alert"
+        description: "Alert when temperature exceeds 30°C"
+        is_active: true
+        condition:
+          type: "threshold"
+          operator: ">"
+          value: 30
+        action:
+          type: "notify"
+          message: "User_1 temperature is overwhelming"
+        device_metric: "123e4567-e89b-12d3-a456-426614174000"  
 
     RuleCreate:
       type: object
@@ -1629,10 +1669,21 @@ components:
         - is_active
         - action
         - device_metric
+      example:
+        name: "High Temperature Alert"
+        description: "Alert when temperature exceeds 30°C"
+        is_active: true
+        condition:
+          type: "threshold"
+          operator: ">"
+          value: 30
+        action:
+          type: "notify"
+          message: "User_1 temperature is overwhelming"
+        device_metric: "123e4567-e89b-12d3-a456-426614174000"  
 
     RulePatch:
       type: object
-      description: Partial update of rule fields
       properties:
         name:
           type: string
@@ -1644,94 +1695,20 @@ components:
           type: object
         action:
           type: object
+        device_metric:
+          type: string
+          format: uuid
       example:
-        enabled: false
-
-    RuleConditionThreshold:
-      type: object
-      description: Threshold-based rule condition
-      properties:
-        type:
-          type: string
-          enum: [threshold]
-          example: "threshold"
-        operator:
-          type: string
-          enum: [">", ">=", "<", "<=", "==", "!="]
-          example: ">"
-        value:
-          type: number
-          example: 30
-      required:
-        - type
-        - operator
-        - value
-      example:
-        type: "threshold"
-        operator: ">"
-        value: 30
-
-    RuleConditionRate:
-      type: object
-      description: Rate-based rule condition (event frequency)
-      properties:
-        type:
-          type: string
-          enum: [rate]
-          example: "rate"
-        count:
-          type: integer
-          minimum: 1
-          description: Number of events threshold
-          example: 10
-        minutes:
-          type: integer
-          minimum: 1
-          description: Time window in seconds
-          example: 300
-      required:
-        - type
-        - count
-        - minutes
-      example:
-        type: "rate"
-        count: 10
-        minutes: 300
-
-    RuleConditionComposite:
-      type: object
-      description: Composite rule combining multiple conditions
-      properties:
-        type:
-          type: string
-          enum: [composite]
-          example: "composite"
-        operator:
-          type: string
-          enum: [AND, OR]
-          example: "AND"
-        conditions:
-          type: array
-          description: Array of sub-conditions (threshold or rate)
-          items:
-            oneOf:
-              - $ref: '#/components/schemas/RuleConditionThreshold'
-              - $ref: '#/components/schemas/RuleConditionRate'
-          minItems: 2
-      required:
-        - type
-        - operator
-        - conditions
-      example:
-        type: "composite"
-        operator: "AND"
-        conditions:
-          - type: "threshold"
-            operator: ">"
-            value: 35
-          - type: "rate"
-            count: 5
-            minutes: 20
+        name: "High Temp Updated"
+        description: "Alert if > 32°C"
+        is_active: false
+        condition:
+          type: "threshold"
+          operator: ">"
+          value: 32
+        action:
+          type: "notify"
+        device_metric: "123e4567-e89b-12d3-a456-426614174000"    
 
     PaginatedRules:
       type: object
@@ -1775,28 +1752,29 @@ components:
     RuleEvaluateRequest:
       type: object
       properties:
-        rule_id:
+        device_id:
           type: string
           format: uuid
-        telemetry_value:
-          type: number
       required:
-        - rule_id
-        - telemetry_value
+        - device_id
+      example:
+        device_id: "550e8400-e29b-41d4-a716-446655440000"  
     
     RuleEvaluateResponse:
       type: object
       properties:
-        rule_id:
+        device_id:
           type: string
           format: uuid
-        triggered:
-          type: boolean
-        message:
+        trigger_telemetry_id:
           type: string
+          format: uuid
       required:
-        - rule_id
+        - device_id
         - trigger_telemetry_id
+      example:
+        device_id: "550e8400-e29b-41d4-a716-446655440000"
+        trigger_telemetry_id: "766e8400-a33b-11d4-a716-446655441100"   
     
     Event:
       type: object
@@ -1833,9 +1811,10 @@ components:
           example:
             metric_value: 35.2
         trigger_device_metric_id:
-          type: integer
+          type: string
+          format: uuid
           nullable: true
-          example: 5
+          example: "550e8400-e29b-41d4-a716-446655440001"
       required:
         - id
         - rule_id
@@ -1850,7 +1829,7 @@ components:
         trigger_telemetry_id: "550e8400-e29b-41d4-a716-446655440001"
         trigger_value:
           metric_value: 35.2
-        trigger_device_metric_id: 5
+        trigger_device_metric_id: "550e8400-e29b-41d4-a716-446655440009"
 
     PaginatedEvents:
       type: object
@@ -1886,5 +1865,5 @@ components:
             trigger_telemetry_id: "550e8400-e29b-41d4-a716-446655440001"
             trigger_value:
               metric_value: 35.2
-            trigger_device_metric_id: 5
+            trigger_device_metric_id: "550e8400-e29b-41d4-a716-446655440011"
           
