@@ -154,16 +154,16 @@ class Command(BaseCommand):
                 """.strip(),
                 "Compression policy added: after 30 days.",
             ),
-            (
-                """
-                SELECT add_retention_policy(
-                    'telemetries',
-                    INTERVAL '1 year',
-                    if_not_exists => TRUE
-                );
-                """.strip(),
-                "Retention policy added: keep data for 1 year.",
-            ),
+            # (
+            #     """
+            #     SELECT add_retention_policy(
+            #         'telemetries',
+            #         INTERVAL '1 year',
+            #         if_not_exists => TRUE
+            #     );
+            #     """.strip(),
+            #     "Retention policy added: keep data for 1 year.",
+            # ),
         ]
 
         try:
