@@ -52,7 +52,7 @@ Compares a telemetry value against a static threshold.
   "operator": ">",
   "value": 30
 }
-````
+```
 
 **Supported operators:** `>`, `<`, `>=`, `<=`, `==`, `!=`
 
@@ -106,7 +106,10 @@ Combines multiple rule conditions using logical operators.
 
 **Supported operators:** `AND`, `OR`
 
-The rule triggers if all sub-conditions evaluate to true.
+> The rule triggers depending on the logical operator:
+>
+> * `AND` — all sub-conditions must evaluate to true
+> * `OR` — at least one sub-condition must evaluate to true
 
 ---
 ## 3. CRUD Operations
@@ -167,17 +170,28 @@ When a rule triggers, an **Event** is generated:
 
 ```json
 {
-  "id": "event-uuid",
-  "rule": 123,
-  "device_metric": 123,
-  "created_at": "2026-02-09T10:05:00Z",
-  "trigger_telemetry": 123,
+  "id": 123,
+  "rule_id": 456,
+  "timestamp": "2026-02-09T10:05:00Z",
+  "acknowledged": false,
+  "created_at": "2026-02-09T10:05:10Z"
 }
 ```
 
 **Field explanations:**
 
-* `rule_id` — the rule that triggered the event
-* `device_metric` — metric associated with the rule
-* `value` — metric value that caused the trigger
-* `trigger_telemetry` — which tele
+| Field          | Type     | Description                                        |
+| -------------- | -------- | -------------------------------------------------- |
+| `id`           | integer  | Unique identifier of the event                     |
+| `rule_id`      | integer  | Reference to the rule that triggered the event     |
+| `timestamp`    | datetime | When the event occurred (evaluated telemetry time) |
+| `acknowledged` | boolean  | Whether the event was acknowledged                 |
+| `created_at`   | datetime | When the event record was created in the database  |
+
+> Notes:
+>
+> * Each Event is created when a Rule condition is satisfied.
+> * `timestamp` reflects the time the triggering telemetry was evaluated.
+> * `acknowledged` can be updated to track whether the event has been reviewed.
+> * `created_at` is automatically set when the Event record is stored in the database.
+
