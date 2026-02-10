@@ -9,28 +9,21 @@ class Event(models.Model):
     rule = models.ForeignKey('rules.Rule', on_delete=models.CASCADE, null=False, db_index=True)
     acknowledged = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, null=False)
-    trigger_telemetry_id = models.UUIDField(null=True, 
-                                            blank=True, 
-                                            db_index=True,
-                                            help_text="ID of the telemetry that triggered this event")
-    trigger_value = models.JSONField(
+    trigger_telemetry_id = models.BigIntegerField(
         null=True,
-        help_text="Copy of telemetry value at trigger time"
+        blank=True,
+        db_index=True,
+        help_text="ID of the telemetry that triggered this event",
     )
-    trigger_device_metric_id = models.BigIntegerField(
-        null=True,
-        help_text="Device metric for context"
-    )
-    
-    # Helper method to get telemetry
+
     def get_trigger_telemetry(self):
         """Safely retrieve trigger telemetry if it still exists"""
         if self.trigger_telemetry_id:
             try:
                 return Telemetry.objects.get(id=self.trigger_telemetry_id)
             except Telemetry.DoesNotExist:
-                return
-            
+                return None
+
     class Meta:
         db_table = 'events'
         indexes = [
