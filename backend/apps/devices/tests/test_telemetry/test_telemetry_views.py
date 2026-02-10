@@ -39,7 +39,7 @@ def test_ingest_single_service_rejects_returns_400(
     telemetry_ingest_url,
     valid_telemetry_payload,
 ):
-    """Test service reject returns 400."""
+    """Test service reject returns 422."""
     telemetry_create_mock.return_value = Mock(created_count=0, errors={'device': 'invalid'})
 
     res = post_json(
@@ -48,7 +48,7 @@ def test_ingest_single_service_rejects_returns_400(
         valid_telemetry_payload,
     )
 
-    assert res.status_code == 400
+    assert res.status_code == 422
     telemetry_create_mock.assert_called_once()
 
     data = res.json()
