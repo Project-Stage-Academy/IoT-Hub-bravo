@@ -17,10 +17,9 @@ class Command(BaseCommand):
         telemetry_qs = Telemetry.objects.filter(created_at__gte=since).order_by("created_at")
 
         count = 0
-        processor = RuleProcessor()
-
+ 
         for telemetry in telemetry_qs:
-            processor.run(telemetry)
+            RuleProcessor.run(telemetry)
             count += 1
 
         self.stdout.write(self.style.SUCCESS(f"Processed {count} telemetry events"))
