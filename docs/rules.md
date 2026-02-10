@@ -70,12 +70,12 @@ Counts telemetry events over a sliding time window.
   "type": "rate",
   "operator": ">=",
   "count": 5,
-  "window_seconds": 60
+  "minutes": 1
 }
 ```
 
 **Description:**
-The rule triggers if at least 5 telemetry events occurred within the last 60 seconds.
+The rule triggers if at least 5 telemetry events occurred within the last 1 minute.
 
 ---
 
@@ -99,7 +99,7 @@ Combines multiple rule conditions using logical operators.
       "type": "rate",
       "operator": ">=",
       "count": 3,
-      "window_seconds": 120
+      "minutes": 2
     }
   ]
 }
