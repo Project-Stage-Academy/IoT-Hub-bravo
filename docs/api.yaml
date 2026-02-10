@@ -594,7 +594,7 @@ paths:
                   action: 
                     type: "notify"
                     message: "some info"
-                  device_metric: "123e4567-e89b-12d3-a456-426614174000"
+                  device_metric: 123
               rate_rule:
                 summary: Event rate rule
                 value:
@@ -608,7 +608,7 @@ paths:
                   action: 
                     type: "webhook"
                     message: "some info"
-                  device_metric: "123e4567-e89b-12d3-a456-426614174000"
+                  device_metric: 32
               composite_rule:
                 summary: Composite AND rule
                 value:
@@ -622,15 +622,15 @@ paths:
                       - type: "threshold"
                         operator: ">"
                         value: 35
-                        device_metric: "123e4567-e89b-12d3-a456-426614174000"
+                        device_metric: 11
                       - type: "threshold"
-                        device_metric: "123e4567-e89b-12d3-a456-426614174111"
+                        device_metric: 33
                         operator: "<"
                         value: 20
                   action:
                     type: "notify"
                     message: "some info"
-                  device_metric: "123e4567-e89b-12d3-a456-426614174000"
+                  device_metric: 12
       responses:
         '201':
           description: Rule created successfully
@@ -683,7 +683,7 @@ paths:
           in: path
           required: true
           schema:
-            type: int  
+            type: integer  
       responses:
         '200':
           description: Rule found
@@ -746,7 +746,7 @@ paths:
           in: path
           required: true
           schema:
-            type: int
+            type: integer
       requestBody:
         required: true
         content:
@@ -814,7 +814,7 @@ paths:
           in: path
           required: true
           schema:
-            type: int
+            type: integer
       requestBody:
         required: true
         content:
@@ -897,7 +897,7 @@ paths:
           in: path
           required: true
           schema:
-            type: int
+            type: integer
       responses:
         '204':
           description: Rule deleted
@@ -934,7 +934,7 @@ paths:
           in: path
           required: true
           schema:
-            type: int
+            type: integer
       responses:
         '200':
           description: Rule state changed
@@ -984,7 +984,7 @@ paths:
           in: path
           required: true
           schema:
-            type: int
+            type: integer
       responses:
         '200':
           description: Rule state changed
@@ -1082,7 +1082,7 @@ paths:
           in: path
           required: true
           schema:
-            type: int
+            type: integer
         - name: limit
           in: query
           schema:
@@ -1126,8 +1126,8 @@ paths:
                       - id: 9999
                         rule_id: 99
                         acknowledged: false
-                        timestamp: 99
-                        created_at: 9
+                        timestamp: "2026-01-22T12:00:00Z"
+                        created_at: "2026-01-22T12:00:00Z"
                         trigger_telemetry_id: 123
                         trigger_value:
                           metric_value: 35.2
@@ -1567,7 +1567,7 @@ components:
       description: Business logic rule for monitoring and alerting
       properties:
         id:
-          type: int
+          type: integer
           example: 12
         name:
           type: string
@@ -1592,7 +1592,7 @@ components:
             type: "notify"
             message: "User_1 temperature is overwhelming"
         device_metric:
-          type: int
+          type: integer
           description: Foreign key to DeviceMetric model
           example: 12 
       required:
@@ -1614,7 +1614,7 @@ components:
         action:
           type: "notify"
           message: "User_1 temperature is overwhelming"
-        device_metric: "123e4567-e89b-12d3-a456-426614174000"  
+        device_metric: 44  
 
     RuleCreate:
       type: object
@@ -1649,7 +1649,7 @@ components:
           example: 
             type: "notify"
         device_metric:
-          type: int
+          type: integer
           description: Foreign key to DeviceMetric model
           example: 13
       required:
@@ -1669,7 +1669,7 @@ components:
         action:
           type: "notify"
           message: "User_1 temperature is overwhelming"
-        device_metric: "123e4567-e89b-12d3-a456-426614174000"  
+        device_metric: 45 
 
     RulePatch:
       type: object
@@ -1685,7 +1685,7 @@ components:
         action:
           type: object
         device_metric:
-          type: int
+          type: integer
       example:
         name: "High Temp Updated"
         description: "Alert if > 32°C"
@@ -1741,7 +1741,7 @@ components:
       type: object
       properties:
         device_id:
-          type: int
+          type: integer
       required:
         - device_id
       example:
@@ -1751,9 +1751,9 @@ components:
       type: object
       properties:
         device_id:
-          type: int
+          type: integer
         trigger_telemetry_id:
-          type: int
+          type: integer
       required:
         - device_id
         - trigger_telemetry_id
@@ -1766,10 +1766,10 @@ components:
       description: Rule evaluation event (rule firing)
       properties:
         id:
-          type: int
+          type: integer
           example: 11
         rule_id:
-          type: int
+          type: integer
           example: 66
         acknowledged:
           type: boolean
@@ -1783,7 +1783,7 @@ components:
           format: date-time
           example: "2026-01-22T16:31:00Z"
         trigger_telemetry_id:
-          type: int
+          type: integer
           nullable: true
           example: 11
         trigger_value:
@@ -1793,7 +1793,7 @@ components:
           example:
             metric_value: 35.2
         trigger_device_metric_id:
-          type: int
+          type: integer
           nullable: true
           example: 45
       required:
