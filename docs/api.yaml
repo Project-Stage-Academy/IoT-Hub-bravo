@@ -531,7 +531,7 @@ paths:
                     limit: 20
                     offset: 0
                     items:
-                      - id: "550e8400-e29b-41d4-a716-446655440000"
+                      - id: 12
                         name: "High Temperature Alert"
                         description: "Alert when temperature exceeds 30°C"
                         is_active: true
@@ -541,8 +541,8 @@ paths:
                           value: 30
                         action:
                           type: "notify"
-                        device_metric: "123e4567-e89b-12d3-a456-426614174000"
-                      - id: "660e8400-e29b-41d4-a716-446655440111"
+                        device_metric: 31
+                      - id: 32
                         name: "Low Humidity Alert"
                         description: "Alert when humidity drops below 20%"
                         is_active: true
@@ -552,7 +552,7 @@ paths:
                           value: 20
                         action:
                           type: "notify"
-                        device_metric: "123e4567-e29b-12d3-a456-426614174001"
+                        device_metric: 3
         '400':
           description: Invalid request
           content:
@@ -642,7 +642,7 @@ paths:
                 created:
                   summary: Created rule with full schema
                   value:
-                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    id: 22
                     name: "High Temperature Alert"
                     description: "Alert when temperature exceeds 30°C"
                     is_active: true
@@ -653,7 +653,7 @@ paths:
                     action:
                       type: "notify"
                       message: "User_1 temperature is overwhelming"
-                    device_metric: "123e4567-e89b-12d3-a456-426614174000"  
+                    device_metric: 12 
         '400':
           description: Invalid rule definition
           content:
@@ -683,9 +683,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
-          description: Rule UUID   
+            type: int  
       responses:
         '200':
           description: Rule found
@@ -697,7 +695,7 @@ paths:
                 updated:
                   summary: Updated rule
                   value:
-                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    id: 31
                     name: "Updated Rule"
                     is_active: false
                     action: 
@@ -707,7 +705,7 @@ paths:
                       type: "threshold"
                       operator: ">"
                       value: 13
-                    device_metric: "550e8400-e29b-41d4-a716-446655440000"     
+                    device_metric: 32     
         '400':
           description: Invalid request
           content:
@@ -748,8 +746,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: int
       requestBody:
         required: true
         content:
@@ -767,7 +764,7 @@ paths:
                 updated:
                   summary: Updated rule
                   value:
-                    id: "550e8411-e29b-41d4-a716-446655440000"
+                    id: 44
                     name: "Updated Rule"
                     is_active: false
                     action: 
@@ -777,7 +774,7 @@ paths:
                       type: "threshold"
                       operator: ">"
                       value: 13
-                    device_metric: "550e8412-e29b-41d4-a716-446655440000"       
+                    device_metric: 55   
         '400':
           description: Invalid request
           content:
@@ -817,8 +814,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: int
       requestBody:
         required: true
         content:
@@ -835,7 +831,7 @@ paths:
                     type: "threshold"
                     operator: "<"
                     value: 10
-                  device_metric: "123e4567-e89b-12d3-a456-426614174000"
+                  device_metric: 11
                   action: 
                     type: "notify"
                     message: "info"
@@ -851,7 +847,7 @@ paths:
                 updated:
                   summary: Updated rule
                   value:
-                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    id: 16
                     name: "Updated Rule"
                     is_active: false
                     action: 
@@ -861,7 +857,7 @@ paths:
                       type: "threshold"
                       operator: ">"
                       value: 13
-                    device_metric: "550e8400-e29b-41d4-a716-446655440000"    
+                    device_metric: 77    
         '400':
           description: Invalid request
           content:
@@ -901,8 +897,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: int
       responses:
         '204':
           description: Rule deleted
@@ -939,8 +934,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: int
       responses:
         '200':
           description: Rule state changed
@@ -952,14 +946,14 @@ paths:
                 enabled:
                   summary: Rule enabled
                   value:
-                    id: "550e8400-e29b-41d4-a716-446655448000"
+                    id: 999
                     name: "Rule name"
                     is_active: true
                     condition:
                       type: "threshold"
                       operator: ">"
                       value: 13
-                    device_metric: "550e8400-e29b-41d4-a716-446655440900"
+                    device_metric: 99
                     action:
                       type: "notify"
                       message: "123"
@@ -990,8 +984,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: int
       responses:
         '200':
           description: Rule state changed
@@ -1003,14 +996,14 @@ paths:
                 enabled:
                   summary: Rule enabled
                   value:
-                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    id: 9
                     name: "Rule name"
                     is_active: true
                     condition:
                       type: "threshold"
                       operator: ">"
                       value: 13
-                    device_metric: "550e8400-e29b-41d4-a716-446655440000"
+                    device_metric: 99
                     action:
                       type: "notify"
                       message: "123" 
@@ -1048,7 +1041,7 @@ paths:
               evaluate_example:
                 summary: Evaluate telemetry data against rules
                 value:
-                  device_id: "550e8400-e29b-41d4-a716-446655440000"
+                  device_id: 9
       responses:
         '200':
           description: Evaluation results
@@ -1060,8 +1053,8 @@ paths:
                 success:
                   summary: Rules matched
                   value:
-                    device_id: "550e8400-e29b-41d4-a716-446655440000"
-                    trigger_telemetry_id: "123e4567-e89b-12d3-a456-426614174000"
+                    device_id: 999
+                    trigger_telemetry_id: 99
         '400':
           description: Invalid request
           content:
@@ -1089,8 +1082,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: int
         - name: limit
           in: query
           schema:
@@ -1131,15 +1123,15 @@ paths:
                     limit: 20
                     offset: 0
                     items:
-                      - id: "550e8400-e29b-41d4-a716-446655440001"
-                        rule_id: "550e8400-e29b-41d4-a716-446655440002"
+                      - id: 9999
+                        rule_id: 99
                         acknowledged: false
-                        timestamp: "2026-01-22T16:30:00Z"
-                        created_at: "2026-01-22T16:31:00Z"
-                        trigger_telemetry_id: "550e8400-e29b-41d4-a716-446655440003"
+                        timestamp: 99
+                        created_at: 9
+                        trigger_telemetry_id: 123
                         trigger_value:
                           metric_value: 35.2
-                        trigger_device_metric_id: "550e8400-e29b-41d4-a716-446655440001"
+                        trigger_device_metric_id: 321
         '404':
           description: Rule not found
           content:
@@ -1575,9 +1567,8 @@ components:
       description: Business logic rule for monitoring and alerting
       properties:
         id:
-          type: string
-          format: uuid
-          example: "550e8400-e29b-41d4-a716-446655440000"
+          type: int
+          example: 12
         name:
           type: string
           example: "High Temperature Alert"
@@ -1601,10 +1592,9 @@ components:
             type: "notify"
             message: "User_1 temperature is overwhelming"
         device_metric:
-          type: string
-          format: uuid
+          type: int
           description: Foreign key to DeviceMetric model
-          example: "123e4567-e89b-12d3-a456-426614174000" 
+          example: 12 
       required:
         - id
         - name
@@ -1613,7 +1603,7 @@ components:
         - action
         - device_metric
       example:
-        id: "550e8400-e29b-41d4-a716-446655440000"
+        id: 1
         name: "High Temperature Alert"
         description: "Alert when temperature exceeds 30°C"
         is_active: true
@@ -1659,10 +1649,9 @@ components:
           example: 
             type: "notify"
         device_metric:
-          type: string
-          format: uuid
+          type: int
           description: Foreign key to DeviceMetric model
-          example: "123e4567-e89b-12d3-a456-426614174000" 
+          example: 13
       required:
         - name
         - condition
@@ -1696,8 +1685,7 @@ components:
         action:
           type: object
         device_metric:
-          type: string
-          format: uuid
+          type: int
       example:
         name: "High Temp Updated"
         description: "Alert if > 32°C"
@@ -1708,7 +1696,7 @@ components:
           value: 32
         action:
           type: "notify"
-        device_metric: "123e4567-e89b-12d3-a456-426614174000"    
+        device_metric: 444    
 
     PaginatedRules:
       type: object
@@ -1736,7 +1724,7 @@ components:
         limit: 20
         offset: 0
         items:
-          - id: "550e8400-e29b-41d4-a716-446655440000"
+          - id: 124
             name: "High Temperature Alert"
             description: "Alert when temperature exceeds 30°C"
             is_active: true
@@ -1747,47 +1735,42 @@ components:
             action:
               type: "notify"
               message: "User_1 temperature is overwhelming"
-            device_metric: "123e4567-e89b-12d3-a456-426614174000"
+            device_metric: 123
     
     RuleEvaluateRequest:
       type: object
       properties:
         device_id:
-          type: string
-          format: uuid
+          type: int
       required:
         - device_id
       example:
-        device_id: "550e8400-e29b-41d4-a716-446655440000"  
+        device_id: 11  
     
     RuleEvaluateResponse:
       type: object
       properties:
         device_id:
-          type: string
-          format: uuid
+          type: int
         trigger_telemetry_id:
-          type: string
-          format: uuid
+          type: int
       required:
         - device_id
         - trigger_telemetry_id
       example:
-        device_id: "550e8400-e29b-41d4-a716-446655440000"
-        trigger_telemetry_id: "766e8400-a33b-11d4-a716-446655441100"   
+        device_id: 33
+        trigger_telemetry_id: 333   
     
     Event:
       type: object
       description: Rule evaluation event (rule firing)
       properties:
         id:
-          type: string
-          format: uuid
-          example: "550e8400-e29b-41d4-a716-446655440000"
+          type: int
+          example: 11
         rule_id:
-          type: string
-          format: uuid
-          example: "550e8400-e29b-41d4-a716-446655440000"
+          type: int
+          example: 66
         acknowledged:
           type: boolean
           example: false
@@ -1800,10 +1783,9 @@ components:
           format: date-time
           example: "2026-01-22T16:31:00Z"
         trigger_telemetry_id:
-          type: string
-          format: uuid
+          type: int
           nullable: true
-          example: "550e8400-e29b-41d4-a716-446655440001"
+          example: 11
         trigger_value:
           type: object
           nullable: true
@@ -1811,25 +1793,24 @@ components:
           example:
             metric_value: 35.2
         trigger_device_metric_id:
-          type: string
-          format: uuid
+          type: int
           nullable: true
-          example: "550e8400-e29b-41d4-a716-446655440001"
+          example: 45
       required:
         - id
         - rule_id
         - timestamp
         - created_at
       example:
-        id: "550e8400-e29b-41d4-a716-446655440001"
-        rule_id: "550e8400-e29b-41d4-a716-446655440001"
+        id: 1
+        rule_id: 1
         acknowledged: false
         timestamp: "2026-01-22T16:30:00Z"
         created_at: "2026-01-22T16:31:00Z"
-        trigger_telemetry_id: "550e8400-e29b-41d4-a716-446655440001"
+        trigger_telemetry_id: 1
         trigger_value:
           metric_value: 35.2
-        trigger_device_metric_id: "550e8400-e29b-41d4-a716-446655440009"
+        trigger_device_metric_id: 1
 
     PaginatedEvents:
       type: object
@@ -1857,13 +1838,13 @@ components:
         limit: 20
         offset: 0
         items:
-          - id: "550e8400-e29b-41d4-a716-446655440001"
-            rule_id: "550e8400-e29b-41d4-a716-446655440001"
+          - id: 1
+            rule_id: 1
             acknowledged: false
             timestamp: "2026-01-22T16:30:00Z"
             created_at: "2026-01-22T16:31:00Z"
-            trigger_telemetry_id: "550e8400-e29b-41d4-a716-446655440001"
+            trigger_telemetry_id: 1
             trigger_value:
               metric_value: 35.2
-            trigger_device_metric_id: "550e8400-e29b-41d4-a716-446655440011"
+            trigger_device_metric_id: 1
           
