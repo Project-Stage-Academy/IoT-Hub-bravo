@@ -4,16 +4,17 @@
 
 The **Rule** model represents a business logic rule for monitoring and alerting.
 
-| Field           | Type     | Description                                |
-| --------------- | -------- | ------------------------------------------ |
-| `id`            | integer     | Unique identifier of the rule              |
-| `name`          | string   | Rule name                                  |
-| `description`   | string   | Short description of the rule              |
-| `is_active`     | boolean  | Whether the rule is active                 |
-| `condition`     | object   | Trigger condition (JSON)                   |
-| `action`        | object   | Action performed when rule triggers (JSON) |
-| `device_metric` | integer    | Foreign key to DeviceMetric                |
-| `created_at`    | datetime | Creation timestamp                         |
+| Field           | Type     | Required | Description                                |
+| --------------- | -------- | -------- | ------------------------------------------ |
+| `id`            | integer  | Yes      | Unique identifier of the rule              |
+| `name`          | string   | Yes      | Rule name                                  |
+| `description`   | string   | No       | Short description of the rule              |
+| `is_active`     | boolean  | Yes      | Whether the rule is active                 |
+| `condition`     | object   | Yes      | Trigger condition (JSON)                   |
+| `action`        | object   | Yes      | Action performed when rule triggers (JSON) |
+| `device_metric` | integer  | Yes      | Foreign key to DeviceMetric                |
+| `created_at`    | datetime | Yes      | Creation timestamp                         |
+
 
 **Example `condition`:**
 
@@ -174,7 +175,8 @@ When a rule triggers, an **Event** is generated:
   "rule_id": 456,
   "timestamp": "2026-02-09T10:05:00Z",
   "acknowledged": false,
-  "created_at": "2026-02-09T10:05:10Z"
+  "created_at": "2026-02-09T10:05:10Z",
+  "trigger_telemetry_id": 123,
 }
 ```
 
@@ -187,11 +189,4 @@ When a rule triggers, an **Event** is generated:
 | `timestamp`    | datetime | When the event occurred (evaluated telemetry time) |
 | `acknowledged` | boolean  | Whether the event was acknowledged                 |
 | `created_at`   | datetime | When the event record was created in the database  |
-
-> Notes:
->
-> * Each Event is created when a Rule condition is satisfied.
-> * `timestamp` reflects the time the triggering telemetry was evaluated.
-> * `acknowledged` can be updated to track whether the event has been reviewed.
-> * `created_at` is automatically set when the Event record is stored in the database.
-
+| `trigger_telemetry_id`   | int | Which telemtry trigger the event  |
