@@ -2,7 +2,7 @@ import logging
 import operator
 from datetime import timedelta
 from datetime import datetime
-from typing import Tuple, Any
+from typing import Tuple, Any, Callable
 
 from apps.devices.models.telemetry import Telemetry
 from apps.rules.models.rule import Rule
@@ -40,7 +40,7 @@ def _get_window(telemetry: Telemetry, minutes: int) -> Tuple[datetime, datetime]
     return start, end
 
 
-def _get_comparator(condition: str) -> operator:
+def _get_comparator(condition: str) -> Callable[[float, float], bool]:
     """Returns the comparison operator for the condition"""
     op = condition.get("operator")
     if not op:
@@ -79,7 +79,7 @@ def _validate_metric(rule: Rule, telemetry: Telemetry) -> bool:
                 "telemetry_metric": telemetry.device_metric.metric.metric_type,
             },
         )
-        raise TypeError("Rule metric must match a telemetry metric field")
+        raise ValueError("Rule metric must match a telemetry metric field")
 
 
 def _get_telemetries_in_window(telemetry: Telemetry, minutes: int):
@@ -90,6 +90,17 @@ def _get_telemetries_in_window(telemetry: Telemetry, minutes: int):
     )
 
 
+def _get_duration_minutes(condition: dict) -> int:
+    """Get minutes duration for time window from rule.condition"""
+    if "minutes" in condition:
+        return condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
+
+    if "duration_minutes" in condition:
+        return condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
+
+    return DEFAULT_DURATION_MINUTES
+
+
 class ThresholdEvaluator:
     @staticmethod
     def evaluate(rule: Rule, telemetry: Telemetry) -> bool:
@@ -98,7 +109,7 @@ class ThresholdEvaluator:
         condition = rule.condition
         condition_value = _get_value(condition)
         comparator = _get_comparator(condition)
-        duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
+        duration_minutes = _get_duration_minutes(condition)
         telemetries_in_window = _get_telemetries_in_window(telemetry, duration_minutes)
 
         total_count = telemetries_in_window.count()
@@ -136,7 +147,7 @@ class RateEvaluator:
         """
         condition = rule.condition
         count_required = condition.get("count")
-        duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
+        duration_minutes = _get_duration_minutes(condition)
 
         if count_required is None or duration_minutes is None:
             logger.error("Rate rule missing 'count' or 'duration_minutes'")

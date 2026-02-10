@@ -166,6 +166,24 @@ docker compose exec web python manage.py run_manual_rules --id 123
 # Option 2: Process the last 10 received telemetry records
 docker compose exec web python manage.py run_manual_rules --latest
 
+# Option 3: Process the last 10 telemetry records ordered by creation time
+docker compose exec web python manage.py run_manual_rules --latest --order created_at
+
+### Ordering options
+
+The `--order` flag controls how telemetry records are selected when using `--latest`.
+
+* `ts` — order by telemetry timestamp (default)
+* `created_at` — order by database creation time
+
+```bash
+docker compose exec web python manage.py run_manual_rules --latest --order ts
+docker compose exec web python manage.py run_manual_rules --latest --order created_at
+```
+
+> Note: The `--order` option is ignored when `--id` is provided.
+
+
 ---
 
 ## 7. Notes / Tips

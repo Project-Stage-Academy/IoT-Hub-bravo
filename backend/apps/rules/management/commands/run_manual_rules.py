@@ -8,10 +8,12 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--id', type=int, help='Specific Telemetry ID to process')
         parser.add_argument('--latest', action='store_true', help='Process the 10 latest telemetry records')
+        parser.add_argument('--order', choices=['ts','created_at'], default='ts', help='Ordering field for --latest (default: ts)')
 
     def handle(self, *args, **options):
         telemetry_id = options['id']
-        
+        order_field = options['order']
+
         if telemetry_id:
             try:
                 t = Telemetry.objects.get(id=telemetry_id)
@@ -22,7 +24,8 @@ class Command(BaseCommand):
                 return
 
         elif options['latest']:
-            latest_items = Telemetry.objects.order_by('-ts')[:10] # or by created_by ??????
+            ordering = f"-{order_field}"
+            latest_items = Telemetry.objects.order_by(ordering)[:10]
             for t in latest_items:
                 self.stdout.write(f"Processing telemetry {t.id} (device: {t.device_metric})...")
                 RuleProcessor.run(t)
