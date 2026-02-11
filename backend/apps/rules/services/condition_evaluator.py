@@ -1,36 +1,25 @@
 import logging
-import operator
 from datetime import timedelta
 from datetime import datetime
-from typing import Tuple, Any, Callable
+from typing import Tuple, Any
+from django.db.models import Q, Count, Case, When
 
 from apps.devices.models.telemetry import Telemetry
 from apps.rules.models.rule import Rule
 
 logger = logging.getLogger(__name__)
 
-COMPARISON_OPERATORS = {
-    "==": operator.eq,  # or '=' for non tech user (?)
-    "!=": operator.ne,
-    ">": operator.gt,
-    "<": operator.lt,
-    ">=": operator.ge,
-    "<=": operator.le,
+COMPARISON_OPERATOR_MAP = { # for filter
+    ">": "gt",
+    "<": "lt",
+    ">=": "gte",
+    "<=": "lte",
+    "==": "exact",
+    "!=": "exact",
 }
 
 DEFAULT_DURATION_MINUTES = 5  # default value for time window
 DEFAULT_THRESHOLD_PERCENTAGE = 0.8  # default value to meet "threshold"
-
-
-def _extract_telemetry_value(telemetry: Telemetry) -> float | bool | str | None:
-    """Extract value from telemetry regardless of type"""
-    if telemetry.value_numeric is not None:
-        return telemetry.value_numeric
-    elif telemetry.value_bool is not None:
-        return telemetry.value_bool
-    elif telemetry.value_str is not None:
-        return telemetry.value_str
-    return None
 
 
 def _get_window(telemetry: Telemetry, minutes: int) -> Tuple[datetime, datetime]:
@@ -40,20 +29,12 @@ def _get_window(telemetry: Telemetry, minutes: int) -> Tuple[datetime, datetime]
     return start, end
 
 
-def _get_comparator(condition: str) -> Callable[[float, float], bool]:
+def _get_comparison_operator(condition: dict) -> str:
     """Returns the comparison operator for the condition"""
     op = condition.get("operator")
     if not op:
-        raise ValueError("No operator")
-    comparator = COMPARISON_OPERATORS.get(op)
-    if not comparator:
-        raise ValueError("Invalid operator")
-    return comparator
-
-
-def _compare_safe(comparator: operator, telemetry_value: Any, condition_value: Any) -> bool:
-    """Compare values"""
-    return comparator(telemetry_value, condition_value)
+        raise ValueError("No comparison operator")
+    return op
 
 
 def _get_value(condition: dict, key: str = 'value') -> Any:
@@ -65,7 +46,7 @@ def _get_value(condition: dict, key: str = 'value') -> Any:
     return value
 
 
-def _validate_metric(rule: Rule, telemetry: Telemetry) -> bool:
+def _validate_metric(rule: Rule, telemetry: Telemetry) -> None:
     """Checks that the rule has a metric and it matches the telemetry metric"""
     condition_metric = rule.device_metric.metric.metric_type
     if condition_metric is None:
@@ -101,6 +82,32 @@ def _get_duration_minutes(condition: dict) -> int:
     return DEFAULT_DURATION_MINUTES
 
 
+def _get_value_field(telemetry: Telemetry):
+    """Get name (type) of the value telemtry field"""
+    if telemetry.value_numeric is not None:
+        return "value_numeric"
+    if telemetry.value_bool is not None:
+        return "value_bool"
+    if telemetry.value_str is not None:
+        return "value_str"
+
+    raise ValueError("Telemetry has no value set")
+
+
+def _build_filter_condition(telemetry: Telemetry, comparison_operator: str, condition_value: Any) -> Q:
+    """Filter for match_count in threshold evaluator"""
+    field_name = _get_value_field(telemetry)
+    lookup = COMPARISON_OPERATOR_MAP.get(comparison_operator)
+
+    if not lookup:
+        raise ValueError(f"Invalid operator")
+
+    if comparison_operator == "!=":
+        return ~Q(**{f"{field_name}__{lookup}": condition_value})
+
+    return Q(**{f"{field_name}__{lookup}": condition_value})
+
+
 class ThresholdEvaluator:
     @staticmethod
     def evaluate(rule: Rule, telemetry: Telemetry) -> bool:
@@ -108,7 +115,7 @@ class ThresholdEvaluator:
         _validate_metric(rule, telemetry)
         condition = rule.condition
         condition_value = _get_value(condition)
-        comparator = _get_comparator(condition)
+        comparison_operator = _get_comparison_operator(condition)
         duration_minutes = _get_duration_minutes(condition)
         telemetries_in_window = _get_telemetries_in_window(telemetry, duration_minutes)
 
@@ -116,19 +123,13 @@ class ThresholdEvaluator:
         if total_count == 0:
             logger.info("No telemetries in window")
             return False
+        
+        filter_q = _build_filter_condition(telemetry, comparison_operator, condition_value)
 
-        matching_count = 0
-        for t in telemetries_in_window:
-            value = _extract_telemetry_value(t)
-            if value is None:
-                logger.warning(f"No value present in telemetry id={t.id}")
-                continue
-
-            if _compare_safe(comparator, value, condition_value):
-                matching_count += 1
+        matching_count = telemetries_in_window.aggregate(matches=Count(Case(When(filter_q, then=1))))['matches']
 
         logger.info(
-            f"Threshold check: {matching_count} out of {total_count} events meet {comparator} {condition_value}"
+            f"Threshold check: {matching_count} out of {total_count} events meet {comparison_operator} {condition_value}"
         )
 
         threshold_percentage = condition.get("threshold_percentage", DEFAULT_THRESHOLD_PERCENTAGE)
