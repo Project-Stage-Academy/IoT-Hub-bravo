@@ -17,6 +17,12 @@ def run_rule_processor(telemetry_id: int):
     """
     Celery task to run RuleProcessor asynchronously on the given telemetry
     """
-    telemetry = Telemetry.objects.get(id=telemetry_id)
+    try:
+        telemetry = Telemetry.objects.get(id=telemetry_id)
+    except Telemetry.DoesNotExist:
+        logger_celery.warning(
+            "Telemetry not found",
+            extra={"telemetry_id": telemetry_id}
+        )
+    
     RuleProcessor.run(telemetry)
-    logger_celery.info("Rule processor")
