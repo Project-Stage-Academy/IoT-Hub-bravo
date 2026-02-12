@@ -30,7 +30,7 @@ paths:
       description: |
         Authenticates a user and returns a JWT access token.
         The token must be used in the `Authorization` header for all protected endpoints.
-      security: []
+      security: [ ]
       requestBody:
         required: true
         content:
@@ -66,7 +66,7 @@ paths:
         - Authentication
       summary: Refresh access token
       operationId: refreshToken
-      security: []
+      security: [ ]
       requestBody:
         required: true
         content:
@@ -87,11 +87,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthTokenResponse'
         '400':
-            description: Invalid request
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/devices:
     get:
@@ -100,7 +100,7 @@ paths:
       operationId: listDevices
       summary: List devices with pagination
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: limit
           in: query
@@ -136,7 +136,7 @@ paths:
       operationId: createDevice
       summary: Create a new device
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -164,7 +164,7 @@ paths:
       operationId: getDeviceById
       summary: Get device by id
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -190,7 +190,7 @@ paths:
       operationId: replaceDevice
       summary: Replace device
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -228,7 +228,7 @@ paths:
       summary: Partially update device
       operationId: patchDevice
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -266,7 +266,7 @@ paths:
       summary: Delete device
       operationId: deleteDevice
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -290,7 +290,7 @@ paths:
       summary: List telemetry records by device_id with pagination
       operationId: listTelemetry
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: device_id
           in: query
@@ -326,29 +326,90 @@ paths:
     post:
       tags:
         - Telemetry
-      summary: Create telemetry record
-      operationId: createTelemetry
+      summary: Ingest telemetry (single or batch)
+      operationId: ingestTelemetry
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
+      parameters:
+        - in: header
+          name: Ingest-Async
+          description: "If set to 1, ingestion is queued via Celery and returns 202."
+          required: false
+          schema:
+            type: string
+            enum: [ "1" ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VersionedTelemetryCreate'
+              oneOf:
+                - $ref: "#/components/schemas/TelemetryIngest"
+                - $ref: "#/components/schemas/TelemetryIngestBatch"
+            examples:
+              single:
+                summary: Single telemetry payload
+                value:
+                  schema_version: 1
+                  device: "DEV-001"
+                  ts: "2026-02-04T12:00:00Z"
+                  metrics:
+                    temperature: 21.5
+                    door_open: false
+                    status: "ok"
+              batch:
+                summary: Batch telemetry payload
+                value:
+                  - schema_version: 1
+                    device: "DEV-001"
+                    ts: "2026-02-04T12:00:00Z"
+                    metrics:
+                      temperature: 21.5
+                  - schema_version: 1
+                    device: "DEV-001"
+                    ts: "2026-02-04T12:00:01Z"
+                    metrics:
+                      temperature: 21.6
       responses:
         '201':
-          description: Telemetry created
+          description: Telemetry ingested
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Telemetry'
+                oneOf:
+                  - $ref: "#/components/schemas/TelemetryIngestSingleResponse"
+                  - $ref: "#/components/schemas/TelemetryIngestBatchResponse"
+              examples:
+                single_ok:
+                  summary: Single payload accepted
+                  value:
+                    status: "ok"
+                    created: 3
+                    errors: { }
+                batch_ok:
+                  summary: Batch payload accepted
+                  value:
+                    status: "ok"
+                    created: 4
+                    items:
+                      - created: 2
+                        errors: { }
+                      - created: 2
+                        errors: { }
+                    errors: { }
+        '202':
+          description: Accepted for async ingestion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetryIngestAsyncResponse"
+
         '400':
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/telemetry/{id}:
     get:
@@ -357,7 +418,7 @@ paths:
       summary: Get telemetry by id
       operationId: getTelemetryById
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -383,7 +444,7 @@ paths:
       summary: Replace telemetry
       operationId: replaceTelemetry
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -395,7 +456,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VersionedTelemetryCreate'
+              $ref: '#/components/schemas/TelemetryIngest'
       responses:
         '200':
           description: Telemetry updated
@@ -421,7 +482,7 @@ paths:
       summary: Partially update telemetry
       operationId: patchTelemetry
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -459,7 +520,7 @@ paths:
       summary: Delete telemetry
       operationId: deleteTelemetry
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1293,6 +1354,16 @@ components:
           description: "Updated description."
           is_active: true
 
+    TelemetryMetricValue:
+      oneOf:
+        - type: boolean
+          example: false
+        - type: number
+          example: 21.5
+        - type: string
+          example: "ok"
+      example: 21.5
+
     Telemetry:
       type: object
       properties:
@@ -1325,26 +1396,148 @@ components:
         value: 18.3
         created_at: "2024-04-13T18:45:37Z"
 
-    TelemetryCreate:
+    TelemetryIngest:
       type: object
       properties:
-        device_id:
+        schema_version:
           type: integer
           example: 1
-        key:
+        device:
           type: string
-          example: "humidity"
-        value:
-          type: number
-          example: 25.43
+          example: "DEV-001"
+        ts:
+          type: string
+          format: date-time
+          example: "2026-02-04T12:00:00Z"
+        metrics:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/TelemetryMetricValue"
+          example:
+            temperature: 21.5
+            door_open: false
+            status: "ok"
       required:
-        - device_id
-        - key
-        - value
+        - schema_version
+        - device
+        - metrics
+        - ts
       example:
-        device_id: 1
-        key: "humidity"
-        value: 25.43
+        schema_version: 1
+        device: "DEV-001"
+        ts: "2026-02-04T12:00:00Z"
+        metrics:
+          temperature: 21.5
+          door_open: false
+          status: "ok"
+
+    TelemetryIngestBatch:
+      type: array
+      items:
+        $ref: "#/components/schemas/TelemetryIngest"
+      example:
+        - schema_version: 1
+          device: "DEV-001"
+          ts: "2026-02-04T12:00:00Z"
+          metrics:
+            temperature: 21.5
+            door_open: false
+        - schema_version: 1
+          device: "DEV-001"
+          ts: "2026-02-04T12:00:01Z"
+          metrics:
+            temperature: 21.6
+            status: "ok"
+
+    TelemetryIngestSingleResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [ "ok", "rejected" ]
+          example: "ok"
+        created:
+          type: integer
+          example: 3
+        errors:
+          type: object
+          additionalProperties: true
+          example: { }
+      required:
+        - status
+        - created
+        - errors
+      example:
+        status: "ok"
+        created: 3
+        errors: { }
+
+    TelemetryIngestBatchItemResult:
+      type: object
+      additionalProperties: false
+      properties:
+        created:
+          type: integer
+          example: 2
+        errors:
+          type: object
+          additionalProperties: true
+          example: { }
+      required:
+        - created
+        - errors
+      example:
+        created: 2
+        errors: { }
+
+    TelemetryIngestBatchResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ "ok", "rejected" ]
+          example: "ok"
+        created:
+          type: integer
+          example: 4
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TelemetryIngestBatchItemResult"
+        errors:
+          description: Item-level validation errors keyed by item index.
+          type: object
+          additionalProperties: true
+          example:
+            '1':
+              device: "device must be of type str."
+      required:
+        - status
+        - created
+        - items
+        - errors
+      example:
+        status: "ok"
+        created: 4
+        items:
+          - created: 2
+            errors: { }
+          - created: 2
+            errors: { }
+        errors: { }
+
+    TelemetryIngestAsyncResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ "accepted" ]
+          example: "accepted"
+      required:
+        - status
+      example:
+        status: "accepted"
 
     TelemetryPatch:
       type: object
@@ -1358,24 +1551,6 @@ components:
       example:
         key: "temperature"
         value: 24.3
-
-    VersionedTelemetryCreate:
-      type: object
-      properties:
-        schema_version:
-          type: string
-          example: "v1"
-        telemetry:
-          $ref: '#/components/schemas/TelemetryCreate'
-      required:
-        - schema_version
-        - telemetry
-      example:
-        schema_version: "v2"
-        telemetry:
-          device_id: 1
-          key: "humidity"
-          value: 25.43
 
     VersionedTelemetryPatch:
       type: object
@@ -1524,8 +1699,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Telemetry'
-          example: 
-              [
+          example:
+            [
               {
                 id: 1,
                 device_id: 1,

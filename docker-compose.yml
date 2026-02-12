@@ -14,8 +14,6 @@ x-django-base: &django_base
       condition: service_healthy
     redis:
       condition: service_healthy
-    mosquitto:
-      condition: service_healthy
 
 services:
   swagger-ui:
@@ -39,7 +37,6 @@ services:
       - media_data:/app/media
     ports:
       - "8000:8000"
-
 
   db:
     image: timescale/timescaledb:latest-pg16
@@ -77,7 +74,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-
 
   worker:
     <<: *django_base
@@ -176,10 +172,23 @@ services:
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
     healthcheck:
-      test: ["CMD-SHELL", "exit 0"]
+      test: [ "CMD-SHELL", "exit 0" ]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  mqtt-adapter:
+    <<: *django_base
+    image: iot-hub-mqtt-adapter
+    container_name: mqtt-adapter
+    command: [ "python", "-m", "mqtt_adapter.main" ]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
 
 volumes:
   media_data:
