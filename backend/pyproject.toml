@@ -13,3 +13,33 @@ extend-exclude = '''
 
 [tool.ruff]
 line-length = 99
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "conf.settings"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--cov=apps",
+    "--cov-report=term-missing",
+    "--cov-fail-under=35",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:pythonjsonlogger.*",
+]
+
+[tool.coverage.run]
+source = ["apps"]
+omit = [
+    "*/migrations/*",
+    "*/admin.py",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
