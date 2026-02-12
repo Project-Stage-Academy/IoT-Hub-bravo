@@ -14,7 +14,7 @@ def post_json(client, url, payload, headers=None):
     )
 
 
-@patch('apps.devices.views.telemetry_create')
+@patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_single_valid_returns_201(
     telemetry_create_mock, client, telemetry_ingest_url, valid_telemetry_payload
 ):
@@ -32,7 +32,7 @@ def test_ingest_single_valid_returns_201(
     assert 'errors' in data
 
 
-@patch('apps.devices.views.telemetry_create')
+@patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_single_service_rejects_returns_400(
     telemetry_create_mock,
     client,
@@ -57,7 +57,7 @@ def test_ingest_single_service_rejects_returns_400(
     assert 'errors' in data
 
 
-@patch('apps.devices.views.telemetry_create')
+@patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_batch_valid_returns_201(
     telemetry_create_mock,
     client,
@@ -82,7 +82,7 @@ def test_ingest_batch_valid_returns_201(
     assert len(data['items']) == 2
 
 
-@patch('apps.devices.views.telemetry_create')
+@patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_batch_mixed_valid_invalid(
     telemetry_create_mock,
     client,
@@ -108,7 +108,7 @@ def test_ingest_batch_mixed_valid_invalid(
     assert '1' in {str(k) for k in data['errors'].keys()} or 1 in data['errors']
 
 
-@patch('apps.devices.views.telemetry_create')
+@patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_batch_all_invalid_returns_400(
     telemetry_create_mock, client, telemetry_ingest_url, valid_telemetry_payload
 ):
@@ -159,7 +159,7 @@ def test_ingest_wrong_payload_type_returns_400(client, telemetry_ingest_url):
 
 
 @override_settings(TELEMETRY_ASYNC_HEADER='Ingest-Async')
-@patch('apps.devices.views.ingest_telemetry_payload')
+@patch('apps.devices.views.telemetry_views.ingest_telemetry_payload')
 def test_ingest_async_header_triggers_celery_delay(
     ingest_task_mock,
     client,
@@ -183,7 +183,7 @@ def test_ingest_async_header_triggers_celery_delay(
 
 @override_settings(TELEMETRY_ASYNC_HEADER='Ingest-Async')
 @override_settings(TELEMETRY_ASYNC_BATCH_THRESHOLD=5)
-@patch('apps.devices.views.ingest_telemetry_payload')
+@patch('apps.devices.views.telemetry_views.ingest_telemetry_payload')
 def test_ingest_async_large_batch_triggers_celery_delay(
     ingest_task_mock,
     client,
