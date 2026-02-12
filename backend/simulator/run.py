@@ -157,7 +157,9 @@ def main():
     parser.add_argument("--device", required=True, help="Device serial ID")
     parser.add_argument("--rate", type=positive_float, default=1, help="Messages per second")
     parser.add_argument("--count", type=positive_int, default=1, help="Number of messages to send")
-    parser.add_argument("--schema-version", type=str, default=1, help="Message schema version")
+    parser.add_argument(
+        "--schema-version", type=positive_int, default=1, help="Message schema version"
+    )
     parser.add_argument(
         "--value-generation",
         choices=["manual", "random", "non-interactive"],
