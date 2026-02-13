@@ -95,6 +95,8 @@ erDiagram
 | rules            | idx_rules_is_active                 | is_active                        | normal     | Filter active rules quickly                                        |
 | events           | idx_events_timestamp                | timestamp                        | normal     | Time-range queries, sorting events by time                         |
 | events           | idx_events_rule                     | rule_id                          | normal     | Find all events triggered by a rule                                |
+| events           | idx_events_ack                     | acknowledged                    | normal     | Filter acknowledged vs unacknowledged events                        | 
+| events           | idx_events_telemetry_id            | trigger_telemetry_id             | normal     | Link events back to triggering telemetry for root cause analysis   |
 | telemetries      | unique_telemetry_per_metric_time    | device_metric_id, ts             | **unique** | Prevent duplicate measurements at same timestamp                   |
 | telemetries      | idx_telemetries_metric_time         | device_metric_id, ts             | normal     | Fast time-series queries per metric (most frequent access pattern) |
 | telemetries      | idx_telemetries_timestamp           | ts                               | normal     | Global time-range queries across all telemetry                     |

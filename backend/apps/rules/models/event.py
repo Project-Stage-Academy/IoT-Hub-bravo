@@ -26,6 +26,8 @@ class Event(models.Model):
                 return None
 
     class Meta:
+        verbose_name = "Event"
+        verbose_name_plural = "Events"
         db_table = 'events'
         indexes = [
             models.Index(fields=['timestamp'], name='idx_events_timestamp'),
