@@ -34,7 +34,7 @@ class Command(BaseCommand):
                 if d_type == 'numeric':
                     val = {"t": "numeric", "v": str(round(random.uniform(10, 40), 2))}
                 elif d_type == 'bool':
-                    val = {"t": "bool", "v": random.choice(["True", "False"])}
+                    val = {"t": "bool", "v": random.choice([True, False])}
                 else:
                     val = {"t": "str", "v": random.choice(["OK", "WARN", "ERR"])}
 
