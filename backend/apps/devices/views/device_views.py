@@ -1,27 +1,29 @@
 import json
+
 from django.http import JsonResponse, HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
-from django.utils.dateparse import parse_datetime
-
-from apps.devices.models import Device, DeviceMetric, Telemetry
-
-
 from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404
 from django.views import View
-from apps.users.decorators import jwt_required, role_required
 
-from .serializers.device_serializers.base_device_serializer import DeviceOutputSerializer
-from .serializers.device_serializers.create_device_serializer import DeviceCreateV1Serializer
-from .serializers.device_serializers.update_device_serializer import DeviceUpdateV1Serializer
-from .services.device_service import DeviceService
+from apps.devices.models import Device
+from apps.users.decorators import jwt_required, role_required
+from apps.devices.serializers.device_serializers.base_device_serializer import (
+    DeviceOutputSerializer,
+)
+from apps.devices.serializers.device_serializers.create_device_serializer import (
+    DeviceCreateV1Serializer,
+)
+from apps.devices.serializers.device_serializers.update_device_serializer import (
+    DeviceUpdateV1Serializer,
+)
+from apps.devices.services.device_service import DeviceService
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 @method_decorator(jwt_required, name="dispatch")
 @method_decorator(role_required({"GET": ["client", "admin"], "POST": ["admin"]}), name="dispatch")
 class DeviceView(View):
-
     def parse_json_request(self, body: bytes):
         try:
             return json.loads(body), None
@@ -123,8 +125,8 @@ class DeviceDetailView(View):
         serializer = SerializerClass(data=data.get("device"))
         if not serializer.is_valid():
             return JsonResponse({"errors": serializer.errors}, status=400)
+
         canonical_data = serializer.to_canonical()
-        print(canonical_data)
         device = DeviceService.update_device(instance=device, **canonical_data)
         return JsonResponse(
             DeviceOutputSerializer().to_representation(instance=device), status=200
@@ -150,51 +152,3 @@ class DeviceDetailView(View):
         device = self.get_device(pk)
         DeviceService.delete_device(device)
         return JsonResponse({}, status=204)
-
-
-@csrf_exempt
-def ingest_telemetry(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "method not allowed"}, status=405)
-
-    try:
-        payload = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "invalid json"}, status=400)
-
-    required = {"device", "metrics", "ts"}
-    if not required.issubset(payload) or not isinstance(payload["metrics"], dict):
-        return JsonResponse({"error": "invalid payload structure"}, status=400)
-
-    ts = parse_datetime(payload["ts"])
-
-    if ts is None:
-        return JsonResponse({"error": "invalid timestamp format."}, status=400)
-
-    try:
-        device = Device.objects.get(serial_id=payload["device"])
-    except Device.DoesNotExist:
-        return JsonResponse({"error": "device not found"}, status=404)
-
-    metric_names = list(payload["metrics"].keys())
-    device_metrics = {
-        dm.metric.metric_type: dm
-        for dm in DeviceMetric.objects.filter(
-            device=device, metric__metric_type__in=metric_names
-        ).select_related('metric')
-    }
-
-    telemetry_instances = []
-
-    for name, value in payload["metrics"].items():
-        dm = device_metrics.get(name)
-        if not dm:
-            continue
-
-        telemetry_instances.append(
-            Telemetry(device_metric=dm, ts=ts, value_jsonb={"t": dm.metric.data_type, "v": value})
-        )
-
-    Telemetry.objects.bulk_create(telemetry_instances, ignore_conflicts=True)
-
-    return JsonResponse({"status": "ok", "created": len(telemetry_instances)}, status=201)

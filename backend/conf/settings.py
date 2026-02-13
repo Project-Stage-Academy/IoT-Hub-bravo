@@ -10,23 +10,23 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,web', cast=Csv())
 
-#Django apps
+# Django apps
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',    
+    'django.contrib.staticfiles',
 ]
 
-#Third party apps
+# Third party apps
 INSTALLED_APPS += [
     'corsheaders',
     'django_prometheus',
 ]
 
-#Local apps
+# Local apps
 INSTALLED_APPS += [
     'apps.devices',
     'apps.users',
@@ -35,7 +35,7 @@ INSTALLED_APPS += [
 
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
-    'conf.middleware.logging_middleware.LoggingMiddleware', #Logging middleware
+    'conf.middleware.logging_middleware.LoggingMiddleware',  # Logging middleware
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -67,7 +67,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'conf.wsgi.application'
 
-#Databases
+# Databases
 IS_BUILD = os.environ.get('BUILD_TIME') == '1'
 
 if IS_BUILD:
@@ -115,15 +115,16 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'  
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', 
-    default=False, 
+CORS_ALLOW_ALL_ORIGINS = config(
+    'CORS_ALLOW_ALL_ORIGINS',
+    default=False,
     cast=bool
 )
 
@@ -234,8 +235,8 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_RESULT_EXPIRES = 60 * 60
 
 # LOGGING configuration for django and celery
-DJANGO_LOG_LEVEL = config('DJANGO_LOG_LEVEL', default = 'INFO')
-CELERY_LOG_LEVEL = config('CELERY_LOG_LEVEL', default = 'INFO')
+DJANGO_LOG_LEVEL = config('DJANGO_LOG_LEVEL', default='INFO')
+CELERY_LOG_LEVEL = config('CELERY_LOG_LEVEL', default='INFO')
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -250,7 +251,7 @@ LOGGING = {
                 "name": "logger_name",
             },
         },
-        
+
         "celery_json": {
             "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
             "format": "{asctime} {levelname} {name} {message} {task_id} {task_name}",
@@ -264,7 +265,7 @@ LOGGING = {
     },
 
     "filters": {
-        "request_context":{
+        "request_context": {
             "()": "conf.filters.logging_filters.RequestContextFilter",
         },
         "celery_context": {
@@ -276,7 +277,7 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "filters": ["request_context"],
-            "formatter": "json",   
+            "formatter": "json",
         },
 
         "celery_console": {
@@ -292,7 +293,7 @@ LOGGING = {
             "level": DJANGO_LOG_LEVEL,
         },
 
-        "django": { # Django logger is declared (propagate = False by default)
+        "django": {  # Django logger is declared (propagate = False by default)
             "handlers": ["console"],
             "level": DJANGO_LOG_LEVEL,
             "propagate": False,
@@ -305,3 +306,10 @@ LOGGING = {
         },
     },
 }
+
+TELEMETRY_ASYNC_HEADER = 'Ingest-Async'
+TELEMETRY_ASYNC_BATCH_THRESHOLD = config(
+    'TELEMETRY_ASYNC_BATCH_THRESHOLD',
+    default='50',
+    cast=int
+)
