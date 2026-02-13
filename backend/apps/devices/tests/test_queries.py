@@ -1,6 +1,7 @@
 import pytest
 from django.db import connection
 
+
 @pytest.mark.django_db
 def test_index_scan_on_device_metric_id():
     query = '''
@@ -13,7 +14,7 @@ def test_index_scan_on_device_metric_id():
     with connection.cursor() as cur:
         cur.execute(f"EXPLAIN {query}")
         plan = "\n".join(row[0] for row in cur.fetchall())
-    
+
     assert "Index Scan" in plan or "Bitmap Index Scan" in plan
 
 
@@ -29,8 +30,9 @@ def test_index_scan_on_ts():
     with connection.cursor() as cur:
         cur.execute(f"EXPLAIN {query}")
         plan = "\n".join(row[0] for row in cur.fetchall())
-    
+
     assert "Index Scan" in plan or "Bitmap Index Scan" in plan
+
 
 @pytest.mark.django_db
 def test_index_scan_on_device_metric_id_and_ts():
@@ -45,8 +47,9 @@ def test_index_scan_on_device_metric_id_and_ts():
     with connection.cursor() as cur:
         cur.execute(f"EXPLAIN {query}")
         plan = "\n".join(row[0] for row in cur.fetchall())
-    
+
     assert "Index Scan" in plan or "Bitmap Index Scan" in plan
+
 
 @pytest.mark.django_db
 def test_hypertable_scan_without_filters():
@@ -59,5 +62,5 @@ def test_hypertable_scan_without_filters():
     with connection.cursor() as cur:
         cur.execute(f"EXPLAIN {query}")
         plan = "\n".join(row[0] for row in cur.fetchall())
-    
+
     assert "Bitmap Index Scan" in plan or "Index Scan" in plan

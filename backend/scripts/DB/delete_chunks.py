@@ -3,8 +3,9 @@ import os
 from django.db import DatabaseError
 from celery import shared_task
 
+
 def fetch_chunks(cur):
-    sql_query = f"""
+    sql_query = """
         SELECT chunk_name
         FROM timescaledb_information.chunks
         WHERE hypertable_name = %s
@@ -23,8 +24,9 @@ def fetch_chunks(cur):
     except DatabaseError as e:
         print(f"Database error: {e}")
 
+
 def get_job_id(cur):
-    sql_query = f"""
+    sql_query = """
        SELECT job_id, proc_name, config
        FROM timescaledb_information.jobs
        WHERE hypertable_name = %s
@@ -43,7 +45,8 @@ def get_job_id(cur):
             print("No job found for hypertable 'telemetries' with proc_name 'policy_retention'")
     except psycopg.DatabaseError as e:
         print(f"Database error: {e}")
-    
+
+
 def run_retention(cur, retention_id):
     sql_query = f"""
         CALL run_job({retention_id});
@@ -53,6 +56,7 @@ def run_retention(cur, retention_id):
         print(f"Retention job with ID {retention_id} executed successfully.")
     except DatabaseError as e:
         print(f"Database error during retention: {e}")
+
 
 @shared_task
 def delete_chunks():
@@ -76,6 +80,7 @@ def delete_chunks():
         "before": before,
         "after": after,
     }
+
 
 if __name__ == "__main__":
     delete_chunks()
