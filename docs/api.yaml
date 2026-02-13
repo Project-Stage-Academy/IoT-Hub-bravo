@@ -23,7 +23,7 @@ tags:
 
 
 paths:
-  /api/auth/login:
+  /api/auth/login/:
     post:
       tags:
         - Authentication
@@ -102,7 +102,7 @@ paths:
                     code: 422
                     message: "password: This field is required."
 
-  /api/auth/refresh:
+  /api/auth/refresh/:
     post:
       tags:
         - Authentication
@@ -171,7 +171,7 @@ paths:
                   value:
                     detail: "refresh_token is required."
 
-  /api/devices:
+  /api/devices/:
     get:
       tags:
         - Devices
@@ -299,7 +299,7 @@ paths:
                     code: 400
                     message: "Invalid device data"
 
-  /api/devices/{id}:
+  /api/devices/{id}/:
     get:
       tags:
         - Devices
@@ -510,7 +510,7 @@ paths:
                     code: 404
                     message: "Device not found."
 
-  /api/telemetry:
+  /api/telemetry/:
     get:
       tags:
         - Telemetry

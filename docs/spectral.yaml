@@ -2,6 +2,18 @@ extends:
   - "spectral:oas"
 
 rules:
+  path-keys-no-trailing-slash: off
+
+  paths-must-have-trailing-slash:
+    description: "All API paths must end with a trailing slash."
+    message: "Path must end with a trailing slash."
+    severity: warn
+    given: "$.paths.*~"
+    then:
+      function: pattern
+      functionOptions:
+        match: ".+/$"
+
   no-unused-components:
     description: "Warn on schemas that are defined but not referenced"
     given: "$.components.schemas[*]"
