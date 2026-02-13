@@ -10,5 +10,9 @@ services:
     volumes:
       - ./backend:/app
 
+  mqtt-adapter:
+    volumes:
+      - ./backend:/app
+
 volumes:
   static_data:

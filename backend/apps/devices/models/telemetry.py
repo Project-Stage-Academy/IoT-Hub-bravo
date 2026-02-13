@@ -2,6 +2,7 @@ from django.db import models
 from django.db.models import Case, When, Value, DecimalField
 from django.db.models.functions import Cast
 from django.db.models.fields.json import KeyTextTransform
+from django.utils.timezone import now
 
 
 class Telemetry(models.Model):
@@ -48,7 +49,7 @@ class Telemetry(models.Model):
         db_persist=True,
     )
 
-    ts = models.DateTimeField(default=models.functions.Now(), null=False, db_index=True)
+    ts = models.DateTimeField(default=now, null=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, null=False)
 
     class Meta:
