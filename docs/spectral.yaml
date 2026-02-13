@@ -2,6 +2,18 @@ extends:
   - "spectral:oas"
 
 rules:
+  path-keys-no-trailing-slash: off
+
+  paths-must-have-trailing-slash:
+    description: "All API paths must end with a trailing slash."
+    message: "Path must end with a trailing slash."
+    severity: warn
+    given: "$.paths.*~"
+    then:
+      function: pattern
+      functionOptions:
+        match: ".+/$"
+
   no-unused-components:
     description: "Warn on schemas that are defined but not referenced"
     given: "$.components.schemas[*]"
@@ -14,24 +26,53 @@ rules:
     given: "$.servers[*]"
     then:
       function: truthy
-      message: "Server entry must not be empty"
-      severity: warn
+    message: "Server entry must have a non-empty url"
+    severity: error
 
-  schema-must-have-examples:
-    description: "Schema must include example"
+  schema-should-have-example:
+    description: "Every schema should have an example"
     given: "$.components.schemas[*]"
     then:
       field: example
-      function: truthy
-      message: "Schema '{{path}}' must include at least one example"
-      severity: warn
+      function: defined
+    message: "Schema '{{path}}' should have 'example'"
+    severity: error
+
+  request-body-examples-required:
+    description: "Every requestBody must define example or examples"
+    message: "Add example(s) for requestBody (example/examples)"
+    severity: error
+    given: "$.paths[*][*].requestBody.content[*]"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          anyOf:
+            - required: ["example"]
+            - required: ["examples"]
+  
+  response-body-examples-required:
+    description: "Every response must define example or examples"
+    message: "Add example(s) for response body (example/examples)"
+    severity: error
+    given: "$.paths[*][*].responses[*].content[*]"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          anyOf:
+            - required: ["example"]
+            - required: ["examples"]
 
   operation-description:
-    given: "$.paths[*][*].description"
+    given: "$.paths[*][get,post,put,patch,delete,options,head]"
     then:
+      field: description
       function: truthy
-      message: "Operation must have a description"
-      severity: error
+    message: "Operation must have a meaningful description (not empty)"
+    severity: warn
 
   operation-summary-sentence-case:
     given: "$.paths[*][*].summary"
@@ -55,5 +96,53 @@ rules:
     given: "$.info.contact"
     then:
       function: truthy
-      message: "API info must include a contact"
-      severity: warn
+    message: "It is recommended to include contact information (email/url)"
+    severity: warn
+
+  responses-required:
+    given: "$.paths[*][get,post,put,patch,delete,options,head]"
+    then:
+      field: responses
+      function: truthy
+    message: "Operation must define at least one response"
+    severity: error
+  
+  response-should-have-2xx:
+    description: "Operation should define at least one 2xx response"
+    given: "$.paths[*][get,post,put,patch,delete,options,head].responses"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          anyOf:
+            - required: ["200"]
+            - required: ["201"]
+            - required: ["202"]
+            - required: ["204"]
+    message: "Operation should have at least one successful (2xx) response"
+    severity: error
+
+  operation-tags-recommended:
+    given: "$.paths[*][get,post,put,patch,delete,options,head]"
+    then:
+      field: tags
+      function: truthy
+    message: "It is recommended to add tags to operations"
+    severity: warn
+
+  operation-id-required:
+    given: "$.paths[*][get,post,put,patch,delete,options,head]"
+    then:
+      field: operationId
+      function: truthy
+    message: "Every operation must have an operationId"
+    severity: error
+
+  operation-id-camelcase:
+    given: "$.paths[*][get,post,put,patch,delete,options,head].operationId"
+    then:
+      function: casing
+      functionOptions:
+        type: camel
+    message: "operationId '{{value}}' should be camelCase (not PascalCase)"
+    severity: error
