@@ -4,6 +4,7 @@ from django.db.models.functions import Cast
 from django.db.models.fields.json import KeyTextTransform
 from django.utils.timezone import now
 
+
 class Telemetry(models.Model):
     id = models.BigAutoField(primary_key=True)
     device_metric = models.ForeignKey(

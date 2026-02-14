@@ -10,7 +10,7 @@ from apps.rules.models.rule import Rule
 
 logger = logging.getLogger(__name__)
 
-COMPARISON_OPERATOR_MAP = { # for filter
+COMPARISON_OPERATOR_MAP = {  # for filter
     ">": "gt",
     "<": "lt",
     ">=": "gte",
@@ -74,7 +74,9 @@ def _get_telemetries_in_window(telemetry: Telemetry, minutes: int):
 
 def _get_duration_minutes(condition: dict) -> int:
     """Get minutes duration for time window from rule.condition"""
-    return condition.get("duration_minutes") or condition.get("minutes") or DEFAULT_DURATION_MINUTES
+    return (
+        condition.get("duration_minutes") or condition.get("minutes") or DEFAULT_DURATION_MINUTES
+    )
 
 
 def _get_value_field(telemetry: Telemetry):
@@ -89,7 +91,9 @@ def _get_value_field(telemetry: Telemetry):
     raise ValueError("Telemetry has no value set")
 
 
-def _build_filter_condition(telemetry: Telemetry, comparison_operator: str, condition_value: Any) -> Q:
+def _build_filter_condition(
+    telemetry: Telemetry, comparison_operator: str, condition_value: Any
+) -> Q:
     """Filter for match_count in threshold evaluator"""
     field_name = _get_value_field(telemetry)
     lookup = COMPARISON_OPERATOR_MAP.get(comparison_operator)
@@ -116,10 +120,12 @@ class ThresholdEvaluator:
         if total_count == 0:
             logger.info("No telemetries in window")
             return False
-        
+
         filter_q = _build_filter_condition(telemetry, comparison_operator, condition_value)
 
-        matching_count = telemetries_in_window.aggregate(matches=Count(Case(When(filter_q, then=1))))['matches']
+        matching_count = telemetries_in_window.aggregate(
+            matches=Count(Case(When(filter_q, then=1)))
+        )['matches']
 
         logger.info(
             f"Threshold check: {matching_count} out of {total_count} events meet {comparison_operator} {condition_value}"
@@ -203,14 +209,14 @@ class ConditionEvaluator:
     def evaluate(condition: dict, device_metric: DeviceMetric, telemetry: Telemetry) -> bool:
         """Evaluate rule"""
         _validate_metric(device_metric, telemetry)
-        
+
         rule_type = condition.get("type")
         if not rule_type:
             raise ValueError(f"Missing 'type' in rule.condition: {condition}")
-        
+
         evaluator = ConditionEvaluator._evaluators.get(rule_type)
         if evaluator is None:
             logger.warning(f"Unknown condition type: {rule_type}")
             return False
-        
+
         return evaluator(condition=condition, device_metric=device_metric, telemetry=telemetry)

@@ -45,31 +45,27 @@ def create_telemetry(device_metric, value, created_at=None):
     return Telemetry.objects.create(
         device_metric=device_metric,
         value_jsonb={"t": "numeric", "v": value},
-        created_at=created_at or timezone.now()
+        created_at=created_at or timezone.now(),
     )
 
 
 def create_rule(device_metric, condition, action="notify", is_active=True):
     """Helper function to create rule"""
     return Rule.objects.create(
-        device_metric=device_metric,
-        condition=condition,
-        action=action,
-        is_active=is_active
+        device_metric=device_metric, condition=condition, action=action, is_active=is_active
     )
+
 
 # ============================================================================
 # RULE PROCESSOR END-TO-END TESTS
 # ============================================================================
 
+
 @pytest.mark.django_db
 def test_rule_processor_creates_event_real(device_metric, rule_processor):
     """Create event"""
     telemetry = create_telemetry(device_metric, 111)
-    rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": ">", "value": 100}
-    )
+    rule = create_rule(device_metric, {"type": "threshold", "operator": ">", "value": 100})
 
     with patch.object(ConditionEvaluator, "evaluate", return_value=True):
         rule_processor.run(telemetry)
@@ -85,10 +81,7 @@ def test_rule_processor_creates_event_when_condition_threshold_type_true(
 ):
     """Event should be created when condition is TRUE"""
     telemetry = create_telemetry(device_metric, 111)
-    rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": ">", "value": 100}
-    )
+    rule = create_rule(device_metric, {"type": "threshold", "operator": ">", "value": 100})
 
     rule_processor.run(telemetry)
 
@@ -102,10 +95,7 @@ def test_rule_processor_no_event_when_condition_threshold_type_false(
 ):
     """Event should NOT be created when condition is FALSE"""
     telemetry = create_telemetry(device_metric, 90)
-    rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": ">", "value": 100}
-    )
+    rule = create_rule(device_metric, {"type": "threshold", "operator": ">", "value": 100})
 
     rule_processor.run(telemetry)
 
@@ -119,16 +109,13 @@ def test_rule_processor_only_processes_matching_device_metric_threshold_type(
 ):
     """Test that rules only process telemetry from their device_metric"""
     device_metric1 = DeviceMetric.objects.create(device=device, metric=metric)
-    
+
     device2 = Device.objects.create(user=user, serial_id="dev2", name="Device 2")
     metric2 = Metric.objects.create(metric_type="humidity", data_type="numeric")
     device_metric2 = DeviceMetric.objects.create(device=device2, metric=metric2)
 
     telemetry = create_telemetry(device_metric1, 111)
-    rule = create_rule(
-        device_metric2,
-        {"type": "threshold", "operator": ">", "value": 100}
-    )
+    rule = create_rule(device_metric2, {"type": "threshold", "operator": ">", "value": 100})
 
     rule_processor.run(telemetry)
 
@@ -136,18 +123,13 @@ def test_rule_processor_only_processes_matching_device_metric_threshold_type(
 
 
 @pytest.mark.django_db
-def test_rule_processor_creates_event_when_condition_rate_type_true(
-    device_metric, rule_processor
-):
+def test_rule_processor_creates_event_when_condition_rate_type_true(device_metric, rule_processor):
     """Event should be created when rate condition is met"""
     now = timezone.now()
     for v in [100, 105, 110]:
         create_telemetry(device_metric, v, now - timedelta(minutes=1))
 
-    rule = create_rule(
-        device_metric,
-        {"type": "rate", "count": 3, "duration_minutes": 5}
-    )
+    rule = create_rule(device_metric, {"type": "rate", "count": 3, "duration_minutes": 5})
 
     rule_processor.run(Telemetry.objects.last())
 
@@ -164,10 +146,7 @@ def test_rule_processor_creates_event_when_condition_rate_type_false(
     for v in [100, 105]:
         create_telemetry(device_metric, v, now - timedelta(minutes=1))
 
-    rule = create_rule(
-        device_metric,
-        {"type": "rate", "count": 3, "duration_minutes": 5}
-    )
+    rule = create_rule(device_metric, {"type": "rate", "count": 3, "duration_minutes": 5})
 
     rule_processor.run(Telemetry.objects.last())
 
@@ -193,7 +172,7 @@ def test_rule_processor_creates_event_when_condition_composite_and_true(
                 {"type": "threshold", "operator": ">", "value": 90},
                 {"type": "rate", "count": 3, "duration_minutes": 5},
             ],
-        }
+        },
     )
 
     rule_processor.run(Telemetry.objects.last())
@@ -209,7 +188,7 @@ def test_rule_processor_creates_event_when_condition_composite_or_true(
     """Event should be created when composite OR condition is met"""
     now = timezone.now()
     create_telemetry(device_metric, 100, now)
-    
+
     for v in [100, 111, 110]:
         create_telemetry(device_metric, v, now - timedelta(minutes=1))
 
@@ -222,7 +201,7 @@ def test_rule_processor_creates_event_when_condition_composite_or_true(
                 {"type": "threshold", "operator": ">", "value": 110},
                 {"type": "rate", "count": 3, "duration_minutes": 5},
             ],
-        }
+        },
     )
 
     rule_processor.run(Telemetry.objects.last())
@@ -249,7 +228,7 @@ def test_rule_processor_creates_event_when_condition_composite_false(
                 {"type": "threshold", "operator": ">", "value": 110},
                 {"type": "rate", "count": 3, "duration_minutes": 5},
             ],
-        }
+        },
     )
 
     rule_processor.run(Telemetry.objects.last())
@@ -262,10 +241,7 @@ def test_rule_processor_creates_event_when_condition_composite_false(
 def test_rule_processor_unknown_rule_type(device_metric, rule_processor):
     """Event should NOT be created with unknown rule type"""
     telemetry = create_telemetry(device_metric, 111)
-    rule = create_rule(
-        device_metric,
-        {"type": "custom", "operator": ">", "value": 100}
-    )
+    rule = create_rule(device_metric, {"type": "custom", "operator": ">", "value": 100})
 
     rule_processor.run(telemetry)
 
@@ -277,24 +253,23 @@ def test_rule_processor_unknown_rule_type(device_metric, rule_processor):
 def test_evaluate_threshold_invalid_operator(device_metric, condition_evaluator):
     """Should raise ValueError for invalid operator"""
     telemetry = create_telemetry(device_metric, 111)
-    rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": "INVALID", "value": 25}
-    )
-    
+    rule = create_rule(device_metric, {"type": "threshold", "operator": "INVALID", "value": 25})
+
     with pytest.raises(ValueError, match="Invalid operator"):
-        condition_evaluator.evaluate(rule.condition,device_metric, telemetry)
+        condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
+
 
 # ============================================================================
 # RULE PARSING TESTS
 # ============================================================================
+
 
 @pytest.mark.django_db
 def test_rule_condition_parsing_threshold_valid(device_metric):
     """Test that valid threshold condition is parsed and stored correctly"""
     condition = {"type": "threshold", "operator": ">", "value": 100}
     rule = create_rule(device_metric, condition)
-    
+
     assert rule.condition == condition
     assert rule.condition["type"] == "threshold"
     assert rule.condition["operator"] == ">"
@@ -306,7 +281,7 @@ def test_rule_condition_parsing_rate_valid(device_metric):
     """Test that valid rate condition is parsed and stored correctly"""
     condition = {"type": "rate", "count": 3, "duration_minutes": 5}
     rule = create_rule(device_metric, condition)
-    
+
     assert rule.condition == condition
     assert rule.condition["type"] == "rate"
     assert rule.condition["count"] == 3
@@ -325,7 +300,7 @@ def test_rule_condition_parsing_composite_valid(device_metric):
         ],
     }
     rule = create_rule(device_metric, condition)
-    
+
     assert rule.condition == condition
     assert rule.condition["type"] == "composite"
     assert rule.condition["operator"] == "AND"
@@ -336,50 +311,48 @@ def test_rule_condition_parsing_composite_valid(device_metric):
 # THRESHOLD OPERATOR TESTS
 # ============================================================================
 
+
 @pytest.mark.django_db
-@pytest.mark.parametrize("operator,threshold,telemetry_value,should_trigger", [
-    # Greater than
-    (">", 100, 111, True),
-    (">", 100, 100, False),
-    (">", 100, 90, False),
-    
-    # Less than
-    ("<", 100, 90, True),
-    ("<", 100, 100, False),
-    ("<", 100, 111, False),
-    
-    # Greater than or equal
-    (">=", 100, 111, True),
-    (">=", 100, 100, True),
-    (">=", 100, 90, False),
-    
-    # Less than or equal
-    ("<=", 100, 90, True),
-    ("<=", 100, 100, True),
-    ("<=", 100, 111, False),
-    
-    # Equal
-    ("==", 100, 100, True),
-    ("==", 100, 99, False),
-    ("==", 100, 101, False),
-    
-    # Not equal
-    ("!=", 100, 99, True),
-    ("!=", 100, 101, True),
-    ("!=", 100, 100, False),
-])
+@pytest.mark.parametrize(
+    "operator,threshold,telemetry_value,should_trigger",
+    [
+        # Greater than
+        (">", 100, 111, True),
+        (">", 100, 100, False),
+        (">", 100, 90, False),
+        # Less than
+        ("<", 100, 90, True),
+        ("<", 100, 100, False),
+        ("<", 100, 111, False),
+        # Greater than or equal
+        (">=", 100, 111, True),
+        (">=", 100, 100, True),
+        (">=", 100, 90, False),
+        # Less than or equal
+        ("<=", 100, 90, True),
+        ("<=", 100, 100, True),
+        ("<=", 100, 111, False),
+        # Equal
+        ("==", 100, 100, True),
+        ("==", 100, 99, False),
+        ("==", 100, 101, False),
+        # Not equal
+        ("!=", 100, 99, True),
+        ("!=", 100, 101, True),
+        ("!=", 100, 100, False),
+    ],
+)
 def test_threshold_all_operators(
     device_metric, rule_processor, operator, threshold, telemetry_value, should_trigger
 ):
     """Test all threshold operators with various values"""
     telemetry = create_telemetry(device_metric, telemetry_value)
     rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": operator, "value": threshold}
+        device_metric, {"type": "threshold", "operator": operator, "value": threshold}
     )
-    
+
     rule_processor.run(telemetry)
-    
+
     events = Event.objects.filter(rule=rule)
     expected_count = 1 if should_trigger else 0
     assert events.count() == expected_count, (
@@ -392,13 +365,10 @@ def test_threshold_all_operators(
 def test_threshold_operator_with_float_values(device_metric, rule_processor):
     """Test threshold operators work with float values"""
     telemetry = create_telemetry(device_metric, 25.7)
-    rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": ">", "value": 25.5}
-    )
-    
+    rule = create_rule(device_metric, {"type": "threshold", "operator": ">", "value": 25.5})
+
     rule_processor.run(telemetry)
-    
+
     events = Event.objects.filter(rule=rule)
     assert events.count() == 1, "Float comparison should work: 25.7 > 25.5"
 
@@ -407,13 +377,10 @@ def test_threshold_operator_with_float_values(device_metric, rule_processor):
 def test_threshold_operator_with_negative_values(device_metric, rule_processor):
     """Test threshold operators work with negative values"""
     telemetry = create_telemetry(device_metric, -10)
-    rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": "<", "value": -5}
-    )
-    
+    rule = create_rule(device_metric, {"type": "threshold", "operator": "<", "value": -5})
+
     rule_processor.run(telemetry)
-    
+
     events = Event.objects.filter(rule=rule)
     assert events.count() == 1, "Negative comparison should work: -10 < -5"
 
@@ -422,22 +389,20 @@ def test_threshold_operator_with_negative_values(device_metric, rule_processor):
 # RATE RULE EDGE CASES
 # ============================================================================
 
+
 @pytest.mark.django_db
 def test_rate_rule_exact_count_at_boundary(device_metric, rule_processor):
     """Test rate rule triggers when exactly at count threshold"""
     now = timezone.now()
-    
+
     # Create exactly 3 telemetry entries within 5 minutes
     for v in [100, 105, 110]:
         create_telemetry(device_metric, v, now - timedelta(minutes=1))
-    
-    rule = create_rule(
-        device_metric,
-        {"type": "rate", "count": 3, "duration_minutes": 5}
-    )
-    
+
+    rule = create_rule(device_metric, {"type": "rate", "count": 3, "duration_minutes": 5})
+
     rule_processor.run(Telemetry.objects.last())
-    
+
     events = Event.objects.filter(rule=rule)
     assert events.count() == 1, "Should trigger with exactly 3 events"
 
@@ -446,19 +411,16 @@ def test_rate_rule_exact_count_at_boundary(device_metric, rule_processor):
 def test_rate_rule_exact_duration_boundary(device_metric, rule_processor):
     """Test rate rule at exact duration boundary (edge case)"""
     now = timezone.now()
-    
+
     # Create telemetry exactly at the 5-minute boundary
     create_telemetry(device_metric, 100, now - timedelta(minutes=5))
     create_telemetry(device_metric, 105, now - timedelta(minutes=3))
     create_telemetry(device_metric, 110, now - timedelta(minutes=1))
-    
-    rule = create_rule(
-        device_metric,
-        {"type": "rate", "count": 3, "duration_minutes": 5}
-    )
-    
+
+    rule = create_rule(device_metric, {"type": "rate", "count": 3, "duration_minutes": 5})
+
     rule_processor.run(Telemetry.objects.last())
-    
+
     events = Event.objects.filter(rule=rule)
     # This tests the boundary behavior - adjust assertion based on implementation
     assert events.count() in [0, 1], "Boundary behavior should be consistent"
@@ -468,18 +430,15 @@ def test_rate_rule_exact_duration_boundary(device_metric, rule_processor):
 def test_rate_rule_with_zero_duration(device_metric, rule_processor):
     """Test rate rule behavior with zero duration (edge case)"""
     now = timezone.now()
-    
+
     create_telemetry(device_metric, 100, now)
     create_telemetry(device_metric, 105, now)
     create_telemetry(device_metric, 110, now)
-    
-    rule = create_rule(
-        device_metric,
-        {"type": "rate", "count": 3, "duration_minutes": 0}
-    )
-    
+
+    rule = create_rule(device_metric, {"type": "rate", "count": 3, "duration_minutes": 0})
+
     rule_processor.run(Telemetry.objects.last())
-    
+
     # Should handle gracefully - either raise error or treat as instant
     events = Event.objects.filter(rule=rule)
     assert events.count() >= 0, "Should handle zero duration without crashing"
@@ -489,18 +448,17 @@ def test_rate_rule_with_zero_duration(device_metric, rule_processor):
 # INACTIVE RULE TESTS
 # ============================================================================
 
+
 @pytest.mark.django_db
 def test_inactive_rule_does_not_trigger_threshold(device_metric, rule_processor):
     """Inactive rule should not create events even when condition is met"""
     telemetry = create_telemetry(device_metric, 111)
     rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": ">", "value": 100},
-        is_active=False
+        device_metric, {"type": "threshold", "operator": ">", "value": 100}, is_active=False
     )
-    
+
     rule_processor.run(telemetry)
-    
+
     assert Event.objects.filter(rule=rule).count() == 0, "Inactive rule should not trigger"
 
 
@@ -510,15 +468,13 @@ def test_inactive_rule_does_not_trigger_rate(device_metric, rule_processor):
     now = timezone.now()
     for v in [100, 105, 110]:
         create_telemetry(device_metric, v, now - timedelta(minutes=1))
-    
+
     rule = create_rule(
-        device_metric,
-        {"type": "rate", "count": 3, "duration_minutes": 5},
-        is_active=False
+        device_metric, {"type": "rate", "count": 3, "duration_minutes": 5}, is_active=False
     )
-    
+
     rule_processor.run(Telemetry.objects.last())
-    
+
     assert Event.objects.filter(rule=rule).count() == 0, "Inactive rate rule should not trigger"
 
 
@@ -528,7 +484,7 @@ def test_inactive_rule_does_not_trigger_composite(device_metric, rule_processor)
     now = timezone.now()
     for v in [100, 105, 110]:
         create_telemetry(device_metric, v, now - timedelta(minutes=1))
-    
+
     rule = create_rule(
         device_metric,
         {
@@ -539,29 +495,29 @@ def test_inactive_rule_does_not_trigger_composite(device_metric, rule_processor)
                 {"type": "rate", "count": 3, "duration_minutes": 5},
             ],
         },
-        is_active=False
+        is_active=False,
     )
-    
+
     rule_processor.run(Telemetry.objects.last())
-    
-    assert Event.objects.filter(rule=rule).count() == 0, "Inactive composite rule should not trigger"
+
+    assert (
+        Event.objects.filter(rule=rule).count() == 0
+    ), "Inactive composite rule should not trigger"
 
 
 # ============================================================================
 # CONDITION EVALUATOR UNIT TESTS
 # ============================================================================
 
+
 @pytest.mark.django_db
 def test_condition_evaluator_threshold_direct(device_metric, condition_evaluator):
     """Direct unit test of ConditionEvaluator.evaluate() for threshold"""
     telemetry = create_telemetry(device_metric, 111)
-    rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": ">", "value": 100}
-    )
-    
+    rule = create_rule(device_metric, {"type": "threshold", "operator": ">", "value": 100})
+
     result = condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
-    
+
     assert result is True, "Evaluator should return True for 111 > 100"
 
 
@@ -569,13 +525,10 @@ def test_condition_evaluator_threshold_direct(device_metric, condition_evaluator
 def test_condition_evaluator_threshold_false_direct(device_metric, condition_evaluator):
     """Direct unit test of ConditionEvaluator.evaluate() returning False"""
     telemetry = create_telemetry(device_metric, 90)
-    rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": ">", "value": 100}
-    )
-    
+    rule = create_rule(device_metric, {"type": "threshold", "operator": ">", "value": 100})
+
     result = condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
-    
+
     assert result is False, "Evaluator should return False for 90 > 100"
 
 
@@ -585,15 +538,12 @@ def test_condition_evaluator_rate_direct(device_metric, condition_evaluator):
     now = timezone.now()
     for v in [100, 105, 110]:
         create_telemetry(device_metric, v, now - timedelta(minutes=1))
-    
-    rule = create_rule(
-        device_metric,
-        {"type": "rate", "count": 3, "duration_minutes": 5}
-    )
+
+    rule = create_rule(device_metric, {"type": "rate", "count": 3, "duration_minutes": 5})
     telemetry = Telemetry.objects.last()
-    
+
     result = condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
-    
+
     assert result is True, "Evaluator should return True when rate condition is met"
 
 
@@ -603,7 +553,7 @@ def test_condition_evaluator_composite_and_direct(device_metric, condition_evalu
     now = timezone.now()
     for v in [100, 105, 110]:
         create_telemetry(device_metric, v, now - timedelta(minutes=1))
-    
+
     rule = create_rule(
         device_metric,
         {
@@ -613,12 +563,12 @@ def test_condition_evaluator_composite_and_direct(device_metric, condition_evalu
                 {"type": "threshold", "operator": ">", "value": 90},
                 {"type": "rate", "count": 3, "duration_minutes": 5},
             ],
-        }
+        },
     )
     telemetry = Telemetry.objects.last()
-    
+
     result = condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
-    
+
     assert result is True, "Evaluator should return True when both AND conditions are met"
 
 
@@ -628,7 +578,7 @@ def test_condition_evaluator_composite_or_direct(device_metric, condition_evalua
     now = timezone.now()
     # Only threshold passes, rate fails
     create_telemetry(device_metric, 111, now)
-    
+
     rule = create_rule(
         device_metric,
         {
@@ -638,12 +588,12 @@ def test_condition_evaluator_composite_or_direct(device_metric, condition_evalua
                 {"type": "threshold", "operator": ">", "value": 100},
                 {"type": "rate", "count": 5, "duration_minutes": 5},  # Will fail
             ],
-        }
+        },
     )
     telemetry = Telemetry.objects.last()
-    
+
     result = condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
-    
+
     assert result is True, "Evaluator should return True when at least one OR condition is met"
 
 
@@ -651,13 +601,10 @@ def test_condition_evaluator_composite_or_direct(device_metric, condition_evalua
 def test_condition_evaluator_unknown_type_returns_false(device_metric, condition_evaluator):
     """Test that unknown condition type returns False and logs warning"""
     telemetry = create_telemetry(device_metric, 111)
-    rule = create_rule(
-        device_metric,
-        {"type": "unknown_type", "operator": ">", "value": 100}
-    )
-    
+    rule = create_rule(device_metric, {"type": "unknown_type", "operator": ">", "value": 100})
+
     result = condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
-    
+
     assert result is False, "Unknown condition type should return False, not raise exception"
 
 
@@ -665,16 +612,13 @@ def test_condition_evaluator_unknown_type_returns_false(device_metric, condition
 def test_condition_evaluator_unknown_type_logs_warning(device_metric, condition_evaluator, caplog):
     """Test that unknown condition type logs appropriate warning"""
     import logging
-    
+
     telemetry = create_telemetry(device_metric, 111)
-    rule = create_rule(
-        device_metric,
-        {"type": "unknown_type", "operator": ">", "value": 100}
-    )
-    
+    rule = create_rule(device_metric, {"type": "unknown_type", "operator": ">", "value": 100})
+
     with caplog.at_level(logging.WARNING):
         condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
-    
+
     assert "Unknown condition type: unknown_type" in caplog.text
 
 
@@ -682,22 +626,17 @@ def test_condition_evaluator_unknown_type_logs_warning(device_metric, condition_
 # MULTIPLE RULES TESTS
 # ============================================================================
 
+
 @pytest.mark.django_db
 def test_multiple_rules_for_same_device_metric(device_metric, rule_processor):
     """Test that multiple rules can be triggered by the same telemetry"""
     telemetry = create_telemetry(device_metric, 111)
-    
-    rule1 = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": ">", "value": 100}
-    )
-    rule2 = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": ">", "value": 50}
-    )
-    
+
+    rule1 = create_rule(device_metric, {"type": "threshold", "operator": ">", "value": 100})
+    rule2 = create_rule(device_metric, {"type": "threshold", "operator": ">", "value": 50})
+
     rule_processor.run(telemetry)
-    
+
     # Both rules should trigger
     assert Event.objects.filter(rule=rule1).count() == 1
     assert Event.objects.filter(rule=rule2).count() == 1
@@ -707,15 +646,12 @@ def test_multiple_rules_for_same_device_metric(device_metric, rule_processor):
 def test_rule_does_not_create_duplicate_events(device_metric, rule_processor):
     """Test that running processor twice doesn't create duplicate events"""
     telemetry = create_telemetry(device_metric, 111)
-    rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": ">", "value": 100}
-    )
-    
+    rule = create_rule(device_metric, {"type": "threshold", "operator": ">", "value": 100})
+
     # Run processor twice with same telemetry
     rule_processor.run(telemetry)
     rule_processor.run(telemetry)
-    
+
     # Should only create one event (or test the actual expected behavior)
     events = Event.objects.filter(rule=rule)
     # Adjust assertion based on actual business logic
@@ -726,17 +662,15 @@ def test_rule_does_not_create_duplicate_events(device_metric, rule_processor):
 # EVENT CREATION TESTS
 # ============================================================================
 
+
 @pytest.mark.django_db
 def test_event_contains_correct_data(device_metric, rule_processor):
     """Test that created Event contains correct reference data"""
     telemetry = create_telemetry(device_metric, 111)
-    rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": ">", "value": 100}
-    )
-    
+    rule = create_rule(device_metric, {"type": "threshold", "operator": ">", "value": 100})
+
     rule_processor.run(telemetry)
-    
+
     event = Event.objects.filter(rule=rule).first()
     assert event is not None
     assert event.rule == rule
@@ -750,13 +684,11 @@ def test_event_action_field_set_correctly(device_metric, rule_processor):
     """Test that Event inherits action from Rule"""
     telemetry = create_telemetry(device_metric, 111)
     rule = create_rule(
-        device_metric,
-        {"type": "threshold", "operator": ">", "value": 100},
-        action="email_alert"
+        device_metric, {"type": "threshold", "operator": ">", "value": 100}, action="email_alert"
     )
-    
+
     rule_processor.run(telemetry)
-    
+
     event = Event.objects.filter(rule=rule).first()
     # Adjust based on how Event stores action
-    assert event.rule.action == "email_alert"        
+    assert event.rule.action == "email_alert"
