@@ -150,10 +150,43 @@ docker compose ps
 ```bash
 curl http://localhost:8000/api/health/
 ```
+---
+## 6. Rule Evaluation & Debugging
+
+Manual triggers for the Rule Engine are useful for demos, testing new conditions, or re-processing data.
+
+### Manual Rule Pass
+
+Run the rule processor for a specific telemetry record or a batch of latest records:
+
+```bash
+# Option 1: Process a specific telemetry record by ID
+docker compose exec web python manage.py run_manual_rules --id 123
+
+# Option 2: Process the last 10 received telemetry records
+docker compose exec web python manage.py run_manual_rules --latest
+
+# Option 3: Process the last 10 telemetry records ordered by creation time
+docker compose exec web python manage.py run_manual_rules --latest --order created_at
+
+### Ordering options
+
+The `--order` flag controls how telemetry records are selected when using `--latest`.
+
+* `ts` — order by telemetry timestamp (default)
+* `created_at` — order by database creation time
+
+```bash
+docker compose exec web python manage.py run_manual_rules --latest --order ts
+docker compose exec web python manage.py run_manual_rules --latest --order created_at
+```
+
+> Note: The `--order` option is ignored when `--id` is provided.
+
 
 ---
 
-## 6. Notes / Tips
+## 7. Notes / Tips
 
 * Always backup DB before destructive operations
 * Apply migrations **only after backup**

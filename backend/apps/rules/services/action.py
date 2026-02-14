@@ -15,7 +15,7 @@ class Action:
     def _webhook(self):
         pass
 
-    def _archieve(self):
+    def _archive(self):
         pass
 
     @staticmethod
