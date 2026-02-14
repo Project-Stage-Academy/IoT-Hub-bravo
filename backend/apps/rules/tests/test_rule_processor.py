@@ -648,20 +648,7 @@ def test_rule_processor_invalid_condition_count_type_rate_rule(device_metric, ru
     for v in [100, 105, 110]:
         create_telemetry(device_metric, v, now - timedelta(minutes=1))
 
-    rule = create_rule(device_metric, {"type": "rate", "duration_minutes": "12", "count": "3"})
-
-    with pytest.raises(ValueError, match="Invalid count value: 3"):
-        rule_processor.run(Telemetry.objects.last())
-
-
-@pytest.mark.django_db
-def test_rule_processor_invalid_condition_count_type_rate_rule(device_metric, rule_processor):
-    """Event should not be created when condition duration_minutes has invalid type"""
-    now = timezone.now()
-    for v in [100, 105, 110]:
-        create_telemetry(device_metric, v, now - timedelta(minutes=1))
-
-    rule = create_rule(device_metric, {"type": "rate", "duration_minutes": 12, "count": "3"})
+    create_rule(device_metric, {"type": "rate", "duration_minutes": 12, "count": "3"})
 
     with pytest.raises(ValueError, match="Invalid count value: 3"):
         rule_processor.run(Telemetry.objects.last())
@@ -674,7 +661,7 @@ def test_rule_processor_invalid_condition_count_value_rate_rule(device_metric, r
     for v in [100, 105, 110]:
         create_telemetry(device_metric, v, now - timedelta(minutes=1))
 
-    rule = create_rule(device_metric, {"type": "rate", "duration_minutes": 12, "count": -1})
+    create_rule(device_metric, {"type": "rate", "duration_minutes": 12, "count": -1})
 
     with pytest.raises(ValueError, match="Invalid count value: -1"):
         rule_processor.run(Telemetry.objects.last())
@@ -687,7 +674,7 @@ def test_rule_processor_invalid_condition_minutes_value_rate_rule(device_metric,
     for v in [100, 105, 110]:
         create_telemetry(device_metric, v, now - timedelta(minutes=1))
 
-    rule = create_rule(device_metric, {"type": "rate", "duration_minutes": -12, "count": -1})
+    create_rule(device_metric, {"type": "rate", "duration_minutes": -12, "count": -1})
 
     with pytest.raises(ValueError, match="Invalid count value: -1"):
         rule_processor.run(Telemetry.objects.last())
