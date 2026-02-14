@@ -46,9 +46,9 @@ def _get_value(condition: dict, key: str = 'value') -> Any:
     return value
 
 
-def _validate_metric(rule: Rule, telemetry: Telemetry) -> None:
+def _validate_metric(device_metric, telemetry: Telemetry) -> None:
     """Checks that the rule has a metric and it matches the telemetry metric"""
-    condition_metric = rule.device_metric.metric.metric_type
+    condition_metric = device_metric.metric.metric_type
     if condition_metric is None:
         logger.error("Rule must contain a 'metric' field")
         raise ValueError("Rule must contain a 'metric' field")
@@ -110,10 +110,8 @@ def _build_filter_condition(telemetry: Telemetry, comparison_operator: str, cond
 
 class ThresholdEvaluator:
     @staticmethod
-    def evaluate(rule: Rule, telemetry: Telemetry) -> bool:
+    def evaluate(condition: dict, telemetry: Telemetry, **kwargs) -> bool:
         """Evaluate rule for 'threshold' type"""
-        _validate_metric(rule, telemetry)
-        condition = rule.condition
         condition_value = _get_value(condition)
         comparison_operator = _get_comparison_operator(condition)
         duration_minutes = _get_duration_minutes(condition)
@@ -140,13 +138,12 @@ class ThresholdEvaluator:
 
 class RateEvaluator:
     @staticmethod
-    def evaluate(rule: Rule, telemetry: Telemetry) -> bool:
+    def evaluate(condition: dict, telemetry: Telemetry, **kwargs) -> bool:
         """
         Rate evaluator:
         Checks if the count of Telemetry events for the same device_metric
         in the past `duration_minutes` meets or exceeds `count`.
         """
-        condition = rule.condition
         count_required = condition.get("count")
         duration_minutes = _get_duration_minutes(condition)
 
@@ -165,11 +162,10 @@ class RateEvaluator:
 
 class CompositeEvaluator:
     @staticmethod
-    def evaluate(rule: Rule, telemetry: Telemetry) -> bool:
+    def evaluate(condition: dict, device_metric, telemetry: Telemetry) -> bool:
         """
         Evaluate composite rules combining multiple subconditions with AND/OR.
         """
-        condition = rule.condition
         operator_type = condition.get("operator", "AND").upper()
         subconditions = condition.get("conditions", [])
 
@@ -179,8 +175,7 @@ class CompositeEvaluator:
 
         results = []
         for i, subcondition in enumerate(subconditions):
-            temp_rule = Rule(device_metric=rule.device_metric, condition=subcondition)
-            result = ConditionEvaluator.evaluate(temp_rule, telemetry)
+            result = ConditionEvaluator.evaluate(subcondition, device_metric, telemetry)
             logger.info(f"Subcondition {i} (type={subcondition.get('type')}): {result}")
             results.append(result)
 
@@ -210,14 +205,18 @@ class ConditionEvaluator:
         ConditionEvaluator._evaluators[rule_type] = evaluator_callable
 
     @staticmethod
-    def evaluate(rule: Rule, telemetry: Telemetry) -> bool:
+    def evaluate(condition: dict, device_metric: Any, telemetry: Telemetry) -> bool:
         """Evaluate rule"""
-        rule_type = rule.condition.get("type")
+        _validate_metric(device_metric, telemetry)
+        rule_type = condition.get("type")
         if not rule_type:
-            raise ValueError(f"Missing 'type' in rule.condition: {rule.condition}")
+            raise ValueError(f"Missing 'type' in rule.condition: {condition}")
+        
         evaluator = ConditionEvaluator._evaluators.get(rule_type)
-
+        # condition = rule.condition
+        
         if evaluator is None:
             logger.warning(f"Unknown condition type: {rule_type}")
             return False
-        return evaluator(rule, telemetry)
+        
+        return evaluator(condition=condition, device_metric=device_metric, telemetry=telemetry)

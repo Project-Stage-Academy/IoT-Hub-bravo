@@ -16,7 +16,10 @@ class RuleProcessor:
     @staticmethod
     def run(telemetry: Telemetry):
         rules = Rule.objects.filter(is_active=True, device_metric=telemetry.device_metric)
-
+        
         for rule in rules:
-            if ConditionEvaluator.evaluate(rule, telemetry):
+            condition = rule.condition
+            device_metric = rule.device_metric
+            
+            if ConditionEvaluator.evaluate(condition, device_metric, telemetry):
                 Action.dispatch_action(rule, telemetry)

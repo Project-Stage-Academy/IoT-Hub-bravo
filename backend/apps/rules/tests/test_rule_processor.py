@@ -283,7 +283,7 @@ def test_evaluate_threshold_invalid_operator(device_metric, condition_evaluator)
     )
     
     with pytest.raises(ValueError, match="Invalid operator"):
-        condition_evaluator.evaluate(rule, telemetry)
+        condition_evaluator.evaluate(rule.condition,device_metric, telemetry)
 
 # ============================================================================
 # RULE PARSING TESTS
@@ -560,7 +560,7 @@ def test_condition_evaluator_threshold_direct(device_metric, condition_evaluator
         {"type": "threshold", "operator": ">", "value": 100}
     )
     
-    result = condition_evaluator.evaluate(rule, telemetry)
+    result = condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
     
     assert result is True, "Evaluator should return True for 111 > 100"
 
@@ -574,7 +574,7 @@ def test_condition_evaluator_threshold_false_direct(device_metric, condition_eva
         {"type": "threshold", "operator": ">", "value": 100}
     )
     
-    result = condition_evaluator.evaluate(rule, telemetry)
+    result = condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
     
     assert result is False, "Evaluator should return False for 90 > 100"
 
@@ -592,7 +592,7 @@ def test_condition_evaluator_rate_direct(device_metric, condition_evaluator):
     )
     telemetry = Telemetry.objects.last()
     
-    result = condition_evaluator.evaluate(rule, telemetry)
+    result = condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
     
     assert result is True, "Evaluator should return True when rate condition is met"
 
@@ -617,7 +617,7 @@ def test_condition_evaluator_composite_and_direct(device_metric, condition_evalu
     )
     telemetry = Telemetry.objects.last()
     
-    result = condition_evaluator.evaluate(rule, telemetry)
+    result = condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
     
     assert result is True, "Evaluator should return True when both AND conditions are met"
 
@@ -642,7 +642,7 @@ def test_condition_evaluator_composite_or_direct(device_metric, condition_evalua
     )
     telemetry = Telemetry.objects.last()
     
-    result = condition_evaluator.evaluate(rule, telemetry)
+    result = condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
     
     assert result is True, "Evaluator should return True when at least one OR condition is met"
 
@@ -656,7 +656,7 @@ def test_condition_evaluator_unknown_type_returns_false(device_metric, condition
         {"type": "unknown_type", "operator": ">", "value": 100}
     )
     
-    result = condition_evaluator.evaluate(rule, telemetry)
+    result = condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
     
     assert result is False, "Unknown condition type should return False, not raise exception"
 
@@ -673,7 +673,7 @@ def test_condition_evaluator_unknown_type_logs_warning(device_metric, condition_
     )
     
     with caplog.at_level(logging.WARNING):
-        condition_evaluator.evaluate(rule, telemetry)
+        condition_evaluator.evaluate(rule.condition, device_metric, telemetry)
     
     assert "Unknown condition type: unknown_type" in caplog.text
 
