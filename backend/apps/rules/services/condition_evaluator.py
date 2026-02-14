@@ -1,10 +1,11 @@
 import logging
 from datetime import timedelta
 from datetime import datetime
-from typing import Tuple, Any
+from typing import Tuple, Any, Callable
 from django.db.models import Q, Count, Case, When
 
 from apps.devices.models.telemetry import Telemetry
+from apps.devices.models.device_metric import DeviceMetric
 from apps.rules.models.rule import Rule
 
 logger = logging.getLogger(__name__)
@@ -73,13 +74,7 @@ def _get_telemetries_in_window(telemetry: Telemetry, minutes: int):
 
 def _get_duration_minutes(condition: dict) -> int:
     """Get minutes duration for time window from rule.condition"""
-    if "minutes" in condition:
-        return condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
-
-    if "duration_minutes" in condition:
-        return condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
-
-    return DEFAULT_DURATION_MINUTES
+    return condition.get("duration_minutes") or condition.get("minutes") or DEFAULT_DURATION_MINUTES
 
 
 def _get_value_field(telemetry: Telemetry):
@@ -162,7 +157,7 @@ class RateEvaluator:
 
 class CompositeEvaluator:
     @staticmethod
-    def evaluate(condition: dict, device_metric, telemetry: Telemetry) -> bool:
+    def evaluate(condition: dict, device_metric: DeviceMetric, telemetry: Telemetry) -> bool:
         """
         Evaluate composite rules combining multiple subconditions with AND/OR.
         """
@@ -200,21 +195,20 @@ class ConditionEvaluator:
     }
 
     @staticmethod
-    def register(rule_type: str, evaluator_callable):
+    def register(rule_type: str, evaluator_callable: Callable):
         """Register a new evaluator for a custom rule type"""
         ConditionEvaluator._evaluators[rule_type] = evaluator_callable
 
     @staticmethod
-    def evaluate(condition: dict, device_metric: Any, telemetry: Telemetry) -> bool:
+    def evaluate(condition: dict, device_metric: DeviceMetric, telemetry: Telemetry) -> bool:
         """Evaluate rule"""
         _validate_metric(device_metric, telemetry)
+        
         rule_type = condition.get("type")
         if not rule_type:
             raise ValueError(f"Missing 'type' in rule.condition: {condition}")
         
         evaluator = ConditionEvaluator._evaluators.get(rule_type)
-        # condition = rule.condition
-        
         if evaluator is None:
             logger.warning(f"Unknown condition type: {rule_type}")
             return False
