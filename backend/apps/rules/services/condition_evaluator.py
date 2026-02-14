@@ -105,6 +105,7 @@ def _build_filter_condition(
 
     return Q(**{f"{field_name}__{lookup}": condition_value})
 
+
 def _validate_duration_minutes(value: Any) -> int:
     """Ensure duration_minutes is int >= 0, fallback to default if invalid"""
     if isinstance(value, int) and value > 0:
@@ -160,7 +161,6 @@ class RateEvaluator:
         """
         count_required = _validate_count(condition.get("count"))
         duration_minutes = _validate_duration_minutes(_get_duration_minutes(condition))
-
 
         if count_required is None or duration_minutes is None:
             logger.error("Rate rule missing 'count' or 'duration_minutes'")
