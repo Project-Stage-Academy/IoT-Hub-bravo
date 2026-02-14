@@ -105,6 +105,20 @@ def _build_filter_condition(
 
     return Q(**{f"{field_name}__{lookup}": condition_value})
 
+def _validate_duration_minutes(value: Any) -> int:
+    """Ensure duration_minutes is int >= 0, fallback to default if invalid"""
+    if isinstance(value, int) and value > 0:
+        return value
+    logger.warning(f"Invalid duration_minutes: {value}, using default {DEFAULT_DURATION_MINUTES}")
+    return DEFAULT_DURATION_MINUTES
+
+
+def _validate_count(value: Any) -> int:
+    """Ensure count is int > 0"""
+    if isinstance(value, int) and value > 0:
+        return value
+    raise ValueError(f"Invalid count value: {value}")
+
 
 class ThresholdEvaluator:
     @staticmethod
@@ -112,7 +126,7 @@ class ThresholdEvaluator:
         """Evaluate rule for 'threshold' type"""
         condition_value = _get_value(condition)
         comparison_operator = _get_comparison_operator(condition)
-        duration_minutes = _get_duration_minutes(condition)
+        duration_minutes = _validate_duration_minutes(_get_duration_minutes(condition))
         telemetries_in_window = _get_telemetries_in_window(telemetry, duration_minutes)
 
         total_count = telemetries_in_window.count()
@@ -144,8 +158,9 @@ class RateEvaluator:
         Checks if the count of Telemetry events for the same device_metric
         in the past `duration_minutes` meets or exceeds `count`.
         """
-        count_required = condition.get("count")
-        duration_minutes = _get_duration_minutes(condition)
+        count_required = _validate_count(condition.get("count"))
+        duration_minutes = _validate_duration_minutes(_get_duration_minutes(condition))
+
 
         if count_required is None or duration_minutes is None:
             logger.error("Rate rule missing 'count' or 'duration_minutes'")

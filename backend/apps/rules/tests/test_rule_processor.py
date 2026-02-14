@@ -622,6 +622,72 @@ def test_condition_evaluator_unknown_type_logs_warning(device_metric, condition_
     assert "Unknown condition type: unknown_type" in caplog.text
 
 
+@pytest.mark.django_db
+def test_rule_processor_invalid_condition_duration_minutes_rate_rule(device_metric, rule_processor):
+    """Event should not be created when condition duration_minutes has invalid type"""
+    now = timezone.now()
+    for v in [100, 105, 110]:
+        create_telemetry(device_metric, v, now - timedelta(minutes=1))
+        
+    rule = create_rule(device_metric, {"type": "rate", "duration_minutes": "12", "count": 3})
+
+    rule_processor.run(Telemetry.objects.last())
+
+    events = Event.objects.filter(rule=rule)
+    assert events.count() == 1, "Event created when duration_minutes has invlid type (because of default value)"
+
+
+@pytest.mark.django_db
+def test_rule_processor_invalid_condition_count_type_rate_rule(device_metric, rule_processor):
+    """Event should not be created when condition duration_minutes has invalid type"""
+    now = timezone.now()
+    for v in [100, 105, 110]:
+        create_telemetry(device_metric, v, now - timedelta(minutes=1))
+        
+    rule = create_rule(device_metric, {"type": "rate", "duration_minutes": "12", "count": "3"})
+
+    with pytest.raises(ValueError, match="Invalid count value: 3"):
+        rule_processor.run(Telemetry.objects.last())
+
+
+@pytest.mark.django_db
+def test_rule_processor_invalid_condition_count_type_rate_rule(device_metric, rule_processor):
+    """Event should not be created when condition duration_minutes has invalid type"""
+    now = timezone.now()
+    for v in [100, 105, 110]:
+        create_telemetry(device_metric, v, now - timedelta(minutes=1))
+        
+    rule = create_rule(device_metric, {"type": "rate", "duration_minutes": 12, "count": "3"})
+
+    with pytest.raises(ValueError, match="Invalid count value: 3"):
+        rule_processor.run(Telemetry.objects.last())
+
+
+@pytest.mark.django_db
+def test_rule_processor_invalid_condition_count_value_rate_rule(device_metric, rule_processor):
+    """Count can't be <0"""
+    now = timezone.now()
+    for v in [100, 105, 110]:
+        create_telemetry(device_metric, v, now - timedelta(minutes=1))
+        
+    rule = create_rule(device_metric, {"type": "rate", "duration_minutes": 12, "count": -1})
+
+    with pytest.raises(ValueError, match="Invalid count value: -1"):
+        rule_processor.run(Telemetry.objects.last())
+
+
+@pytest.mark.django_db
+def test_rule_processor_invalid_condition_minutes_value_rate_rule(device_metric, rule_processor):
+    """Minutes can't be <0"""
+    now = timezone.now()
+    for v in [100, 105, 110]:
+        create_telemetry(device_metric, v, now - timedelta(minutes=1))
+        
+    rule = create_rule(device_metric, {"type": "rate", "duration_minutes": -12, "count": -1})
+
+    with pytest.raises(ValueError, match="Invalid count value: -1"):
+        rule_processor.run(Telemetry.objects.last())
+
 # ============================================================================
 # MULTIPLE RULES TESTS
 # ============================================================================
