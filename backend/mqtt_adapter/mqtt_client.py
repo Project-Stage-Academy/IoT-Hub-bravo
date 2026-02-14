@@ -95,12 +95,16 @@ class MqttCallbacks:
 
 def build_client(config: MqttConfig, callbacks: MqttCallbacks) -> mqtt.Client:
     client = mqtt.Client(client_id=config.client_id)
+    client.username_pw_set(config.username, config.password)
 
     client.on_connect = callbacks.on_connect
     client.on_disconnect = callbacks.on_disconnect
     client.on_message = callbacks.on_message
 
-    client.reconnect_delay_set(min_delay=1, max_delay=30)
+    client.reconnect_delay_set(
+        min_delay=config.min_reconnect_delay,
+        max_delay=config.max_reconnect_delay,
+    )
     return client
 
 
@@ -109,5 +113,5 @@ def run_mqtt_client(*, config: MqttConfig, handle_payload: Callable) -> None:
     client = build_client(config, callbacks)
 
     logger.info('Connecting to MQTT broker %s:%s...', config.host, config.port)
-    client.connect(config.host, config.port, keepalive=config.keepalive)
-    client.loop_forever()
+    client.connect_async(config.host, config.port, keepalive=config.keepalive)
+    client.loop_forever(retry_first_connection=True)
