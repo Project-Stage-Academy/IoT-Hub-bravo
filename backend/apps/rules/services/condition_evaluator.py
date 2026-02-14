@@ -6,7 +6,6 @@ from django.db.models import Q, Count, Case, When
 
 from apps.devices.models.telemetry import Telemetry
 from apps.devices.models.device_metric import DeviceMetric
-from apps.rules.models.rule import Rule
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +98,7 @@ def _build_filter_condition(
     lookup = COMPARISON_OPERATOR_MAP.get(comparison_operator)
 
     if not lookup:
-        raise ValueError(f"Invalid operator")
+        raise ValueError("Invalid operator")
 
     if comparison_operator == "!=":
         return ~Q(**{f"{field_name}__{lookup}": condition_value})
