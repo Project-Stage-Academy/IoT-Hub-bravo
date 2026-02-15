@@ -1,19 +1,15 @@
-def test_ci_smoke():
-    """
-    Placeholder test to ensure that CI runs
-    pytest and collects at least one test.
-    """
-    assert True
-
-
 """
 Smoke tests for critical flows.
 Run before demos: docker compose exec web pytest tests/smoke/ -v
 """
 
 import json
+import jwt
+from datetime import datetime, timedelta, timezone
+
 import pytest
 from celery import current_app
+from django.conf import settings
 
 from apps.devices.models import Device, Telemetry
 from apps.rules.models import Event
@@ -27,6 +23,14 @@ from tests.fixtures.factories import (
 )
 
 pytestmark = pytest.mark.django_db
+
+
+def test_ci_smoke():
+    """
+    Placeholder test to ensure that CI runs
+    pytest and collects at least one test.
+    """
+    assert True
 
 
 class TestCriticalFlowsSmoke:
@@ -100,10 +104,6 @@ class TestCriticalFlowsSmoke:
         """
         Smoke test: Device API CRUD operations work.
         """
-        import jwt
-        from datetime import datetime, timedelta, timezone
-        from django.conf import settings
-
         user = UserFactory(role="admin")
         token = jwt.encode(
             {

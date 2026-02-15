@@ -4,7 +4,6 @@ import json
 
 import pytest
 
-from apps.devices.models import Telemetry
 from tests.fixtures.factories import DeviceFactory, DeviceMetricFactory, MetricFactory
 
 pytestmark = pytest.mark.django_db
@@ -102,7 +101,7 @@ class TestTelemetryIngestAPI:
 
     def test_ingest_telemetry_invalid_timestamp(self, client):
         """Test 400 for invalid timestamp format."""
-        device = DeviceFactory(serial_id="DEVICE-003")
+        DeviceFactory(serial_id="DEVICE-003")
 
         payload = {
             "device": "DEVICE-003",

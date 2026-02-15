@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from django.conf import settings
-from django.test import Client
 
 from apps.devices.models import Device
 from tests.fixtures.factories import DeviceFactory, UserFactory

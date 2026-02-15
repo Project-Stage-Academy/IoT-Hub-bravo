@@ -1,11 +1,11 @@
 """Integration tests for Device → Telemetry flow."""
 
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
-from apps.devices.models import Device, DeviceMetric, Telemetry
+from apps.devices.models import Telemetry
 from tests.fixtures.factories import (
     DeviceFactory,
     DeviceMetricFactory,
@@ -213,17 +213,3 @@ class TestServiceLayerMocking:
         )
 
         mock_create_device.assert_called_once()
-
-
-# class TestTelemetryWithRules:
-#     """Integration tests for Telemetry with Rules (placeholder for future)."""
-#
-#     @pytest.mark.skip(reason="Blocked: Rules engine not yet implemented")
-#     def test_telemetry_triggers_rule(self, client):
-#         """Test that telemetry above threshold triggers rule event."""
-#         pass
-#
-#     @pytest.mark.skip(reason="Blocked: MQTT integration not yet implemented")
-#     def test_mqtt_publishes_on_telemetry_ingest(self, client):
-#         """Test that MQTT message is published when telemetry is ingested."""
-#         pass
