@@ -13,7 +13,6 @@ from tests.fixtures.factories import (
     UserFactory,
 )
 
-
 pytestmark = pytest.mark.django_db
 
 
@@ -128,9 +127,9 @@ class TestDeviceTelemetryFlow:
         assert response.json()["created"] == 2
 
         # Step 5: Verify data in database
-        telemetry_records = Telemetry.objects.filter(
-            device_metric__device=device
-        ).order_by("device_metric__metric__metric_type")
+        telemetry_records = Telemetry.objects.filter(device_metric__device=device).order_by(
+            "device_metric__metric__metric_type"
+        )
 
         assert telemetry_records.count() == 2
 
@@ -143,11 +142,13 @@ class TestDeviceTelemetryFlow:
         # Ingest first reading
         response1 = client.post(
             "/api/telemetry/",
-            data=json.dumps({
-                "device": "INTEGRATION-002",
-                "metrics": {"temperature": "20.0"},
-                "ts": "2024-01-15T10:00:00Z",
-            }),
+            data=json.dumps(
+                {
+                    "device": "INTEGRATION-002",
+                    "metrics": {"temperature": "20.0"},
+                    "ts": "2024-01-15T10:00:00Z",
+                }
+            ),
             content_type="application/json",
         )
         assert response1.status_code == 201
@@ -155,19 +156,19 @@ class TestDeviceTelemetryFlow:
         # Ingest second reading
         response2 = client.post(
             "/api/telemetry/",
-            data=json.dumps({
-                "device": "INTEGRATION-002",
-                "metrics": {"temperature": "22.5"},
-                "ts": "2024-01-15T11:00:00Z",
-            }),
+            data=json.dumps(
+                {
+                    "device": "INTEGRATION-002",
+                    "metrics": {"temperature": "22.5"},
+                    "ts": "2024-01-15T11:00:00Z",
+                }
+            ),
             content_type="application/json",
         )
         assert response2.status_code == 201
 
         # Verify both readings exist
-        telemetry_count = Telemetry.objects.filter(
-            device_metric__device=device
-        ).count()
+        telemetry_count = Telemetry.objects.filter(device_metric__device=device).count()
         assert telemetry_count == 2
 
 

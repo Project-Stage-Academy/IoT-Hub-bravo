@@ -7,7 +7,6 @@ import pytest
 from apps.devices.models import Telemetry
 from tests.fixtures.factories import DeviceFactory, DeviceMetricFactory, MetricFactory
 
-
 pytestmark = pytest.mark.django_db
 
 

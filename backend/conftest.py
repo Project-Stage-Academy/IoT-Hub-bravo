@@ -32,6 +32,7 @@ def api_client():
 def authenticated_client(client, db):
     """Django test client logged in as regular user."""
     from tests.fixtures.factories import UserFactory
+
     user = UserFactory()
     client.login(username=user.username, password="testpass123")
     return client
@@ -41,6 +42,7 @@ def authenticated_client(client, db):
 def admin_client(client, db):
     """Django test client logged in as superuser."""
     from tests.fixtures.factories import AdminUserFactory
+
     user = AdminUserFactory()
     client.login(username=user.username, password="testpass123")
     return client

@@ -118,14 +118,16 @@ class TestCriticalFlowsSmoke:
         # CREATE
         response = client.post(
             "/api/devices/",
-            data=json.dumps({
-                "schema_version": "v1",
-                "device": {
-                    "name": "Smoke CRUD Device",
-                    "serial_id": "SMOKE-CRUD-001",
-                    "user_id": user.id,
-                },
-            }),
+            data=json.dumps(
+                {
+                    "schema_version": "v1",
+                    "device": {
+                        "name": "Smoke CRUD Device",
+                        "serial_id": "SMOKE-CRUD-001",
+                        "user_id": user.id,
+                    },
+                }
+            ),
             content_type="application/json",
             HTTP_AUTHORIZATION=f"Bearer {token}",
         )
@@ -157,11 +159,13 @@ class TestCriticalFlowsSmoke:
 
         response = client.post(
             "/api/telemetry/",
-            data=json.dumps({
-                "device": "SMOKE-TEL-001",
-                "metrics": {"humidity": "65.5"},
-                "ts": "2024-01-15T12:00:00Z",
-            }),
+            data=json.dumps(
+                {
+                    "device": "SMOKE-TEL-001",
+                    "metrics": {"humidity": "65.5"},
+                    "ts": "2024-01-15T12:00:00Z",
+                }
+            ),
             content_type="application/json",
         )
 

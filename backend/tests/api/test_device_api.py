@@ -11,7 +11,6 @@ from django.test import Client
 from apps.devices.models import Device
 from tests.fixtures.factories import DeviceFactory, UserFactory
 
-
 pytestmark = pytest.mark.django_db
 
 
@@ -211,7 +210,9 @@ class TestDeviceDetailAPI:
         assert response.status_code == 200
         assert response.json()["id"] == device.id
 
-    @pytest.mark.skip(reason="Bug in DeviceDetailView.get_device(): returns JsonResponse but callers don't check it")
+    @pytest.mark.skip(
+        reason="Bug in DeviceDetailView.get_device(): returns JsonResponse but callers don't check it"
+    )
     def test_get_device_not_found(self, client):
         """Test 404 for non-existent device."""
         user = UserFactory(role="admin")
