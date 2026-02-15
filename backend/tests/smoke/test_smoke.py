@@ -10,11 +10,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from django.conf import settings
 
-from apps.devices.models import Device
-from tests.fixtures.factories import (
-    DeviceFactory,
-    UserFactory,
-)
+from tests.fixtures.factories import UserFactory
 
 pytestmark = pytest.mark.django_db
 
