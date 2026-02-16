@@ -13,9 +13,14 @@ class MQTTJsonMessage:
 
 
 class MessageHandler(Protocol):
-    def handle(self, message: MQTTJsonMessage) -> None:
-        """Must be fast / non-blocking."""
-        pass
+    """
+    Handles decoded MQTT JSON messages.
+
+    This handler is invoked from the Paho MQTT client loop thread.
+    Implementations must be fast / non-blocking.
+    """
+
+    def handle(self, message: MQTTJsonMessage) -> None: ...
 
 
 class CeleryMessageHandler:
