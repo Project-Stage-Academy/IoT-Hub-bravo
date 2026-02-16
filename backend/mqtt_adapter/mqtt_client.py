@@ -1,7 +1,7 @@
 import json
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 import paho.mqtt.client as mqtt
 
@@ -89,9 +89,26 @@ class MqttCallbacks:
         }
 
 
+def _normalize_credential(credential: str) -> Optional[str]:
+    normalized = credential.strip()
+    return normalized if normalized else None
+
+
+def apply_mqtt_auth(client: mqtt.Client, config: MqttConfig) -> None:
+    username = _normalize_credential(config.username)
+    password = _normalize_credential(config.password)
+
+    if username is None:
+        raise ValueError('Invalid MQTT_USERNAME value.')
+    if password is None:
+        raise ValueError('Invalid MQTT_PASSWORD value.')
+
+    client.username_pw_set(username, password)
+
+
 def build_client(config: MqttConfig, callbacks: MqttCallbacks) -> mqtt.Client:
     client = mqtt.Client(client_id=config.client_id)
-    client.username_pw_set(config.username, config.password)
+    apply_mqtt_auth(client=client, config=config)
 
     client.on_connect = callbacks.on_connect
     client.on_disconnect = callbacks.on_disconnect
