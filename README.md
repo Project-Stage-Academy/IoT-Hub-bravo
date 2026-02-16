@@ -203,6 +203,14 @@ The `seed_dev_data` command is **idempotent** (safe to run multiple times). It p
 * **Sample Devices:**
 * **Metrics & Bindings:**
 * **Telemetry Data:**
+
+   - Generated using `load_telemetry.py`, which produces random telemetry values for devices and metrics.
+
+   - Supports numeric, boolean, and string metrics.
+
+   - Assigns timestamps within configurable ranges for realistic time series data.
+
+   - Populates the telemetries hypertable efficiently using batch inserts, allowing testing of chunk creation, compression, and retention policies.
 * **Initial Rules & Events:**
 * **Execution Options:**
 
@@ -211,6 +219,13 @@ To manually refresh or verify the initial state:
 ```bash
 docker compose exec web python manage.py seed_dev_data
 ```
+
+For generating additional telemetry samples or stress-testing the system, you can run:
+
+```bash
+docker compose exec web python manage.py load_telemetry 50000
+```
+> This will insert 50,000 synthetic telemetry records, useful for testing query performance, indexing, and TimescaleDB hypertable behavior.
 
 For more details on seed data fixtures and structure, see [docs/schema.md](./docs/schema.md#data-seeding).
 
