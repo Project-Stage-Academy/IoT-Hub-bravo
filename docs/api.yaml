@@ -19,6 +19,8 @@ tags:
     description: CRUD operations for telemetry
   - name: Rules
     description: Business logic rules and event management
+  - name: Events
+    description: Events triggered by rules
 
 paths:
   /api/auth/login:
@@ -1205,6 +1207,215 @@ paths:
                   value:
                     code: 404
                     message: "Rule not found"
+
+  /api/events/:
+    get:
+      tags:
+        - Events
+      operationId: listEvents
+      summary: List events
+      description: Retrieve a paginated list of events. Supports filtering by rule_id, device_id, acknowledged, and severity (reserved).
+      parameters:
+        - name: rule_id
+          in: query
+          description: Filter events by rule ID
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: device_id
+          in: query
+          description: Filter events by trigger device ID
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: acknowledged
+          in: query
+          description: Filter events by acknowledgment status
+          required: false
+          schema:
+            type: boolean
+        - name: severity
+          in: query
+          description: Filter events by severity (currently reserved, not implemented)
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of events to return (max 200)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          description: Number of events to skip
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: A paginated list of events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: Total number of events
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        timestamp:
+                          type: string
+                          format: date-time
+                        created_at:
+                          type: string
+                          format: date-time
+                        acknowledged:
+                          type: boolean
+                        rule:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                        trigger_telemetry_id:
+                          type: integer
+                          nullable: true
+
+  /api/events/{event_id}/:
+    get:
+      tags:
+        - Events
+      operationId: getEventById
+      summary: Retrieve event details
+      description: Get detailed information about a single event by ID, including optional trigger telemetry info.
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          description: ID of the event
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Event details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  timestamp:
+                    type: string
+                    format: date-time
+                  created_at:
+                    type: string
+                    format: date-time
+                  acknowledged:
+                    type: boolean
+                  rule:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                  trigger_telemetry_id:
+                    type: integer
+                    nullable: true
+                  trigger_device_id:
+                    type: integer
+                    nullable: true
+                  trigger_telemetry:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: integer
+                      ts:
+                        type: string
+                        format: date-time
+                      device_id:
+                        type: integer
+                        nullable: true
+                      metric_id:
+                        type: integer
+                        nullable: true
+                      value:
+                        type: object
+
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
+  /api/events/{event_id}/ack/:
+    post:
+      tags:
+        - Events
+      operationId: acknowledgeEvent
+      summary: Acknowledge an event
+      description: Marks an event as acknowledged. Idempotent.
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          description: ID of the event
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        description: No body required
+        required: false
+      responses:
+        '200':
+          description: Event acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  event_id:
+                    type: integer
+                  acknowledged:
+                    type: boolean
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
 
 components:
   securitySchemes:
