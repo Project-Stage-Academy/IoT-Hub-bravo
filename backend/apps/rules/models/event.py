@@ -13,8 +13,12 @@ class Event(models.Model):
     trigger_telemetry_id = models.BigIntegerField(
         null=True,
         blank=True,
-        db_index=True,
         help_text="ID of the telemetry that triggered this event",
+    )
+    trigger_device_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        help_text="ID of the device that triggered this event",
     )
 
     def get_trigger_telemetry(self):
@@ -34,6 +38,7 @@ class Event(models.Model):
             models.Index(fields=['rule'], name='idx_events_rule'),
             models.Index(fields=['acknowledged'], name='idx_events_ack'),
             models.Index(fields=['trigger_telemetry_id'], name='idx_events_telemetry_id'),
+            models.Index(fields=['trigger_device_id'], name='idx_events_device_id'),
         ]
 
     def __str__(self):
