@@ -1322,28 +1322,41 @@ paths:
                   results:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                        timestamp:
-                          type: string
-                          format: date-time
-                        created_at:
-                          type: string
-                          format: date-time
-                        acknowledged:
-                          type: boolean
-                        rule:
-                          type: object
-                          properties:
-                            id:
-                              type: integer
-                            name:
-                              type: string
-                        trigger_telemetry_id:
-                          type: integer
-                          nullable: true
+                      $ref: '#/components/schemas/Event'
+              example:
+                count: 2
+                limit: 50
+                offset: 0
+                results:
+                  - id: 123
+                    timestamp: "2026-01-25T09:53:00+00:00"
+                    created_at: "2026-01-25T09:55:00+00:00"
+                    acknowledged: false
+                    rule:
+                      id: 1
+                      name: "High Temperature"
+                    trigger_telemetry_id: 2
+                    trigger_device_id: 1
+                  - id: 124
+                    timestamp: "2026-01-25T09:52:00+00:00"
+                    created_at: "2026-01-25T09:53:00+00:00"
+                    acknowledged: true
+                    rule:
+                      id: 2
+                      name: "Low Battery"
+                    trigger_telemetry_id: 43
+                    trigger_device_id: 3
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_request:
+                  value:
+                    code: 400
+                    message: "Invalid query parameters."  
 
   /api/events/{event_id}/:
     get:
@@ -1366,48 +1379,17 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                  timestamp:
-                    type: string
-                    format: date-time
-                  created_at:
-                    type: string
-                    format: date-time
-                  acknowledged:
-                    type: boolean
-                  rule:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      name:
-                        type: string
-                  trigger_telemetry_id:
-                    type: integer
-                    nullable: true
-                  trigger_device_id:
-                    type: integer
-                    nullable: true
-                  trigger_telemetry:
-                    type: object
-                    nullable: true
-                    properties:
-                      id:
-                        type: integer
-                      ts:
-                        type: string
-                        format: date-time
-                      device_id:
-                        type: integer
-                        nullable: true
-                      metric_id:
-                        type: integer
-                        nullable: true
-                      value:
-                        type: object
+                $ref: '#/components/schemas/Event'
+              example:
+                id: 123
+                timestamp: "2026-01-25T09:53:00+00:00"
+                created_at: "2026-01-25T09:55:00+00:00"
+                acknowledged: false
+                rule:
+                  id: 1
+                  name: "High Temperature"
+                trigger_telemetry_id: 2
+                trigger_device_id: 1
 
         '404':
           description: Event not found
@@ -1418,6 +1400,8 @@ paths:
                 properties:
                   detail:
                     type: string
+              example:
+                detail: "Event not found"
 
   /api/events/{event_id}/ack/:
     post:
@@ -1437,6 +1421,7 @@ paths:
       requestBody:
         description: No body required
         required: false
+        content: { }
       responses:
         '200':
           description: Event acknowledged
@@ -1451,6 +1436,18 @@ paths:
                     type: integer
                   acknowledged:
                     type: boolean
+              example:
+                example:
+                id: 123
+                timestamp: "2026-01-25T09:53:00+00:00"
+                created_at: "2026-01-25T09:55:00+00:00"
+                acknowledged: true
+                rule:
+                  id: 1
+                  name: "High Temperature"
+                trigger_telemetry_id: 2
+                trigger_device_id: 1
+
         '404':
           description: Event not found
           content:
@@ -1460,6 +1457,8 @@ paths:
                 properties:
                   detail:
                     type: string
+              example:
+                detail: "Event not found"
 
 
 components:
@@ -2245,3 +2244,39 @@ components:
     #           type: "notify"
     #           message: "User_1 temperature is overwhelming"
     #         device_metric: "123e4567-e89b-12d3-a456-426614174000"
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        acknowledged:
+          type: boolean
+        rule:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        trigger_telemetry_id:
+          type: integer
+          nullable: true
+        trigger_device_id:
+          type: integer
+          nullable: true
+      example:
+        id: 123
+        timestamp: "2026-01-25T09:20:00+00:00"
+        created_at: "2026-01-25T09:55:00+00:00"
+        acknowledged: false
+        rule:
+          id: 2
+          name: "High Temperature Alert"
+        trigger_telemetry_id: 2
+        trigger_device_id: 1

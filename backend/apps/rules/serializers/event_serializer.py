@@ -199,7 +199,7 @@ class EventListItemSerializer:
             "acknowledged": event.acknowledged,
             "rule": {
                 "id": event.rule_id,
-                "name": getattr(event.rule, "name", None),
+                "name": event.rule.name if event.rule else None,
             },
             "trigger_telemetry_id": event.trigger_telemetry_id,
             "trigger_device_id": event.trigger_device_id,
