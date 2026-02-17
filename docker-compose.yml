@@ -14,13 +14,11 @@ x-django-base: &django_base
       condition: service_healthy
     redis:
       condition: service_healthy
-    mosquitto:
-      condition: service_healthy
 
 services:
   swagger-ui:
     image: swaggerapi/swagger-ui
-    container_name: openAPI_specification
+    container_name: swagger-ui
     restart: always
     ports:
       - "5433:8080"
@@ -39,7 +37,6 @@ services:
       - media_data:/app/media
     ports:
       - "8000:8000"
-
 
   db:
     image: timescale/timescaledb:latest-pg16
@@ -78,7 +75,6 @@ services:
       retries: 5
       start_period: 10s
 
-
   worker:
     <<: *django_base
     image: iot-hub-worker
@@ -110,10 +106,10 @@ services:
       redis:
         condition: service_healthy
   
-  celery-exporter:
+  celery_exporter:
     image: danihodovic/celery-exporter
     platform: linux/amd64
-    container_name: celery-exporter
+    container_name: celery_exporter
     command: --broker-url=${CELERY_BROKER_URL}
     ports:
       - "9808:9808"
@@ -122,11 +118,22 @@ services:
     depends_on:
       - redis
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://celery-exporter:9808/metrics')"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://celery_exporter:9808/metrics')"]
       interval: 3s
       timeout: 3s
       retries: 5
       start_period: 10s  
+  
+  celery_beat:
+    <<: *django_base
+    image: iot-hub-beat
+    container_name: celery_beat
+    command: [ "celery", "-A", "conf.celery_app", "beat", "-l", "INFO", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler" ]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   prometheus:
     image: prom/prometheus
@@ -138,7 +145,7 @@ services:
     networks:
       - backend
     depends_on:
-      celery-exporter:
+      celery_exporter:
         condition: service_healthy   
 
   grafana:
@@ -165,10 +172,23 @@ services:
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
     healthcheck:
-      test: ["CMD-SHELL", "exit 0"]
+      test: [ "CMD-SHELL", "exit 0" ]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  mqtt-adapter:
+    <<: *django_base
+    image: iot-hub-mqtt-adapter
+    container_name: mqtt-adapter
+    command: [ "python", "-m", "mqtt_adapter.main" ]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
 
 volumes:
   media_data:

@@ -18,7 +18,6 @@ sys.path.append(str(BASE_DIR))
 # Set Django settings module
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "conf.settings")
 
-
 django.setup()
 
 from apps.devices.models import Device, DeviceMetric  # noqa
@@ -158,7 +157,9 @@ def main():
     parser.add_argument("--device", required=True, help="Device serial ID")
     parser.add_argument("--rate", type=positive_float, default=1, help="Messages per second")
     parser.add_argument("--count", type=positive_int, default=1, help="Number of messages to send")
-    parser.add_argument("--schema-version", type=str, default="v1", help="Message schema version")
+    parser.add_argument(
+        "--schema-version", type=positive_int, default=1, help="Message schema version"
+    )
     parser.add_argument(
         "--value-generation",
         choices=["manual", "random", "non-interactive"],
@@ -230,10 +231,10 @@ def main():
             else:
                 status = send_mqtt(args.mqtt_broker, args.mqtt_topic, payload)
 
-            print(f"[{i+1}/{args.count}] sent ({status})")
+            print(f"[{i + 1}/{args.count}] sent ({status})")
 
         except Exception as e:
-            print(f"[{i+1}/{args.count}] failed: {e}")
+            print(f"[{i + 1}/{args.count}] failed: {e}")
 
         if i < args.count - 1:
             time.sleep(delay)
