@@ -18,7 +18,7 @@ x-django-base: &django_base
 services:
   swagger-ui:
     image: swaggerapi/swagger-ui
-    container_name: openAPI_specification
+    container_name: swagger-ui
     restart: always
     ports:
       - "5433:8080"
@@ -106,10 +106,10 @@ services:
       redis:
         condition: service_healthy
   
-  celery-exporter:
+  celery_exporter:
     image: danihodovic/celery-exporter
     platform: linux/amd64
-    container_name: celery-exporter
+    container_name: celery_exporter
     command: --broker-url=${CELERY_BROKER_URL}
     ports:
       - "9808:9808"
@@ -118,11 +118,22 @@ services:
     depends_on:
       - redis
     healthcheck:
-      test: [ "CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://celery-exporter:9808/metrics')" ]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://celery_exporter:9808/metrics')"]
       interval: 3s
       timeout: 3s
       retries: 5
-      start_period: 10s
+      start_period: 10s  
+  
+  celery_beat:
+    <<: *django_base
+    image: iot-hub-beat
+    container_name: celery_beat
+    command: [ "celery", "-A", "conf.celery_app", "beat", "-l", "INFO", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler" ]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   prometheus:
     image: prom/prometheus
@@ -134,8 +145,8 @@ services:
     networks:
       - backend
     depends_on:
-      celery-exporter:
-        condition: service_healthy
+      celery_exporter:
+        condition: service_healthy   
 
   grafana:
     image: grafana/grafana

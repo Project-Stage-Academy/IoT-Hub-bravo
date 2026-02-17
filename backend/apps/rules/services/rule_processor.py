@@ -1,4 +1,3 @@
-from celery import shared_task
 import logging
 
 from apps.rules.models.rule import Rule
@@ -15,18 +14,12 @@ class RuleProcessor:
     """
 
     @staticmethod
-    def run(telemetry):
+    def run(telemetry: Telemetry):
         rules = Rule.objects.filter(is_active=True, device_metric=telemetry.device_metric)
 
         for rule in rules:
-            if ConditionEvaluator.evaluate(rule, telemetry):
+            condition = rule.condition
+            device_metric = rule.device_metric
+
+            if ConditionEvaluator.evaluate(condition, device_metric, telemetry):
                 Action.dispatch_action(rule, telemetry)
-
-
-@shared_task
-def run_rule_processor_task(telemetry_id: int):
-    """
-    Celery task to run RuleProcessor asynchronously on the given telemetry
-    """
-    telemetry = Telemetry.objects.get(id=telemetry_id)
-    RuleProcessor().run(telemetry)

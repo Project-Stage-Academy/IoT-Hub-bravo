@@ -1,14 +1,15 @@
 openapi: 3.0.3
 
 info:
-  title: Devices & Telemetry & Rules API
-  version: "1.5.0"
+  title: IoT Hub API
+  version: "1.4.1"
   description: |
     API for managing devices, telemetry, and rules with full CRUD support, JWT authentication,
     pagination, schema versioning, and example payloads for testing.
 
 servers:
   - url: http://localhost:8000
+    description: Local development server
 
 tags:
   - name: Authentication
@@ -22,8 +23,9 @@ tags:
   - name: Events
     description: Events triggered by rules
 
+
 paths:
-  /api/auth/login:
+  /api/auth/login/:
     post:
       tags:
         - Authentication
@@ -32,19 +34,22 @@ paths:
       description: |
         Authenticates a user and returns a JWT access token.
         The token must be used in the `Authorization` header for all protected endpoints.
-      security: [ ]
+      security: []
       requestBody:
         required: true
+        description: User credentials
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AuthLoginRequest'
             examples:
               valid_credentials:
+                summary: Valid user credentials
                 value:
                   username: testuser
                   password: testpassword
               admin_credentials:
+                summary: Valid admin credentials
                 value:
                   username: adminuser
                   password: adminpassword
@@ -55,32 +60,74 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthTokenResponse'
+              examples:
+                success:
+                  summary: Access token response
+                  value:
+                    access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    token_type: bearer
+                    expires_in: "2026-01-22T17:00:00Z"
+        '400':
+          description: Invalid JSON or invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_json:
+                  summary: Invalid JSON
+                  value:
+                    code: 400
+                    message: "Malformed JSON payload."
         '401':
           description: Invalid credentials
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_credentials:
+                  summary: Username or password is incorrect
+                  value:
+                    code: 401
+                    message: "Invalid username or password."
+        '422':
+          description: Validation error (missing or invalid fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_password:
+                  summary: Password is missing
+                  value:
+                    code: 422
+                    message: "password: This field is required."
 
-  /api/auth/refresh:
+  /api/auth/refresh/:
     post:
       tags:
         - Authentication
       summary: Refresh access token
+      description: |
+        Exchanges a valid refresh token for a new access token.
       operationId: refreshToken
-      security: [ ]
+      security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                refresh_token:
-                  type: string
-                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-              required:
-                - refresh_token
+              $ref: '#/components/schemas/AuthRefreshRequest'
+            examples:
+              valid_refresh:
+                summary: Valid refresh token
+                value:
+                  refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              empty_refresh:
+                summary: Empty refresh token (invalid)
+                value:
+                  refresh_token: ""
       responses:
         '200':
           description: Access token refreshed
@@ -88,21 +135,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthTokenResponse'
+              examples:
+                success:
+                  value:
+                    access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    token_type: bearer
+                    expires_in: "2026-04-28T16:15:01Z"
         '400':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_refresh:
+                  value:
+                    detail: "Invalid refresh token."
+        '401':
+          description: Unauthorized (refresh token expired or revoked)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                expired:
+                  value:
+                    detail: "Token is expired."
 
-  /api/devices:
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validation_error:
+                  value:
+                    detail: "refresh_token is required."
+
+  /api/devices/:
     get:
       tags:
         - Devices
       operationId: listDevices
       summary: List devices with pagination
+      description: Retrieve a paginated list of devices in the system.
       security:
-        - BearerAuth: [ ]
+        - BearerAuth: []
       parameters:
         - name: limit
           in: query
@@ -126,25 +205,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedDevices'
+              examples:
+                sample:
+                  value:
+                    total: 2
+                    limit: 5
+                    offset: 0
+                    items:
+                      - id: 1
+                        serial_id: "ABC12345"
+                        name: "Smoke detector"
+                        description: "A device that monitors smoke levels"
+                        user_id: 1
+                        is_active: true
+                        created_at: "2026-01-22T12:00:00Z"
+                      - id: 2
+                        serial_id: "QWE12345"
+                        name: "Humidity meter"
+                        description: "A device that monitors humidity levels"
+                        user_id: 1
+                        is_active: false
+                        created_at: "2026-01-22T14:32:54Z"
         '404':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    code: 404
+                    message: "Devices not found"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  value:
+                    code: 401
+                    message: "Unauthorized"
     post:
       tags:
         - Devices
       operationId: createDevice
       summary: Create a new device
+      description: Create a new device with the provided data. The device must include required fields and schema version.
       security:
-        - BearerAuth: [ ]
+        - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/VersionedDeviceCreate'
+            examples:
+              new_device:
+                value:
+                  schema_version: "v1"
+                  device:
+                    serial_id: "DEF12345"
+                    name: "Digital thermometer"
+                    description: "Monitors indoor temperature"
+                    user_id: 1
+                    is_active: false
       responses:
         '201':
           description: Device created
@@ -152,27 +279,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Device'
+              examples:
+                created:
+                  value:
+                    id: 3
+                    serial_id: "DEF12345"
+                    name: "Digital thermometer"
+                    description: "Monitors indoor temperature"
+                    user_id: 1
+                    is_active: false
+                    created_at: "2026-02-09T16:00:00Z"
         '400':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                bad_request:
+                  value:
+                    code: 400
+                    message: "Invalid device data"
 
-  /api/devices/{id}:
+  /api/devices/{id}/:
     get:
       tags:
         - Devices
       operationId: getDeviceById
       summary: Get device by id
+      description: Returns a single device by its unique identifier.
       security:
-        - BearerAuth: [ ]
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
+            example: 1
       responses:
         '200':
           description: Device found
@@ -180,31 +324,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Device'
+              examples:
+                example_device:
+                  value:
+                    id: 1
+                    serial_id: "ABC12345"
+                    name: "Smoke detector"
+                    description: "Monitors CO2 levels."
+                    user_id: 1
+                    is_active: true
+                    created_at: "2026-01-22T12:00:00Z"
         '404':
           description: Device not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    code: 404
+                    message: "Device not found."
     put:
       tags:
         - Devices
       operationId: replaceDevice
       summary: Replace device
+      description: Fully replaces an existing device with the provided payload.
       security:
-        - BearerAuth: [ ]
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
+            example: 1
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/VersionedDeviceCreate'
+            examples:
+              replace_example:
+                value:
+                  schema_version: "v1"
+                  device:
+                    serial_id: "DEF12345"
+                    name: "Digital thermometer"
+                    description: "Monitors indoor temperature."
+                    user_id: 1
+                    is_active: false
       responses:
         '200':
           description: Device updated
@@ -212,37 +383,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Device'
+              examples:
+                updated_device:
+                  value:
+                    id: 1
+                    serial_id: "DEF12345"
+                    name: "Digital thermometer"
+                    description: "Monitors indoor temperature."
+                    user_id: 1
+                    is_active: false
+                    created_at: "2026-01-22T12:00:00Z"
         '400':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_request:
+                  value:
+                    code: 400
+                    message: "Invalid device payload."
         '404':
           description: Device not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    code: 404
+                    message: "Device not found."
     patch:
       tags:
         - Devices
       summary: Partially update device
+      description: Update one or more fields of an existing device.
       operationId: patchDevice
       security:
-        - BearerAuth: [ ]
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
+            example: 1
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/VersionedDevicePatch'
+            examples:
+              patch_example:
+                value:
+                  schema_version: "v1"
+                  device:
+                    name: "Updated smoke detector"
+                    is_active: true
       responses:
         '200':
           description: Device updated
@@ -250,55 +450,84 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Device'
+              examples:
+                patched_device:
+                  value:
+                    id: 1
+                    serial_id: "ABC12345"
+                    name: "Updated smoke detector"
+                    description: "Monitors CO2 levels."
+                    user_id: 1
+                    is_active: true
+                    created_at: "2026-01-22T12:00:00Z"
         '400':
           description: Invalid patch
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_patch:
+                  value:
+                    code: 400
+                    message: "Invalid fields for patch."
         '404':
           description: Device not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    code: 404
+                    message: "Device not found."
     delete:
       tags:
         - Devices
       summary: Delete device
+      description: Deletes a device by its ID.
       operationId: deleteDevice
       security:
-        - BearerAuth: [ ]
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
+            example: 1
       responses:
         '204':
-          description: Device deleted
+          description: Device deleted successfully
         '404':
           description: Device not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    code: 404
+                    message: "Device not found."
 
-  /api/telemetry:
+  /api/telemetry/:
     get:
       tags:
         - Telemetry
       summary: List telemetry records by device_id with pagination
+      description: Returns a paginated list of telemetry records for a given device.
       operationId: listTelemetry
       security:
-        - BearerAuth: [ ]
+        - BearerAuth: []
       parameters:
         - name: device_id
           in: query
           required: true
           schema:
             type: integer
+            example: 1
         - name: limit
           in: query
           schema:
@@ -319,16 +548,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTelemetry'
+              examples:
+                example_page:
+                  value:
+                    total: 2
+                    limit: 5
+                    offset: 0
+                    items:
+                      - id: 1
+                        device_id: 1
+                        metric: "temperature"
+                        value: 23.5
+                        ts: "2026-02-09T12:00:00Z"
+                      - id: 2
+                        device_id: 1
+                        metric: "temperature"
+                        value: 24.0
+                        ts: "2026-02-09T12:05:00Z"
+
         '404':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    code: 404
+                    message: "No telemetry records found."
     post:
       tags:
         - Telemetry
       summary: Ingest telemetry (single or batch)
+      description: Adds a new telemetry record for a device.
       operationId: ingestTelemetry
       security:
         - BearerAuth: [ ]
@@ -405,719 +658,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TelemetryIngestAsyncResponse"
+              examples:
+                queued:
+                  value:
+                    status: "accepted"
+                    task_id: "c1b6d6d2-3f10-4d77-a5d7-6a4b8a1f2c9e"
 
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
 
-  /api/telemetry/{id}:
-    get:
-      tags:
-        - Telemetry
-      summary: Get telemetry by id
-      operationId: getTelemetryById
-      security:
-        - BearerAuth: [ ]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Telemetry found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Telemetry'
-        '404':
-          description: Telemetry not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    put:
-      tags:
-        - Telemetry
-      summary: Replace telemetry
-      operationId: replaceTelemetry
-      security:
-        - BearerAuth: [ ]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TelemetryIngest'
-      responses:
-        '200':
-          description: Telemetry updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Telemetry'
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Telemetry not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    patch:
-      tags:
-        - Telemetry
-      summary: Partially update telemetry
-      operationId: patchTelemetry
-      security:
-        - BearerAuth: [ ]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VersionedTelemetryPatch'
-      responses:
-        '200':
-          description: Telemetry updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Telemetry'
-        '400':
-          description: Invalid patch
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Telemetry not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    delete:
-      tags:
-        - Telemetry
-      summary: Delete telemetry
-      operationId: deleteTelemetry
-      security:
-        - BearerAuth: [ ]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '204':
-          description: Telemetry deleted
-        '404':
-          description: Telemetry not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/rules:
-    get:
-      tags:
-        - Rules
-      operationId: listRules
-      summary: List rules with pagination and filters
-      description: |
-        Returns a paginated list of rules.
-        Supports filtering by activation status and action type.
-        Used to browse, search, and manage existing rules.
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-          description: Maximum number of rules to return
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-          description: Number of items to skip
-        - name: is_active
-          in: query
-          schema:
-            type: boolean
-          description: Filter by enabled status
-        - name: action
-          in: query
-          schema:
-            type: object
-          description: Filter by action type in JSON format
-          example:
-            type: "notify"
-      responses:
-        '200':
-          description: List of rules
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedRules'
-              examples:
-                default:
-                  summary: Paginated list of rules
-                  value:
-                    total: 3
-                    limit: 20
-                    offset: 0
-                    items:
-                      - id: 12
-                        name: "High Temperature Alert"
-                        description: "Alert when temperature exceeds 30°C"
-                        is_active: true
-                        condition:
-                          type: "threshold"
-                          operator: ">"
-                          value: 30
-                        action:
-                          type: "notify"
-                        device_metric: 31
-                      - id: 32
-                        name: "Low Humidity Alert"
-                        description: "Alert when humidity drops below 20%"
-                        is_active: true
-                        condition:
-                          type: "threshold"
-                          operator: "<"
-                          value: 20
-                        action:
-                          type: "notify"
-                        device_metric: 3
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                invalid_filter:
-                  summary: Invalid query parameters
-                  value:
-                    code: 400
-                    message: "Invalid filter parameters"
-    post:
-      tags:
-        - Rules
-      operationId: createRule
-      summary: Create a new rule
-      description:  |
-        Creates a new rule and persists it for future evaluation.
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RuleCreate'
-            examples:
-              threshold_rule:
-                summary: Temperature threshold rule
-                value:
-                  name: "High Temperature Alert"
-                  description: "Alert when temperature exceeds 30°C"
-                  is_active: true
-                  condition:
-                    type: "threshold"
-                    operator: ">"
-                    value: 30
-                  action: 
-                    type: "notify"
-                    message: "some info"
-                  device_metric: 123
-              rate_rule:
-                summary: Event rate rule
-                value:
-                  name: "Too Many Errors"
-                  description: "Alert when more than 10 errors occur in 5 minutes"
-                  is_active: true
-                  condition:
-                    type: "rate"
-                    count: 10
-                    minutes: 300
-                  action: 
-                    type: "webhook"
-                    message: "some info"
-                  device_metric: 32
-              composite_rule:
-                summary: Composite AND rule
-                value:
-                  name: "Critical System State"
-                  description: "Alert when temperature high AND humidity low"
-                  is_active: true
-                  condition:
-                    type: "composite"
-                    operator: "AND"
-                    conditions:
-                      - type: "threshold"
-                        operator: ">"
-                        value: 35
-                        device_metric: 11
-                      - type: "threshold"
-                        device_metric: 33
-                        operator: "<"
-                        value: 20
-                  action:
-                    type: "notify"
-                    message: "some info"
-                  device_metric: 12
-      responses:
-        '201':
-          description: Rule created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Rule'
-              examples:
-                created:
-                  summary: Created rule with full schema
-                  value:
-                    id: 22
-                    name: "High Temperature Alert"
-                    description: "Alert when temperature exceeds 30°C"
-                    is_active: true
-                    condition:
-                      type: "threshold"
-                      operator: ">"
-                      value: 30
-                    action:
-                      type: "notify"
-                      message: "User_1 temperature is overwhelming"
-                    device_metric: 12 
-        '400':
-          description: Invalid rule definition
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                invalid_condition:
-                  summary: Invalid condition definition
-                  value:
-                    code: 400
-                    message: "Invalid rule condition: Unsupported operator"     
-
-  /api/rules/{id}:
-    get:
-      tags:
-        - Rules
-      operationId: getRuleById
-      summary: Get rule by ID
-      description: |
-        Returns full rule details by its unique identifier.
-        Includes condition definition, action configuration, and current state.
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer  
-      responses:
-        '200':
-          description: Rule found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Rule'
-              examples:
-                updated:
-                  summary: Updated rule
-                  value:
-                    id: 31
-                    name: "Updated Rule"
-                    is_active: false
-                    action: 
-                      type: "notify"
-                      message: "some info" 
-                    condition:
-                      type: "threshold"
-                      operator: ">"
-                      value: 13
-                    device_metric: 32     
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                invalid_payload:
-                  summary: Invalid rule payload
-                  value:
-                    message: "Invalid rule definition"
-                    code: 400   
-        '404':
-          description: Rule not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                not_found:
-                  summary: Rule not found
-                  value:
-                    message: "Rule not found"
-                    code: 404
-    put:
-      tags:
-        - Rules
-      operationId: replaceRule
-      summary: Replace rule completely
-      description: |
-        Replaces the entire rule definition.
-        All rule fields must be provided in the request body.
-        Missing fields will be overwritten with new values.
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RuleCreate'
-      responses:
-        '200':
-          description: Rule updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Rule'
-              examples:
-                updated:
-                  summary: Updated rule
-                  value:
-                    id: 44
-                    name: "Updated Rule"
-                    is_active: false
-                    action: 
-                      type: "notify"
-                      message: "some message"
-                    condition:
-                      type: "threshold"
-                      operator: ">"
-                      value: 13
-                    device_metric: 55   
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                invalid_payload:
-                  summary: Invalid rule payload
-                  value:
-                    message: "Invalid rule definition"
-                    code: 400
-        '404':
-          description: Rule not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                not_found:
-                  summary: Rule not found
-                  value:
-                    message: "Rule not found"
-                    code: 404
-    patch:
-      tags:
-        - Rules
-      summary: Partially update rule
-      description: |
-        Updates one or more fields of an existing rule.
-        Only provided fields are modified; all others remain unchanged.
-      operationId: patchRule
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RulePatch'
-            examples:
-              replace_rule:
-                summary: Full rule replacement
-                value:
-                  name: "Updated Rule"
-                  is_active: false
-                  condition:
-                    type: "threshold"
-                    operator: "<"
-                    value: 10
-                  device_metric: 11
-                  action: 
-                    type: "notify"
-                    message: "info"
-  
-      responses:
-        '200':
-          description: Rule updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Rule'
-              examples:
-                updated:
-                  summary: Updated rule
-                  value:
-                    id: 16
-                    name: "Updated Rule"
-                    is_active: false
-                    action: 
-                      type: "notify"
-                      message: "info"
-                    condition:
-                      type: "threshold"
-                      operator: ">"
-                      value: 13
-                    device_metric: 77    
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                invalid_payload:
-                  summary: Invalid rule payload
-                  value:
-                    message: "Invalid rule definition"
-                    code: 400
-        '404':
-          description: Rule not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                not_found:
-                  summary: Rule not found
-                  value:
-                    message: "Rule not found"
-                    code: 404
-    delete:
-      tags:
-        - Rules
-      summary: Delete rule
-      description: |
-        Permanently deletes a rule.
-        Deleted rules are no longer evaluated and cannot be restored.
-      operationId: deleteRule
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '204':
-          description: Rule deleted
-          content:
-            application/json:
-              examples:
-                no_content:
-                  summary: No response body
-                  value: {}
-        '404':
-          description: Rule not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                not_found:
-                  summary: Rule does not exist
-                  value:
-                    code: 404
-                    message: "Rule not found"
-
-  /api/rules/{id}/enable:
-    post:
-      tags:
-        - Rules
-      summary: Enable a rule
-      operationId: enableRule
-      description: Activates a rule so it will be evaluated during rule processing
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Rule state changed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Rule'
-              examples:
-                enabled:
-                  summary: Rule enabled
-                  value:
-                    id: 999
-                    name: "Rule name"
-                    is_active: true
-                    condition:
-                      type: "threshold"
-                      operator: ">"
-                      value: 13
-                    device_metric: 99
-                    action:
-                      type: "notify"
-                      message: "123"
-        '404':
-          description: Rule not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                not_found:
-                  summary: Rule not found
-                  value:
-                    code: 404
-                    message: "Rule not found"
-
-  /api/rules/{id}/disable:
-    post:
-      tags:
-        - Rules
-      summary: Disable a rule
-      operationId: disableRule
-      description: Deactivates a rule so it will not be evaluated
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Rule state changed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Rule'
-              examples:
-                enabled:
-                  summary: Rule enabled
-                  value:
-                    id: 9
-                    name: "Rule name"
-                    is_active: true
-                    condition:
-                      type: "threshold"
-                      operator: ">"
-                      value: 13
-                    device_metric: 99
-                    action:
-                      type: "notify"
-                      message: "123" 
-        '404':
-          description: Rule not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                not_found:
-                  summary: Rule not found
-                  value:
-                    code: 404
-                    message: "Rule not found"
-
-  /api/rules/evaluate:
-    post:
-      tags:
-        - Rules
-      summary: Manually trigger rule evaluation
-      operationId: evaluateRules
-      description: |
-        Triggers manual evaluation of all enabled rules for debugging and demo purposes.
-        This endpoint runs the rule processor immediately instead of waiting for the scheduled task.
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RuleEvaluateRequest'
-            examples:
-              evaluate_example:
-                summary: Evaluate telemetry data against rules
-                value:
-                  device_id: 9
-      responses:
-        '200':
-          description: Evaluation results
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RuleEvaluateResponse'
-              examples:
-                success:
-                  summary: Rules matched
-                  value:
-                    device_id: 999
-                    trigger_telemetry_id: 99
         '400':
           description: Invalid request
           content:
@@ -1126,87 +673,585 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               examples:
                 invalid_request:
-                  summary: Invalid telemetry payload
                   value:
                     code: 400
-                    message: "Telemetry value missing"
-  
-  /api/rules/{id}/events:
-    get:
-      tags:
-        - Rules
-      summary: Get rule evaluation history
-      operationId: getRuleEvents
-      description: Returns all events (rule firings) for a specific rule with pagination
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-        - name: from_date
-          in: query
-          schema:
-            type: string
-            format: date-time
-          description: Filter events from this date
-        - name: to_date
-          in: query
-          schema:
-            type: string
-            format: date-time
-          description: Filter events until this date
-      responses:
-        '200':
-          description: List of events
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedEvents'
-              examples:
-                success:
-                  summary: Rule events
-                  value:
-                    total: 1
-                    limit: 20
-                    offset: 0
-                    items:
-                      - id: 9999
-                        rule_id: 99
-                        acknowledged: false
-                        timestamp: "2026-01-22T12:00:00Z"
-                        created_at: "2026-01-22T12:00:00Z"
-                        trigger_telemetry_id: 123
-                        trigger_value:
-                          metric_value: 35.2
-                        trigger_device_metric_id: 321
-        '404':
-          description: Rule not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                not_found:
-                  summary: Rule not found
-                  value:
-                    code: 404
-                    message: "Rule not found"
+                    message: "Invalid telemetry payload."
+
+  # Note: The following endpoints for /api/telemetry/{id} are defined but commented out to focus on the more critical paths for testing. They can be uncommented and implemented later as needed.
+  # /api/telemetry/{id}:
+  #   get:
+  #     tags:
+  #       - Telemetry
+  #     summary: Get telemetry by id
+  #     description: Returns a telemetry record by its unique ID.
+  #     operationId: getTelemetryById
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: integer
+  #           example: 1
+  #     responses:
+  #       '200':
+  #         description: Telemetry found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Telemetry'
+  #             examples:
+  #               example_telemetry:
+  #                 value:
+  #                   id: 1
+  #                   device_id: 1
+  #                   value: 23.5
+  #                   timestamp: "2026-02-09T12:00:00Z"
+  #       '404':
+  #         description: Telemetry not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #             examples:
+  #               not_found:
+  #                 value:
+  #                   code: 404
+  #                   message: "Telemetry record not found."
+  #   put:
+  #     tags:
+  #       - Telemetry
+  #     summary: Replace telemetry
+  #     description: Fully replaces an existing telemetry record.
+  #     operationId: replaceTelemetry
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: integer
+  #           example: 1
+  #     requestBody:
+  #       required: true
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/VersionedTelemetryCreate'
+  #           examples:
+  #             replace_telemetry:
+  #               value:
+  #                 schema_version: "v1"
+  #                 telemetry:
+  #                   device_id: 1
+  #                   value: 24.0
+  #     responses:
+  #       '200':
+  #         description: Telemetry updated
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Telemetry'
+  #       '400':
+  #         description: Invalid request
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #       '404':
+  #         description: Telemetry not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #   patch:
+  #     tags:
+  #       - Telemetry
+  #     summary: Partially update telemetry
+  #     operationId: patchTelemetry
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: integer
+  #     requestBody:
+  #       required: true
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/VersionedTelemetryPatch'
+  #     responses:
+  #       '200':
+  #         description: Telemetry updated
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Telemetry'
+  #       '400':
+  #         description: Invalid patch
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #       '404':
+  #         description: Telemetry not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #   delete:
+  #     tags:
+  #       - Telemetry
+  #     summary: Delete telemetry
+  #     description: Deletes a telemetry record by ID.
+  #     operationId: deleteTelemetry
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: integer
+  #           example: 1 
+  #     responses:
+  #       '204':
+  #         description: Telemetry deleted successfully
+  #       '404':
+  #         description: Telemetry not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #             examples:
+  #               not_found:
+  #                 value:
+  #                   code: 404
+  #                   message: "Telemetry record not found."
+
+  # Note: The following endpoints for /api/rules are defined but commented out until the example/examples will be added to the spec.
+  # /api/rules:
+  #   get:
+  #     tags:
+  #       - Rules
+  #     operationId: listRules
+  #     summary: List rules with pagination and filters
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: limit
+  #         in: query
+  #         schema:
+  #           type: integer
+  #           minimum: 1
+  #           maximum: 100
+  #           default: 20
+  #         description: Maximum number of rules to return
+  #       - name: offset
+  #         in: query
+  #         schema:
+  #           type: integer
+  #           minimum: 0
+  #           default: 0
+  #         description: Number of items to skip
+  #       - name: is_active
+  #         in: query
+  #         schema:
+  #           type: boolean
+  #         description: Filter by enabled status
+  #       - name: action
+  #         in: query
+  #         schema:
+  #           type: object
+  #         description: Filter by action type in JSON format
+  #         example:
+  #           type: "notify"
+  #     responses:
+  #       '200':
+  #         description: List of rules
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/PaginatedRules'
+  #       '400':
+  #         description: Invalid request
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #   post:
+  #     tags:
+  #       - Rules
+  #     operationId: createRule
+  #     summary: Create a new rule
+  #     description: Creates a rule
+  #     security:
+  #       - BearerAuth: []
+  #     requestBody:
+  #       required: true
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RuleCreate'
+  #           examples:
+  #             threshold_rule:
+  #               summary: Temperature threshold rule
+  #               value:
+  #                 name: "High Temperature Alert"
+  #                 description: "Alert when temperature exceeds 30°C"
+  #                 is_active: true
+  #                 condition:
+  #                   type: "threshold"
+  #                   operator: ">"
+  #                   value: 30
+  #                 action: "notify"
+  #             rate_rule:
+  #               summary: Event rate rule
+  #               value:
+  #                 name: "Too Many Errors"
+  #                 description: "Alert when more than 10 errors occur in 5 minutes"
+  #                 is_active: true
+  #                 condition:
+  #                   type: "rate"
+  #                   count: 10
+  #                   minutes: 300
+  #                 action: "webhook"
+  #             composite_rule:
+  #               summary: Composite AND rule
+  #               value:
+  #                 name: "Critical System State"
+  #                 description: "Alert when temperature high AND humidity low"
+  #                 is_active: true
+  #                 condition:
+  #                   type: "composite"
+  #                   operator: "AND"
+  #                   conditions:
+  #                     - type: "threshold"
+  #                       metric: "temperature"
+  #                       operator: ">"
+  #                       value: 35
+  #                     - type: "threshold"
+  #                       metric: "humidity"
+  #                       operator: "<"
+  #                       value: 20
+  #                 action: "notify"
+  #     responses:
+  #       '201':
+  #         description: Rule created successfully
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Rule'
+  #       '400':
+  #         description: Invalid rule definition
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+
+  # /api/rules/{id}:
+  #   get:
+  #     tags:
+  #       - Rules
+  #     operationId: getRuleById
+  #     summary: Get rule by ID
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: string
+  #           format: uuid
+  #         description: Rule UUID
+  #     responses:
+  #       '200':
+  #         description: Rule found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Rule'
+  #       '404':
+  #         description: Rule not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #   put:
+  #     tags:
+  #       - Rules
+  #     operationId: replaceRule
+  #     summary: Replace rule completely
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: string
+  #           format: uuid
+  #     requestBody:
+  #       required: true
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RuleCreate'
+  #     responses:
+  #       '200':
+  #         description: Rule updated
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Rule'
+  #       '400':
+  #         description: Invalid request
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #       '404':
+  #         description: Rule not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #   patch:
+  #     tags:
+  #       - Rules
+  #     summary: Partially update rule
+  #     operationId: patchRule
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: string
+  #           format: uuid
+  #     requestBody:
+  #       required: true
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RulePatch'
+  #     responses:
+  #       '200':
+  #         description: Rule updated
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Rule'
+  #       '400':
+  #         description: Invalid patch
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #       '404':
+  #         description: Rule not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+  #   delete:
+  #     tags:
+  #       - Rules
+  #     summary: Delete rule
+  #     operationId: deleteRule
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: string
+  #           format: uuid
+  #     responses:
+  #       '204':
+  #         description: Rule deleted
+  #       '404':
+  #         description: Rule not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+
+  # /api/rules/{id}/enable:
+  #   post:
+  #     tags:
+  #       - Rules
+  #     summary: Enable a rule
+  #     operationId: enableRule
+  #     description: Activates a rule so it will be evaluated during rule processing
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: string
+  #           format: uuid
+  #     responses:
+  #       '200':
+  #         description: Rule enabled successfully
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Rule'
+  #       '404':
+  #         description: Rule not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+
+  # /api/rules/{id}/disable:
+  #   post:
+  #     tags:
+  #       - Rules
+  #     summary: Disable a rule
+  #     operationId: disableRule
+  #     description: Deactivates a rule so it will not be evaluated
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: string
+  #           format: uuid
+  #     responses:
+  #       '200':
+  #         description: Rule disabled successfully
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Rule'
+  #       '404':
+  #         description: Rule not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+
+  # /api/rules/evaluate:
+  #   post:
+  #     tags:
+  #       - Rules
+  #     summary: Manually trigger rule evaluation
+  #     operationId: evaluateRules
+  #     description: |
+  #       Triggers manual evaluation of all enabled rules for debugging and demo purposes.
+  #       This endpoint runs the rule processor immediately instead of waiting for the scheduled task.
+  #     security:
+  #       - BearerAuth: []
+  #     requestBody:
+  #       required: false
+  #       content:
+  #         application/json:
+  #           schema:
+  #             type: object
+  #             properties:
+  #               rule_id:
+  #                 type: string
+  #                 format: uuid
+  #                 description: Optional - evaluate only this specific rule
+  #               device_id:
+  #                 type: integer
+  #                 description: Optional - evaluate rules only for this device
+  #     responses:
+  #       '200':
+  #         description: Evaluation completed
+  #         content:
+  #           application/json:
+  #             schema:
+  #               type: object
+  #               properties:
+  #                 rules_evaluated:
+  #                   type: integer
+  #                   example: 15
+  #                 events_created:
+  #                   type: integer
+  #                   example: 3
+  #                 evaluation_time_ms:
+  #                   type: integer
+  #                   example: 245
+  #                 events:
+  #                   type: array
+  #                   items:
+  #                     $ref: '#/components/schemas/Event'
+  #       '400':
+  #         description: Invalid request
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+
+  # /api/rules/{id}/events:
+  #   get:
+  #     tags:
+  #       - Rules
+  #     summary: Get rule evaluation history
+  #     operationId: getRuleEvents
+  #     description: Returns all events (rule firings) for a specific rule with pagination
+  #     security:
+  #       - BearerAuth: []
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         schema:
+  #           type: string
+  #           format: uuid
+  #       - name: limit
+  #         in: query
+  #         schema:
+  #           type: integer
+  #           minimum: 1
+  #           maximum: 100
+  #           default: 20
+  #       - name: offset
+  #         in: query
+  #         schema:
+  #           type: integer
+  #           minimum: 0
+  #           default: 0
+  #       - name: from_date
+  #         in: query
+  #         schema:
+  #           type: string
+  #           format: date-time
+  #         description: Filter events from this date
+  #       - name: to_date
+  #         in: query
+  #         schema:
+  #           type: string
+  #           format: date-time
+  #         description: Filter events until this date
+  #     responses:
+  #       '200':
+  #         description: List of events
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/PaginatedEvents'
+  #       '404':
+  #         description: Rule not found
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
 
   /api/events/:
     get:
@@ -1584,28 +1629,28 @@ components:
         device_id:
           type: integer
           example: 1
-        key:
+        metric:
           type: string
           example: "temperature"
         value:
-          type: number
-          example: 18.3
-        created_at:
+          $ref: "#/components/schemas/TelemetryMetricValue"
+        ts:
           type: string
           format: date-time
           example: "2024-04-13T18:45:37Z"
       required:
         - id
         - device_id
-        - key
+        - metric
         - value
-        - created_at
+        - ts
       example:
         id: 1
         device_id: 1
-        key: "temperature"
+        metric: "temperature"
         value: 18.3
-        created_at: "2024-04-13T18:45:37Z"
+        ts: "2024-04-13T18:45:37Z"
+
 
     TelemetryIngest:
       type: object
@@ -1750,35 +1795,53 @@ components:
       example:
         status: "accepted"
 
-    TelemetryPatch:
-      type: object
-      properties:
-        key:
-          type: string
-          example: "temperature"
-        value:
-          type: number
-          example: 24.3
-      example:
-        key: "temperature"
-        value: 24.3
+    # TelemetryPatch:
+    #   type: object
+    #   properties:
+    #     key:
+    #       type: string
+    #       example: "temperature"
+    #     value:
+    #       type: number
+    #       example: 24.3
+    #   example:
+    #     key: "temperature"
+    #     value: 24.3
 
-    VersionedTelemetryPatch:
-      type: object
-      properties:
-        schema_version:
-          type: string
-          example: "v1.0"
-        telemetry:
-          $ref: '#/components/schemas/TelemetryPatch'
-      required:
-        - schema_version
-        - telemetry
-      example:
-        schema_version: "v1.2"
-        telemetry:
-          key: "temperature"
-          value: 24.3
+    # VersionedTelemetryCreate:
+    #   type: object
+    #   properties:
+    #     schema_version:
+    #       type: string
+    #       example: "v1"
+    #     telemetry:
+    #       $ref: '#/components/schemas/TelemetryCreate'
+    #   required:
+    #     - schema_version
+    #     - telemetry
+    #   example:
+    #     schema_version: "v2"
+    #     telemetry:
+    #       device_id: 1
+    #       key: "humidity"
+    #       value: 25.43
+
+    # VersionedTelemetryPatch:
+    #   type: object
+    #   properties:
+    #     schema_version:
+    #       type: string
+    #       example: "v1.0"
+    #     telemetry:
+    #       $ref: '#/components/schemas/TelemetryPatch'
+    #   required:
+    #     - schema_version
+    #     - telemetry
+    #   example:
+    #     schema_version: "v1.2"
+    #     telemetry:
+    #       key: "temperature"
+    #       value: 24.3
 
     AuthLoginRequest:
       type: object
@@ -1819,6 +1882,17 @@ components:
         token_type: bearer
         expires_in: "2026-01-22T17:00:00Z"
 
+    AuthRefreshRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+          description: JWT refresh token
+      example:
+        refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        
     ErrorResponse:
       type: object
       properties:
@@ -1905,28 +1979,22 @@ components:
           type: integer
           example: 0
           # Offset = 5 means skip 5 results and display the next 5.
-          # example: page 1 (result showed: 1-5), page 2 (result showed : 6-10) , page 3 (result showed: 11-15), and etc.
+          # example: page 1 (result showed: 1-5), page 2 (result showed : 6-10), page 3 (result showed: 11-15), etc.
         items:
           type: array
           items:
             $ref: '#/components/schemas/Telemetry'
           example:
-            [
-              {
-                id: 1,
-                device_id: 1,
-                key: "temperature",
-                value: 18.3,
-                created_at: "2024-04-13T18:45:37Z"
-              },
-              {
-                id: 2,
-                device_id: 1,
-                key: "humidity",
-                value: 6.73,
-                created_at: "2022-07-01T11:23:33Z"
-              }
-            ]
+            - id: 1
+              device_id: 1
+              metric: "temperature"
+              value: 18.3
+              ts: "2024-04-13T18:45:37Z"
+            - id: 2
+              device_id: 1
+              metric: "humidity"
+              value: 6.73
+              ts: "2024-04-13T18:50:00Z"
       required:
         - total
         - limit
@@ -1939,298 +2007,241 @@ components:
         items:
           - id: 1
             device_id: 1
-            key: "temperature"
+            metric: "temperature"
             value: 18.3
-            created_at: "2024-04-13T18:45:37Z"
+            ts: "2024-04-13T18:45:37Z"
           - id: 2
             device_id: 1
-            key: "humidity"
+            metric: "humidity"
             value: 6.73
-            created_at: "2022-07-01T11:23:33Z"
+            ts: "2024-04-13T18:50:00Z"
 
-    Rule:
-      type: object
-      description: Business logic rule for monitoring and alerting
-      properties:
-        id:
-          type: integer
-          example: 12
-        name:
-          type: string
-          example: "High Temperature Alert"
-        description:
-          type: string
-          example: "Alert when temperature exceeds 30°C"
-        is_active:
-          type: boolean
-          example: true
-        condition:
-          type: object
-          description: Rule condition in JSON format (see docs/rules.md for full schema)
-          example:
-            type: "threshold"
-            operator: ">"
-            value: 30
-        action:
-          type: object
-          description: Rule action in JSON format (see docs/rules.md for full schema)
-          example:
-            type: "notify"
-            message: "User_1 temperature is overwhelming"
-        device_metric:
-          type: integer
-          description: Foreign key to DeviceMetric model
-          example: 12 
-      required:
-        - id
-        - name
-        - is_active
-        - condition
-        - action
-        - device_metric
-      example:
-        id: 1
-        name: "High Temperature Alert"
-        description: "Alert when temperature exceeds 30°C"
-        is_active: true
-        condition:
-          type: "threshold"
-          operator: ">"
-          value: 30
-        action:
-          type: "notify"
-          message: "User_1 temperature is overwhelming"
-        device_metric: 44  
+    # Note: The following schemas for rules and events are defined but commented out until the example/examples will be added to the spec.
+    # Rule:
+    #   type: object
+    #   description: Business logic rule for monitoring and alerting
+    #   properties:
+    #     id:
+    #       type: string
+    #       format: uuid
+    #       example: "550e8400-e29b-41d4-a716-446655440000"
+    #     name:
+    #       type: string
+    #       example: "High Temperature Alert"
+    #     description:
+    #       type: string
+    #       example: "Alert when temperature exceeds 30°C"
+    #     is_active:
+    #       type: boolean
+    #       example: true
+    #     condition:
+    #       type: object
+    #       description: Rule condition in JSON format (see docs/rules.md for full schema)
+    #       example:
+    #         type: "threshold"
+    #         operator: ">"
+    #         value: 30
+    #     action:
+    #       type: object
+    #       description: Rule action in JSON format (see docs/rules.md for full schema)
+    #       example:
+    #         type: "notify"
+    #         message: "User_1 temperature is overwhelming"
+    #     device_metric:
+    #       type: string
+    #       format: uuid
+    #       description: Foreign key to DeviceMetric model
+    #       example: "123e4567-e89b-12d3-a456-426614174000" 
+    #   required:
+    #     - id
+    #     - name
+    #     - is_active
+    #     - condition
+    #     - action
+    #     - device_metric
 
-    RuleCreate:
-      type: object
-      description: Data required to create a new rule
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 255
-          example: "High Temperature Alert"
-        description:
-          type: string
-          maxLength: 1000
-          example: "Alert when temperature exceeds 30°C"
-        is_active:
-          type: boolean
-          default: true
-          example: true
-        condition:
-          type: object
-          description: |
-            Rule condition structure. Supported types:
-            - threshold: Compare metric to value
-            - rate: Count events in time window
-            - composite: Combine multiple conditions with AND/OR
-          example:
-            type: "threshold"
-            operator: ">"
-            value: 30
-        action:
-          type: object
-          example: 
-            type: "notify"
-        device_metric:
-          type: integer
-          description: Foreign key to DeviceMetric model
-          example: 13
-      required:
-        - name
-        - condition
-        - is_active
-        - action
-        - device_metric
-      example:
-        name: "High Temperature Alert"
-        description: "Alert when temperature exceeds 30°C"
-        is_active: true
-        condition:
-          type: "threshold"
-          operator: ">"
-          value: 30
-        action:
-          type: "notify"
-          message: "User_1 temperature is overwhelming"
-        device_metric: 45 
+    # RuleCreate:
+    #   type: object
+    #   description: Data required to create a new rule
+    #   properties:
+    #     name:
+    #       type: string
+    #       minLength: 1
+    #       maxLength: 255
+    #       example: "High Temperature Alert"
+    #     description:
+    #       type: string
+    #       maxLength: 1000
+    #       example: "Alert when temperature exceeds 30°C"
+    #     is_active:
+    #       type: boolean
+    #       default: true
+    #       example: true
+    #     condition:
+    #       type: object
+    #       description: |
+    #         Rule condition structure. Supported types:
+    #         - threshold: Compare metric to value
+    #         - rate: Count events in time window
+    #         - composite: Combine multiple conditions with AND/OR
+    #       example:
+    #         type: "threshold"
+    #         operator: ">"
+    #         value: 30
+    #     action:
+    #       type: object
+    #       example: 
+    #         type: "notify"
+    #     device_metric:
+    #       type: string
+    #       format: uuid
+    #       description: Foreign key to DeviceMetric model
+    #       example: "123e4567-e89b-12d3-a456-426614174000" 
+    #   required:
+    #     - name
+    #     - condition
+    #     - is_active
+    #     - action
+    #     - device_metric
 
-    RulePatch:
-      type: object
-      properties:
-        name:
-          type: string
-        description:
-          type: string
-        is_active:
-          type: boolean
-        condition:
-          type: object
-        action:
-          type: object
-        device_metric:
-          type: integer
-      example:
-        name: "High Temp Updated"
-        description: "Alert if > 32°C"
-        is_active: false
-        condition:
-          type: "threshold"
-          operator: ">"
-          value: 32
-        action:
-          type: "notify"
-        device_metric: 444    
+    # RulePatch:
+    #   type: object
+    #   description: Partial update of rule fields
+    #   properties:
+    #     name:
+    #       type: string
+    #     description:
+    #       type: string
+    #     is_active:
+    #       type: boolean
+    #     condition:
+    #       type: object
+    #     action:
+    #       type: object
+    #   example:
+    #     enabled: false
 
-    PaginatedRules:
-      type: object
-      properties:
-        total:
-          type: integer
-          example: 25
-        limit:
-          type: integer
-          example: 20
-        offset:
-          type: integer
-          example: 0
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Rule'
-      required:
-        - total
-        - limit
-        - offset
-        - items
-      example:
-        total: 25
-        limit: 20
-        offset: 0
-        items:
-          - id: 124
-            name: "High Temperature Alert"
-            description: "Alert when temperature exceeds 30°C"
-            is_active: true
-            condition:
-              type: "threshold"
-              operator: ">"
-              value: 30
-            action:
-              type: "notify"
-              message: "User_1 temperature is overwhelming"
-            device_metric: 123
-    
-    RuleEvaluateRequest:
-      type: object
-      properties:
-        device_id:
-          type: integer
-      required:
-        - device_id
-      example:
-        device_id: 11  
-    
-    RuleEvaluateResponse:
-      type: object
-      properties:
-        device_id:
-          type: integer
-        trigger_telemetry_id:
-          type: integer
-      required:
-        - device_id
-        - trigger_telemetry_id
-      example:
-        device_id: 33
-        trigger_telemetry_id: 333   
-    
-    Event:
-      type: object
-      description: Rule evaluation event (rule firing)
-      properties:
-        id:
-          type: integer
-          example: 11
-        rule_id:
-          type: integer
-          example: 66
-        acknowledged:
-          type: boolean
-          example: false
-        timestamp:
-          type: string
-          format: date-time
-          example: "2026-01-22T16:30:00Z"
-        created_at:
-          type: string
-          format: date-time
-          example: "2026-01-22T16:31:00Z"
-        trigger_telemetry_id:
-          type: integer
-          nullable: true
-          example: 11
-        trigger_value:
-          type: object
-          nullable: true
-          description: Copy of telemetry value at trigger time
-          example:
-            metric_value: 35.2
-        trigger_device_metric_id:
-          type: integer
-          nullable: true
-          example: 45
-      required:
-        - id
-        - rule_id
-        - timestamp
-        - created_at
-      example:
-        id: 1
-        rule_id: 1
-        acknowledged: false
-        timestamp: "2026-01-22T16:30:00Z"
-        created_at: "2026-01-22T16:31:00Z"
-        trigger_telemetry_id: 1
-        trigger_value:
-          metric_value: 35.2
-        trigger_device_metric_id: 1
+    # RuleConditionThreshold:
+    #   type: object
+    #   description: Threshold-based rule condition
+    #   properties:
+    #     type:
+    #       type: string
+    #       enum: [threshold]
+    #       example: "threshold"
+    #     operator:
+    #       type: string
+    #       enum: [">", ">=", "<", "<=", "==", "!="]
+    #       example: ">"
+    #     value:
+    #       type: number
+    #       example: 30
+    #   required:
+    #     - type
+    #     - operator
+    #     - value
+    #   example:
+    #     type: "threshold"
+    #     operator: ">"
+    #     value: 30
 
-    PaginatedEvents:
-      type: object
-      properties:
-        total:
-          type: integer
-          example: 50
-        limit:
-          type: integer
-          example: 20
-        offset:
-          type: integer
-          example: 0
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Event'
-      required:
-        - total
-        - limit
-        - offset
-        - items
-      example:
-        total: 50
-        limit: 20
-        offset: 0
-        items:
-          - id: 1
-            rule_id: 1
-            acknowledged: false
-            timestamp: "2026-01-22T16:30:00Z"
-            created_at: "2026-01-22T16:31:00Z"
-            trigger_telemetry_id: 1
-            trigger_value:
-              metric_value: 35.2
-            trigger_device_metric_id: 1
-          
+    # RuleConditionRate:
+    #   type: object
+    #   description: Rate-based rule condition (event frequency)
+    #   properties:
+    #     type:
+    #       type: string
+    #       enum: [rate]
+    #       example: "rate"
+    #     count:
+    #       type: integer
+    #       minimum: 1
+    #       description: Number of events threshold
+    #       example: 10
+    #     minutes:
+    #       type: integer
+    #       minimum: 1
+    #       description: Time window in seconds
+    #       example: 300
+    #   required:
+    #     - type
+    #     - count
+    #     - minutes
+    #   example:
+    #     type: "rate"
+    #     count: 10
+    #     minutes: 300
+
+    # RuleConditionComposite:
+    #   type: object
+    #   description: Composite rule combining multiple conditions
+    #   properties:
+    #     type:
+    #       type: string
+    #       enum: [composite]
+    #       example: "composite"
+    #     operator:
+    #       type: string
+    #       enum: [AND, OR]
+    #       example: "AND"
+    #     conditions:
+    #       type: array
+    #       description: Array of sub-conditions (threshold or rate)
+    #       items:
+    #         oneOf:
+    #           - $ref: '#/components/schemas/RuleConditionThreshold'
+    #           - $ref: '#/components/schemas/RuleConditionRate'
+    #       minItems: 2
+    #   required:
+    #     - type
+    #     - operator
+    #     - conditions
+    #   example:
+    #     type: "composite"
+    #     operator: "AND"
+    #     conditions:
+    #       - type: "threshold"
+    #         operator: ">"
+    #         value: 35
+    #       - type: "rate"
+    #         count: 5
+    #         minutes: 20
+
+    # PaginatedRules:
+    #   type: object
+    #   properties:
+    #     total:
+    #       type: integer
+    #       example: 25
+    #     limit:
+    #       type: integer
+    #       example: 20
+    #     offset:
+    #       type: integer
+    #       example: 0
+    #     items:
+    #       type: array
+    #       items:
+    #         $ref: '#/components/schemas/Rule'
+    #   required:
+    #     - total
+    #     - limit
+    #     - offset
+    #     - items
+    #   example:
+    #     total: 25
+    #     limit: 20
+    #     offset: 0
+    #     items:
+    #       - id: "550e8400-e29b-41d4-a716-446655440000"
+    #         name: "High Temperature Alert"
+    #         description: "Alert when temperature exceeds 30°C"
+    #         is_active: true
+    #         condition:
+    #           type: "threshold"
+    #           operator: ">"
+    #           value: 30
+    #         action:
+    #           type: "notify"
+    #           message: "User_1 temperature is overwhelming"
+    #         device_metric: "123e4567-e89b-12d3-a456-426614174000"
