@@ -17,6 +17,7 @@ Usage in tests:
     device = DeviceFactory.build()
 """
 
+import random
 import factory
 from factory.django import DjangoModelFactory
 
@@ -38,9 +39,17 @@ class UserFactory(DjangoModelFactory):
 
     email = factory.Sequence(lambda n: f"user{n}@example.com")
     username = factory.Sequence(lambda n: f"user{n}")
-    password = factory.PostGenerationMethodCall("set_password", "testpass123")
     is_active = True
     role = "client"
+
+    @factory.post_generation
+    def password(obj, create, extracted, **kwargs):
+        """Set password after user creation."""
+        if not create:
+            return
+        password = extracted or "testpass123"
+        obj.set_password(password)
+        obj.save()
 
 
 class AdminUserFactory(UserFactory):
@@ -137,10 +146,10 @@ class TelemetryFactory(DjangoModelFactory):
 class TelemetryNumericFactory(TelemetryFactory):
     """Factory for telemetry with random numeric values."""
 
-    value_jsonb = factory.LazyAttribute(
-        lambda _: {
+    value_jsonb = factory.LazyFunction(
+        lambda: {
             "t": "numeric",
-            "v": str(round(factory.Faker._get_faker().pyfloat(min_value=0, max_value=100), 2)),
+            "v": str(round(random.uniform(0, 100), 2)),
         }
     )
 

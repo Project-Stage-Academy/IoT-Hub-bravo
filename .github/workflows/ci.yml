@@ -124,7 +124,7 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: Pytest & Coverage
-        run: pytest --cov=apps --cov-report=xml:coverage.xml --cov-report=term-missing
+        run: pytest --cov --cov-report=xml:coverage.xml --cov-report=term-missing
 
       - name: Upload coverage.xml
         uses: actions/upload-artifact@v4

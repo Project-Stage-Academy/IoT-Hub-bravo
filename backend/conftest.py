@@ -1,6 +1,4 @@
-"""
-Pytest configuration and shared fixtures for the IoT Hub test suite.
-"""
+"""Pytest configuration for Django tests."""
 
 import os
 import django
@@ -26,23 +24,3 @@ def client():
 def api_client():
     """HTTP test client for API endpoint testing."""
     return Client()
-
-
-@pytest.fixture
-def authenticated_client(client, db):
-    """Django test client logged in as regular user."""
-    from tests.fixtures.factories import UserFactory
-
-    user = UserFactory()
-    client.login(username=user.username, password="testpass123")
-    return client
-
-
-@pytest.fixture
-def admin_client(client, db):
-    """Django test client logged in as superuser."""
-    from tests.fixtures.factories import AdminUserFactory
-
-    user = AdminUserFactory()
-    client.login(username=user.username, password="testpass123")
-    return client

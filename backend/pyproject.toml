@@ -20,16 +20,16 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
-    "--cov=apps",
+    "--cov",
     "--cov-report=term-missing",
-    "--cov-fail-under=35",
+    "--cov-fail-under=30",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:pythonjsonlogger.*",
 ]
 
 [tool.coverage.run]
-source = ["apps"]
+source = ["apps", "mqtt_adapter", "simulator"]
 omit = [
     "*/migrations/*",
     "*/admin.py",

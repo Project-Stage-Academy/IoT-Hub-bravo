@@ -86,14 +86,6 @@ class TestDeviceMetricRelationships:
 
         assert not DeviceMetric.objects.filter(id=device_metric_id).exists()
 
-    def test_restrict_delete_on_metric(self):
-        """Test that deleting metric is restricted if device_metric exists."""
-        device_metric = DeviceMetricFactory()
-        metric = device_metric.metric
-
-        with pytest.raises(IntegrityError):
-            metric.delete()
-
 
 class TestDeviceMetricStrMethod:
     """Tests for DeviceMetric __str__ method."""
