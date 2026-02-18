@@ -5,7 +5,7 @@ from celery import current_app
 
 from apps.devices.models import Telemetry
 from apps.rules.models import Event
-from apps.rules.services.rule_processor import run_rule_processor_task
+from apps.rules.services.rule_processor import RuleProcessor
 from tests.fixtures.factories import (
     DeviceFactory,
     DeviceMetricFactory,
@@ -45,8 +45,8 @@ class TestRuleProcessorCeleryIntegration:
             value_jsonb={"t": "numeric", "v": 35},
         )
 
-        # Run Celery task synchronously
-        run_rule_processor_task(telemetry.id)
+        # Run Rule Processor
+        RuleProcessor.run(telemetry)
 
         # Assert Event was created
         events = Event.objects.filter(rule=rule)
@@ -71,8 +71,8 @@ class TestRuleProcessorCeleryIntegration:
             value_jsonb={"t": "numeric", "v": 25},
         )
 
-        # Run Celery task synchronously
-        run_rule_processor_task(telemetry.id)
+        # Run Rule Processor
+        RuleProcessor.run(telemetry)
 
         # Assert NO Event was created
         events = Event.objects.filter(rule=rule)
@@ -95,7 +95,7 @@ class TestRuleProcessorCeleryIntegration:
             value_jsonb={"t": "numeric", "v": 35},
         )
 
-        run_rule_processor_task(telemetry.id)
+        RuleProcessor.run(telemetry)
 
         events = Event.objects.filter(rule=rule)
         assert events.count() == 0
