@@ -1,0 +1,11 @@
+-r requirements.txt
+
+# Test factories
+factory_boy>=3.3.0
+
+# HTTP mocking
+responses>=0.25.0
+
+# Code quality
+black>=24.0.0
+ruff>=0.4.0
