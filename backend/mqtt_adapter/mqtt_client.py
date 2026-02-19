@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any, Optional
 
@@ -7,6 +8,13 @@ import paho.mqtt.client as mqtt
 
 from .config import MqttConfig
 from .message_handlers import MQTTJsonMessage, MessageHandler
+
+# Import Prometheus metrics
+from apps.common.metrics import (
+    ingestion_messages_total,
+    ingestion_latency_seconds,
+    ingestion_errors_total,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +26,7 @@ class MqttCallbacks:
     Subscribes to the configured topic on successful connect;
     Decodes JSON payload and passes it to MessageHandler instance;
     Rejects malformed/non-JSON messages.
+    Collects Prometheus metrics for monitoring.
     """
 
     config: MqttConfig
@@ -49,9 +58,19 @@ class MqttCallbacks:
             logger.info('MQTT disconnected.')
 
     def on_message(self, c: mqtt.Client, userdata: Any, m: mqtt.MQTTMessage) -> None:
+        """
+        Handle incoming MQTT message with Prometheus instrumentation.
+        Tracks: message count, processing latency, and errors.
+        """
+        start_time = time.perf_counter()
+
+        # Parse JSON payload
         obj = self._payload_to_json(m.payload)
 
         if obj is None:
+            # Track parse errors
+            ingestion_errors_total.labels(source='mqtt', error_type='parse_error').inc()
+            ingestion_messages_total.labels(source='mqtt', status='error').inc()
             logger.warning('Invalid JSON object rejected.', extra=self._extra(m))
             return
 
@@ -66,8 +85,17 @@ class MqttCallbacks:
 
         try:
             self.handler.handle(message)
+            # Track successful processing
+            ingestion_messages_total.labels(source='mqtt', status='success').inc()
         except Exception:
+            # Track handler errors
+            ingestion_errors_total.labels(source='mqtt', error_type='handler_error').inc()
+            ingestion_messages_total.labels(source='mqtt', status='error').inc()
             logger.exception('Failed to handle MQTT message: ', extra=self._extra(m))
+        finally:
+            # Always track latency
+            latency = time.perf_counter() - start_time
+            ingestion_latency_seconds.labels(source='mqtt').observe(latency)
 
     @staticmethod
     def _payload_to_json(payload: bytes) -> dict | list | None:
