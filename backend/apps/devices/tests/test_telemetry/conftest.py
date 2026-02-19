@@ -14,9 +14,18 @@ def valid_telemetry_payload():
         'schema_version': 1,
         'device': 'DEV-001',
         'metrics': {
-            'temperature': 21.5,
-            'door_open': False,
-            'status': 'ok',
+            'temperature': {
+                'value': 21.5,
+                'unit': "celsius",
+            },
+            'door_open': {
+                'value': False,
+                'unit': "open",
+            },
+            'status': {
+                'value': "ok",
+                'unit': "Online",
+            },
         },
         'ts': '2026-02-04T12:00:00Z',
     }

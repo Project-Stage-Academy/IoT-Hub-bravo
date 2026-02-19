@@ -6,27 +6,67 @@ from apps.devices.serializers.telemetry_serializers import (
     TelemetryBatchCreateSerializer,
 )
 
+import copy
+import pytest
+
+
+'''@pytest.fixture
+def valid_telemetry_payload():
+    return {
+        "schema_version": 1,
+        "device": "DEV-001",
+        "metrics": {
+            "temperature": {
+                "value": 21.5,
+                "unit": "celsius",
+            },
+            "door_open": {
+                "value": False,
+                "unit": "open",
+            },
+            "status": {
+                "value": "ok",
+                "unit": "Online",
+            },
+        },
+        "ts": "2026-02-04T12:00:00Z",
+    }
+'''
 
 def test_create_serializer_valid_payload(valid_telemetry_payload):
-    """Test valid payload passes validation and returns correct fields."""
-    s = TelemetryCreateSerializer(valid_telemetry_payload)
-    assert s.is_valid() is True
-    data = s.validated_data
+    serializer = TelemetryCreateSerializer(valid_telemetry_payload)
 
-    assert set(data.keys()) == {'device_serial_id', 'metrics', 'ts'}
-    assert data['device_serial_id'] == 'DEV-001'
-    assert data['metrics']['temperature'] == 21.5
-    assert data['metrics']['door_open'] is False
-    assert data['metrics']['status'] == 'ok'
-    assert timezone.is_aware(data['ts']) is True
+    assert serializer.is_valid(), serializer.errors
+
+    data = serializer.validated_data
+
+    assert set(data.keys()) == {"device_serial_id", "metrics", "ts"}
+    assert data["device_serial_id"] == "DEV-001"
+
+    temperature = data["metrics"]["temperature"]
+    assert temperature["value"] == 21.5
+    assert temperature["unit"] == "celsius"
+
+    door_open = data['metrics']['door_open']
+    assert door_open['value'] is False
+    assert door_open['unit'] == 'open'
+
+    status = data['metrics']['status']
+    assert status['value'] == 'ok'
+    assert status['unit'] == 'Online'
+
+
+    assert timezone.is_aware(data["ts"])
+
 
 
 def test_create_serializer_rejects_non_dict_payload():
     """Test non-dict payload is rejected."""
-    s = TelemetryCreateSerializer(['not-a-dict'])
+    serializer = TelemetryCreateSerializer(["not-a-dict"])
 
-    assert s.is_valid() is False
-    assert s.errors['non_field_errors'] == 'Payload must be a JSON object.'
+    assert not serializer.is_valid()
+    assert serializer.errors["non_field_errors"] == "Payload must be a JSON object."
+
 
 
 @pytest.mark.parametrize(
