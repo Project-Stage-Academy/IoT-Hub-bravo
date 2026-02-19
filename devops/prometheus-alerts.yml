@@ -1,0 +1,83 @@
+# Prometheus alerting rules for IoT Hub
+# These alerts are visible in Grafana UI: Alerting -> Alert Rules
+
+groups:
+  - name: iot-ingestion-alerts
+    rules:
+      # High error rate alert
+      - alert: HighIngestionErrorRate
+        expr: |
+          (
+            sum(rate(iot_ingestion_errors_total[5m])) 
+            / 
+            sum(rate(iot_ingestion_messages_total[5m]))
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High ingestion error rate (> 5%)"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      # High latency alert
+      - alert: HighIngestionLatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(iot_ingestion_latency_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High ingestion latency (p95 > 2s)"
+          description: "95th percentile latency is {{ $value | humanizeDuration }}."
+
+      # No messages received
+      - alert: NoIngestionMessages
+        expr: |
+          sum(rate(iot_ingestion_messages_total[5m])) == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No ingestion messages received"
+          description: "No MQTT messages received in the last 10 minutes."
+
+  - name: iot-rules-alerts
+    rules:
+      # High rule trigger rate (possibly bad rule config)
+      - alert: HighRuleTriggerRate
+        expr: |
+          (
+            sum(rate(iot_rules_triggered_total[5m])) 
+            / 
+            sum(rate(iot_rules_evaluated_total[5m]))
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High rule trigger rate (> 80%)"
+          description: "{{ $value | humanizePercentage }} of rules are triggering."
+
+  - name: iot-service-alerts
+    rules:
+      # Django down
+      - alert: DjangoDown
+        expr: up{job="django"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Django web service is down"
+          description: "Django has been unreachable for more than 1 minute."
+
+      # Celery worker down
+      - alert: CeleryWorkerDown
+        expr: up{job="worker"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Celery worker is down"
+          description: "Celery worker has been unreachable for more than 1 minute."
