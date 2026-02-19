@@ -30,12 +30,6 @@ class BaseSerializer:
         raise NotImplementedError
     
 
-def _validate_condition():
-    pass
-
-def _validate_action():
-    ...
-
 class RuleCreateSerializer(BaseSerializer):
     """
     Docstring for RuleCreateSerializer
@@ -74,26 +68,6 @@ class RuleCreateSerializer(BaseSerializer):
             elif not isinstance(data[field], expected_type):
                 self._errors[field] = f"{field} must be of type {expected_type.__name__}."
             else:
-                if field == 'condition':
-                    condition = data.get("condition")
-                    if condition is None:
-                        raise ValueError("No condition in JSON data")
-                    logger.debug()
-                    _validate_condition()
-                if field == 'action':
-                    condition = data.get("condition")
-                    if condition is None:
-                        raise ValueError("No condition in JSON data")
-                    logger.debug()
-                    _validate_action()
-                    pass
-                if field == 'device_metric':
-                    condition = data.get("condition")
-                    if condition is None:
-                        raise ValueError("No condition in JSON data")
-                    logger.debug()
-                    _validate_condition()
-
                 validated[field] = data[field]
 
         optional_fields = set(self.FIELDS_TYPE_MAP.keys()) - set(self.REQUIRED_FIELDS.keys())

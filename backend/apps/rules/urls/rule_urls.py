@@ -2,9 +2,9 @@
 
 from django.urls import path
 
-from . import views
+from apps.rules.views import RuleView
 
 app_name = 'rules'
 urlpatterns = [
-    path('', views.rules_index, name='rules_index'),  # Home page
+    path('', RuleView.as_view(), name='rule'),
 ]
