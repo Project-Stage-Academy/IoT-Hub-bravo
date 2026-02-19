@@ -140,6 +140,7 @@ services:
     container_name: prometheus
     volumes:
       - ./devops/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./devops/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml
     ports:
       - "9090:9090"
     networks:
