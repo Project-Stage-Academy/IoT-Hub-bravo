@@ -8,8 +8,10 @@ import json
 from apps.rules.serializers.rule_serializers import RuleCreateSerializer
 from apps.rules.services.rule_service import rule_create, rule_put, rule_patch, rule_delete
 from apps.rules.models.rule import Rule
+from apps.devices.models.telemetry import Telemetry
 from apps.devices.models.device_metric import DeviceMetric
 from apps.users.decorators import jwt_required, role_required
+from apps.rules.services.rule_processor import RuleProcessor
 
 
 logger = logging.getLogger("rules")  # logger.setLevel(logging.INFO) - is default
@@ -136,3 +138,41 @@ class RuleView(View):
         rule_delete(rule_id=rule_id)
         return JsonResponse({"status": "ok", "message": "deleted"})
 
+
+@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(jwt_required, name='dispatch')
+@method_decorator(
+    role_required({"POST": ["admin", "client"]}),
+    name='dispatch'
+)
+class RuleEvaluateView(View):
+    def post(self, request):
+        user = request.user
+
+        last_telemetries = (
+            Telemetry.objects
+            .filter(device_metric__device__user=user)
+            .order_by('device_metric', '-created_at')
+            .distinct('device_metric')
+        )
+
+        results = []
+
+        for telemetry in last_telemetries:
+            try:
+                evaluation_result = RuleProcessor.run(telemetry)
+
+                results.append({
+                    "telemetry_id": telemetry.id,
+                    "device_metric_id": telemetry.device_metric.id,
+                    "device_name": telemetry.device_metric.device.name,
+                    "result": evaluation_result
+                })
+            except Exception as e:
+                logger.warning(f"Failed to evaluate telemetry {telemetry.id}: {e}")
+                results.append({
+                    "telemetry_id": telemetry.id,
+                    "error": str(e)
+                })
+
+        return JsonResponse({"status": "ok", "results": results})

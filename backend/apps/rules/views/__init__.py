@@ -1,3 +1,3 @@
-from .rule_views import RuleView
+from .rule_views import RuleView, RuleEvaluateView
 
-__all__ = ['RuleView']
+__all__ = ['RuleView', 'RuleEvaluateView']
