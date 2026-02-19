@@ -17,7 +17,7 @@ logger = logging.getLogger("rules")  # logger.setLevel(logging.INFO) - is defaul
 @method_decorator(jwt_required, name='dispatch')
 @method_decorator(
     role_required(
-        {"GET": ["client", "admin"], 
+        {"GET": ["admin","client"], 
          "POST": ["admin","client"], 
          "PUT": ["admin","client"], 
          "PATCH": ["admin","client"], 
@@ -26,7 +26,50 @@ logger = logging.getLogger("rules")  # logger.setLevel(logging.INFO) - is defaul
         name='dispatch',
 )
 class RuleView(View):
-    def post(self, request):
+    def get(self, request, rule_id=None):
+        """Get rule(s)"""
+        user = request.user
+        
+        if rule_id:
+            try:
+                rule = Rule.objects.get(id=rule_id, device_metric__device__user=user)
+                data = {
+                    "id": rule.id,
+                    "name": rule.name,
+                    "device_metric_id": rule.device_metric.id,
+                    "description": rule.description,
+                    "condition": rule.condition,
+                    "action": rule.action,
+                    "is_active": rule.is_active,
+                }
+                return JsonResponse({"rule": data})
+            except Rule.DoesNotExist:
+                return JsonResponse({"error": "Rule not found"}, status=404)
+        else:
+            try:
+                limit = int(request.GET.get("limit", 20))
+                offset = int(request.GET.get("offset", 0))
+            except ValueError:
+                raise ValueError("Limit and offset must be integer type")
+            
+            if limit <= 0 or offset < 0:
+                return JsonResponse({"error": "Limit must be > 0 and offset must be >= 0"}, status=400)
+            
+            all_rules = Rule.objects.filter(device_metric__device__user=user)
+            total = all_rules.count()
+            rules = all_rules[offset : offset + limit]
+            data = [{"id": r.id, 
+                    "name": r.name,
+                    "device_metric_id": r.device_metric.id,
+                    "description": r.description, 
+                    "condition": r.condition, 
+                    "action": r.action,
+                    "is_active": r.is_active,
+                    } for r in rules]
+            return JsonResponse({"total": total, "limit": limit, "offset": offset, "items": data})
+        
+
+    def post(self, request, ):
         """Create a new rule"""
         data = json.loads(request.body)
 
@@ -36,6 +79,7 @@ class RuleView(View):
         
         rule = rule_create(rule_data=serializer.validated_data)
         return JsonResponse({"status": "ok", "rule_id": rule.id})
+
 
     def put(self, request, rule_id):
         """Full update"""
@@ -48,6 +92,7 @@ class RuleView(View):
         rule = rule_put(rule_id=rule_id, rule_data=serializer.validated_data)
         return JsonResponse({"status": "ok", "rule_id": rule.id})
 
+
     def patch(self, request, rule_id):
         """Partial update"""
         data = json.loads(request.body)
@@ -59,27 +104,9 @@ class RuleView(View):
         rule = rule_patch(rule_id=rule_id, rule_data=serializer.validated_data)
         return JsonResponse({"status": "ok", "rule_id": rule.id})
 
+
     def delete(self, request, rule_id):
         """Delete rule"""
         rule_delete(rule_id=rule_id)
         return JsonResponse({"status": "ok", "message": "deleted"})
 
-    def get(self, request, rule_id=None):
-        """Get rule(s)"""
-        if rule_id:
-            try:
-                rule = Rule.objects.get(id=rule_id)
-                data = {
-                    "id": rule.id,
-                    "name": rule.name,
-                    "condition": rule.condition,
-                    "action": rule.action,
-                    "is_active": rule.is_active
-                }
-                return JsonResponse({"rule": data})
-            except Rule.DoesNotExist:
-                return JsonResponse({"error": "Rule not found"}, status=404)
-        else:
-            rules = Rule.objects.all()
-            data = [{"id": r.id, "name": r.name} for r in rules]
-            return JsonResponse({"rules": data})

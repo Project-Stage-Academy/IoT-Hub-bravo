@@ -43,7 +43,7 @@ class RuleCreateSerializer(BaseSerializer):
         'condition': dict,
         'action': dict,
         'is_active': bool,
-        'device_metric': int,
+        'device_metric_id': int,
     }
     
     REQUIRED_FIELDS = {
@@ -52,7 +52,7 @@ class RuleCreateSerializer(BaseSerializer):
         'condition': dict,
         'action': dict,
         'is_active': bool,
-        'device_metric': int,
+        'device_metric_id': int,
     }
 
     def _validate(self, data: Any):
