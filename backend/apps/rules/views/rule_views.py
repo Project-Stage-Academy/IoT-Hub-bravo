@@ -8,6 +8,7 @@ import json
 from apps.rules.serializers.rule_serializers import RuleCreateSerializer
 from apps.rules.services.rule_service import rule_create, rule_put, rule_patch, rule_delete
 from apps.rules.models.rule import Rule
+from apps.devices.models.device_metric import DeviceMetric
 from apps.users.decorators import jwt_required, role_required
 
 
@@ -72,10 +73,16 @@ class RuleView(View):
     def post(self, request, ):
         """Create a new rule"""
         data = json.loads(request.body)
+        user = request.user
 
         serializer = RuleCreateSerializer(data=data)
         if not serializer.is_valid():
             return JsonResponse({'errors': serializer.errors}, status=400)
+        
+        # check if user have that device_metrics
+        device_metric_id = serializer.validated_data.get("device_metric")
+        if not DeviceMetric.objects.filter(id=device_metric_id, device__user=user).exists():
+            return JsonResponse({"error": "DeviceMetric does not belong to the user"}, status=403)
         
         rule = rule_create(rule_data=serializer.validated_data)
         return JsonResponse({"status": "ok", "rule_id": rule.id})
@@ -84,7 +91,13 @@ class RuleView(View):
     def put(self, request, rule_id):
         """Full update"""
         data = json.loads(request.body)
-
+        user = request.user
+        
+        try:
+            rule = Rule.objects.get(id=rule_id, device_metric__device__user=user)
+        except Rule.DoesNotExist:
+            return JsonResponse({"error": "Rule not found or access denied"}, status=404)
+        
         serializer = RuleCreateSerializer(data=data)
         if not serializer.is_valid():
             return JsonResponse({'errors': serializer.errors}, status=400)
@@ -96,7 +109,13 @@ class RuleView(View):
     def patch(self, request, rule_id):
         """Partial update"""
         data = json.loads(request.body)
-
+        user = request.user
+        
+        try:
+            rule = Rule.objects.get(id=rule_id, device_metric__device__user=user)
+        except Rule.DoesNotExist:
+            return JsonResponse({"error": "Rule not found or access denied"}, status=404)
+        
         serializer = RuleCreateSerializer(data=data, partial=True)
         if not serializer.is_valid():
             return JsonResponse({'errors': serializer.errors}, status=400)
@@ -107,6 +126,13 @@ class RuleView(View):
 
     def delete(self, request, rule_id):
         """Delete rule"""
+        user = request.user
+        
+        try:
+            rule = Rule.objects.get(id=rule_id, device_metric__device__user=user)
+        except Rule.DoesNotExist:
+            return JsonResponse({"error": "Rule not found or access denied"}, status=404)
+        
         rule_delete(rule_id=rule_id)
         return JsonResponse({"status": "ok", "message": "deleted"})
 
