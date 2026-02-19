@@ -213,3 +213,9 @@ certs/
 *.key
 *.crt
 !docker/nginx/*.conf
+
+# macOS system files
+.DS_Store
+
+# IDE
+.idea/
