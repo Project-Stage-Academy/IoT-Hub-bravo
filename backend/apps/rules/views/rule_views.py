@@ -9,6 +9,7 @@ from apps.rules.serializers.rule_serializers import RuleCreateSerializer, RulePa
 from apps.rules.services.rule_service import rule_create, rule_put, rule_patch, rule_delete
 from apps.rules.models.rule import Rule
 from apps.devices.models.telemetry import Telemetry
+from apps.devices.models.device import Device
 from apps.devices.models.device_metric import DeviceMetric
 from apps.users.decorators import jwt_required, role_required
 from apps.rules.services.rule_processor import RuleProcessor
@@ -81,8 +82,8 @@ class RuleView(View):
         if not serializer.is_valid():
             return JsonResponse({'errors': serializer.errors}, status=400)
         
-        # check if user have that device_metrics
-        device_metric_id = serializer.validated_data.get("device_metric")
+        # check if user has that device_metrics
+        device_metric_id = serializer.validated_data.get("device_metric_id")
         if not DeviceMetric.objects.filter(id=device_metric_id, device__user=user).exists():
             return JsonResponse({"error": "DeviceMetric does not belong to the user"}, status=403)
         
@@ -148,31 +149,47 @@ class RuleView(View):
 class RuleEvaluateView(View):
     def post(self, request):
         user = request.user
+        data = json.loads(request.body)
+        device_id = data.get("device_id")
+        device_metric_id = data.get("device_metric_id")
+        
+        qs = Telemetry.objects.filter(device_metric__device__user=user)
+
+        if device_id is not None:
+            try:
+                device = Device.objects.get(id=device_id)
+            except Device.DoesNotExist:
+                return JsonResponse({"error": "Device does not exist"}, status=404)
+            
+            if device.user != user:
+                return JsonResponse({"error": "Device does not belong to the user"}, status=403)
+            
+            qs = qs.filter(device_metric__device_id=device_id)
+
+        if device_metric_id is not None:
+            try:
+                device_metric = DeviceMetric.objects.get(id=device_metric_id)
+            except DeviceMetric.DoesNotExist:
+                return JsonResponse({"error": "DeviceMetric does not exist"}, status=404)
+            
+            if device_metric.device.user != user:
+                return JsonResponse({"error": "DeviceMetric does not belong to the user"}, status=403)
+            
+            qs = qs.filter(device_metric_id=device_metric_id)
 
         last_telemetries = (
-            Telemetry.objects
-            .filter(device_metric__device__user=user)
-            .order_by('device_metric', '-created_at')
-            .distinct('device_metric')
+            qs.order_by('device_metric', '-created_at')
+              .distinct('device_metric')
         )
 
         results = []
-
         for telemetry in last_telemetries:
-            try:
-                evaluation_result = RuleProcessor.run(telemetry)
-
-                results.append({
-                    "telemetry_id": telemetry.id,
-                    "device_metric_id": telemetry.device_metric.id,
-                    "device_name": telemetry.device_metric.device.name,
-                    "result": evaluation_result
-                })
-            except Exception as e:
-                logger.warning(f"Failed to evaluate telemetry {telemetry.id}: {e}")
-                results.append({
-                    "telemetry_id": telemetry.id,
-                    "error": str(e)
-                })
+            evaluation_result = RuleProcessor.run(telemetry)
+            results.append({
+                "telemetry_id": telemetry.id,
+                "device_metric_id": telemetry.device_metric.id,
+                "device_name": telemetry.device_metric.device.name,
+                "result": evaluation_result
+            })
 
         return JsonResponse({"status": "ok", "results": results})

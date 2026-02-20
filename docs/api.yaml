@@ -909,7 +909,7 @@ paths:
                             channel: "email"
                             enabled: true
                             message: "High temperature in {device_name}: {value}°C"
-                        device_metric_id: 31
+                        device_metric_id: 1
                       - id: 32
                         name: "Low Humidity Alert"
                         description: "Alert when humidity drops below 20%"
@@ -926,7 +926,7 @@ paths:
                             channel: "email"
                             enabled: true
                             message: "High temperature in {device_name}: {value}°C"
-                        device_metric_id: 3
+                        device_metric_id: 1
         '400':
           description: Invalid request
           content:
@@ -958,6 +958,7 @@ paths:
               threshold_rule:
                 summary: Temperature threshold rule
                 value:
+                  schema_version: 1
                   name: "High Temperature Alert"
                   description: "Alert when temperature exceeds 30°C"
                   is_active: true
@@ -973,10 +974,11 @@ paths:
                       channel: "email"
                       enabled: true
                       message: "High temperature in {device_name}: {value}°C"
-                  device_metric_id: 123
+                  device_metric_id: 1
               rate_rule:
                 summary: Event rate rule
                 value:
+                  schema_version: 1
                   name: "Too Many Errors"
                   description: "Alert when more than 10 errors occur in 5 minutes"
                   is_active: true
@@ -992,10 +994,11 @@ paths:
                       channel: "email"
                       enabled: true
                       message: "High temperature in {device_name}: {value}°C"
-                  device_metric_id: 32
+                  device_metric_id: 2
               composite_rule:
                 summary: Composite AND rule
                 value:
+                  schema_version: 1
                   name: "Critical System State"
                   description: "Alert when temperature high AND humidity low"
                   is_active: true
@@ -1006,9 +1009,9 @@ paths:
                       - type: "threshold"
                         operator: ">"
                         value: 35
-                        device_metric_id: 11
+                        device_metric_id: 1
                       - type: "threshold"
-                        device_metric_id: 33
+                        device_metric_id: 2
                         operator: "<"
                         value: 20
                   action:
@@ -1019,7 +1022,7 @@ paths:
                       channel: "email"
                       enabled: true
                       message: "High temperature in {device_name}: {value}°C"
-                  device_metric_id: 12
+                  device_metric_id: 1
       responses:
         '201':
           description: Rule created successfully
@@ -1047,7 +1050,7 @@ paths:
                         channel: "email"
                         enabled: true
                         message: "High temperature in {device_name}: {value}°C"
-                    device_metric_id: 12 
+                    device_metric_id: 1
         '400':
           description: Invalid rule definition
           content:
@@ -1104,7 +1107,7 @@ paths:
                       type: "threshold"
                       operator: ">"
                       value: 13
-                    device_metric_id: 32     
+                    device_metric_id: 2  
         '400':
           description: Invalid request
           content:
@@ -1171,7 +1174,7 @@ paths:
                       channel: "email"
                       enabled: true
                       message: "High temperature in {device_name}: {value}°C"
-                  device_metric_id: 55  
+                  device_metric_id: 2
       responses:
         '200':
           description: Rule updated
@@ -1198,7 +1201,7 @@ paths:
                       type: "threshold"
                       operator: ">"
                       value: 13
-                    device_metric_id: 55   
+                    device_metric_id: 1   
         '400':
           description: Invalid request
           content:
@@ -1255,7 +1258,7 @@ paths:
                     type: "threshold"
                     operator: "<"
                     value: 10
-                  device_metric_id: 11
+                  device_metric_id: 1
                   action:
                     webhook:
                       url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
@@ -1291,7 +1294,7 @@ paths:
                       type: "threshold"
                       operator: ">"
                       value: 13
-                    device_metric_id: 77    
+                    device_metric_id: 1    
         '400':
           description: Invalid request
           content:
@@ -2026,7 +2029,7 @@ components:
             channel: "email"
             enabled: true
             message: "High temperature in {device_name}: {value}°C"
-        device_metric_id: 44 
+        device_metric_id: 1
 
     RuleCreate:
       type: object
@@ -2077,7 +2080,7 @@ components:
         device_metric_id:
           type: integer
           description: Foreign key to DeviceMetric model
-          example: 123 
+          example: 1
       required:
         - name
         - condition
@@ -2101,7 +2104,7 @@ components:
             channel: "email"
             enabled: true
             message: "High temperature in {device_name}: {value}°C"
-        device_metric_id: 44       
+        device_metric_id: 1       
 
 
     RulePatch:
@@ -2235,7 +2238,7 @@ components:
         limit: 20
         offset: 0
         items:
-          - id: 123
+          - id: 1
             name: "High Temperature Alert"
             description: "Alert when temperature exceeds 30°C"
             is_active: true
@@ -2251,7 +2254,7 @@ components:
                 channel: "email"
                 enabled: true
                 message: "High temperature in {device_name}: {value}°C"
-            device_metric_id: 123
+            device_metric_id: 1
     
     RuleEvaluateRequest:
       type: object
@@ -2289,7 +2292,7 @@ components:
         events:
           - id: 1
             rule_id: 12
-            device_metric_id: 5
+            device_metric_id: 1
             created_at: "2026-02-20T12:00:00Z"
             timestamp: "2026-02-20T12:00:00Z"
 
