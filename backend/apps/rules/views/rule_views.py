@@ -33,10 +33,11 @@ class RuleView(View):
     def get(self, request, rule_id=None):
         """Get rule(s)"""
         user = request.user
-        
+        is_admin = user.role == "admin"
+
         if rule_id:
             try:
-                rule = Rule.objects.get(id=rule_id, device_metric__device__user=user)
+                rule = Rule.objects.get(id=rule_id) if is_admin else Rule.objects.get(id=rule_id, device_metric__device__user=user)
                 data = {
                     "id": rule.id,
                     "name": rule.name,
@@ -59,7 +60,7 @@ class RuleView(View):
             if limit <= 0 or offset < 0:
                 return JsonResponse({"error": "Limit must be > 0 and offset must be >= 0"}, status=400)
             
-            all_rules = Rule.objects.filter(device_metric__device__user=user)
+            all_rules = Rule.objects.all() if is_admin else Rule.objects.filter(device_metric__device__user=user)
             total = all_rules.count()
             rules = all_rules[offset : offset + limit]
             data = [{"id": r.id, 
@@ -77,14 +78,15 @@ class RuleView(View):
         """Create a new rule"""
         data = json.loads(request.body)
         user = request.user
-
+        is_admin = user.role == "admin"
+        
         serializer = RuleCreateSerializer(data=data)
         if not serializer.is_valid():
             return JsonResponse({'errors': serializer.errors}, status=400)
         
         # check if user has that device_metrics
         device_metric_id = serializer.validated_data.get("device_metric_id")
-        if not DeviceMetric.objects.filter(id=device_metric_id, device__user=user).exists():
+        if not is_admin and not DeviceMetric.objects.filter(id=device_metric_id, device__user=user).exists():
             return JsonResponse({"error": "DeviceMetric does not belong to the user"}, status=403)
         
         rule = rule_create(rule_data=serializer.validated_data)
@@ -95,9 +97,10 @@ class RuleView(View):
         """Full update"""
         data = json.loads(request.body)
         user = request.user
-        
+        is_admin = user.role == "admin"
+
         try:
-            rule = Rule.objects.get(id=rule_id, device_metric__device__user=user)
+            rule = Rule.objects.get(id=rule_id) if is_admin else Rule.objects.get(id=rule_id, device_metric__device__user=user)
         except Rule.DoesNotExist:
             return JsonResponse({"error": "Rule not found or access denied"}, status=404)
         
@@ -113,9 +116,10 @@ class RuleView(View):
         """Partial update"""
         data = json.loads(request.body)
         user = request.user
-        
+        is_admin = user.role == "admin"
+
         try:
-            rule = Rule.objects.get(id=rule_id, device_metric__device__user=user)
+            rule = Rule.objects.get(id=rule_id) if is_admin else Rule.objects.get(id=rule_id, device_metric__device__user=user)
         except Rule.DoesNotExist:
             return JsonResponse({"error": "Rule not found or access denied"}, status=404)
         
@@ -130,9 +134,10 @@ class RuleView(View):
     def delete(self, request, rule_id):
         """Delete rule"""
         user = request.user
-        
+        is_admin = user.role == "admin"
+
         try:
-            Rule.objects.get(id=rule_id, device_metric__device__user=user)
+            Rule.objects.get(id=rule_id) if is_admin else Rule.objects.get(id=rule_id, device_metric__device__user=user)
         except Rule.DoesNotExist:
             return JsonResponse({"error": "Rule not found or access denied"}, status=404)
         
@@ -152,30 +157,30 @@ class RuleEvaluateView(View):
         data = json.loads(request.body)
         device_id = data.get("device_id")
         device_metric_id = data.get("device_metric_id")
-        
-        qs = Telemetry.objects.filter(device_metric__device__user=user)
+        is_admin = user.role == "admin"
+
+        # admin бачить все, client тільки своє
+        qs = Telemetry.objects.all() if is_admin else Telemetry.objects.filter(device_metric__device__user=user)
 
         if device_id is not None:
-            try:
-                device = Device.objects.get(id=device_id)
-            except Device.DoesNotExist:
-                return JsonResponse({"error": "Device does not exist"}, status=404)
-            
-            if device.user != user:
-                return JsonResponse({"error": "Device does not belong to the user"}, status=403)
-            
+            if not Device.objects.filter(id=device_id).exists():
+                return JsonResponse({"error": "Device not found"}, status=404)
+            # client device
+            if not is_admin and not Device.objects.filter(id=device_id, user=user).exists():
+                return JsonResponse({"error": "Access denied"}, status=403)
             qs = qs.filter(device_metric__device_id=device_id)
 
         if device_metric_id is not None:
-            try:
-                device_metric = DeviceMetric.objects.get(id=device_metric_id)
-            except DeviceMetric.DoesNotExist:
-                return JsonResponse({"error": "DeviceMetric does not exist"}, status=404)
-            
-            if device_metric.device.user != user:
-                return JsonResponse({"error": "DeviceMetric does not belong to the user"}, status=403)
-            
+            if not DeviceMetric.objects.filter(id=device_metric_id).exists():
+                return JsonResponse({"error": "DeviceMetric not found"}, status=404)
+            # client  device_metric
+            if not is_admin and not DeviceMetric.objects.filter(id=device_metric_id, device__user=user).exists():
+                return JsonResponse({"error": "Access denied"}, status=403)
             qs = qs.filter(device_metric_id=device_metric_id)
+
+        if device_id is not None and device_metric_id is not None:
+            if not DeviceMetric.objects.filter(id=device_metric_id, device_id=device_id).exists():
+                return JsonResponse({"error": "DeviceMetric does not belong to this Device"}, status=400)
 
         last_telemetries = (
             qs.order_by('device_metric', '-created_at')
