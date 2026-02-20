@@ -1960,6 +1960,10 @@ components:
       type: object
       description: Business logic rule for monitoring and alerting
       properties:
+        schema_version:
+          type: int
+          description: Version of the rule schema definition
+          example: 1
         id:
           type: integer
           example: 111
@@ -2004,6 +2008,7 @@ components:
         - condition
         - action
         - device_metric_id
+        - schema_version
       example:
         id: 1
         name: "High Temperature Alert"
@@ -2027,6 +2032,10 @@ components:
       type: object
       description: Data required to create a new rule
       properties:
+        schema_version:
+          type: int
+          description: Version of the rule schema definition
+          example: 1
         name:
           type: string
           minLength: 1
@@ -2075,6 +2084,7 @@ components:
         - is_active
         - action
         - device_metric_id
+        - schema_version
       example:
         name: "High Temperature Alert"
         description: "Alert when temperature exceeds 30°C"
@@ -2098,6 +2108,8 @@ components:
       type: object
       description: Partial update of rule fields
       properties:
+        schema_version:
+          type: int
         name:
           type: string
         description:
