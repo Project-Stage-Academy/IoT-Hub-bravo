@@ -35,10 +35,8 @@ def event_list(*, query: EventListQuery) -> EventListResult:
 
     qs = _apply_filters(qs, query=query)
 
-    # total count BEFORE slicing
     total = qs.count()
 
-    # ordering + pagination
     qs = qs.order_by("-timestamp", "-id")[query.offset : query.offset + query.limit]
 
     return EventListResult(
@@ -71,11 +69,9 @@ def event_ack(*, event_id: int) -> Event:
     return event
 
 
-# =========================
-# Internal helpers
-# =========================
-
 def _apply_filters(qs: QuerySet[Event], *, query: EventListQuery) -> QuerySet[Event]:
+    """TODO: severity filter is reserved for future use when severity field is added to Event model"""
+    
     if query.rule_id is not None:
         qs = qs.filter(rule_id=query.rule_id)
 

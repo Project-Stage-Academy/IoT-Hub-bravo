@@ -16,12 +16,14 @@ from apps.rules.services.event_service import (
     event_list,
     event_get,
     event_ack,
-    EventListResult,
 )
+from apps.users.decorators import jwt_required, role_required
 
 
 @csrf_exempt
 @require_http_methods(["GET"])
+@jwt_required
+@role_required({"GET": ["client", "admin"]})
 def list_events(request):
     """
     GET /api/events/
@@ -54,6 +56,8 @@ def list_events(request):
 
 @csrf_exempt
 @require_http_methods(["GET"])
+@jwt_required
+@role_required({"GET": ["client", "admin"]})
 def event_detail(request, event_id: int):
     """
     GET /api/events/{id}/
@@ -69,6 +73,8 @@ def event_detail(request, event_id: int):
 
 @csrf_exempt
 @require_http_methods(["POST"])
+@jwt_required
+@role_required({"POST": ["client", "admin"]})
 def ack_event(request, event_id: int):
     """
     POST /api/events/{id}/ack
@@ -81,11 +87,6 @@ def ack_event(request, event_id: int):
 
     return JsonResponse(EventDetailSerializer.to_dict(event), status=200)
 
-
-
-# =========================
-# Helpers
-# =========================
 
 def _list_response_json(
     *,

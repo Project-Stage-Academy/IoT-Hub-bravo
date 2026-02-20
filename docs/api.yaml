@@ -1260,6 +1260,8 @@ paths:
       operationId: listEvents
       summary: List events
       description: Retrieve a paginated list of events. Supports filtering by rule_id, device_id, acknowledged, and severity (reserved).
+      security:
+        - BearerAuth: []
       parameters:
         - name: rule_id
           in: query
@@ -1365,6 +1367,8 @@ paths:
       operationId: getEventById
       summary: Retrieve event details
       description: Get detailed information about a single event by ID, including optional trigger telemetry info.
+      security:
+        - BearerAuth: []
       parameters:
         - name: event_id
           in: path
@@ -1410,6 +1414,8 @@ paths:
       operationId: acknowledgeEvent
       summary: Acknowledge an event
       description: Marks an event as acknowledged. Idempotent.
+      security:
+        - BearerAuth: []
       parameters:
         - name: event_id
           in: path
