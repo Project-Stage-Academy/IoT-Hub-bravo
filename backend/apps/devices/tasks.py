@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
     retry_jitter=True,
     retry_kwargs={'max_retries': 10},
 )
-def ingest_telemetry_payload(self, payload: dict | list) -> None:
+def ingest_telemetry_payload(self, payload: dict | list, **kwargs) -> None:
     if isinstance(payload, dict):
         payload = [payload]
     elif isinstance(payload, list):
