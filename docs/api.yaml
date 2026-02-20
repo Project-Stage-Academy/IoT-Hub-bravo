@@ -893,8 +893,7 @@ paths:
                     limit: 20
                     offset: 0
                     items:
-                      - schema_version: 1
-                        id: 12
+                      - id: 12
                         name: "High Temperature Alert"
                         description: "Alert when temperature exceeds 30°C"
                         is_active: true
@@ -2004,9 +2003,7 @@ components:
         - condition
         - action
         - device_metric_id
-        - schema_version
       example:
-        schema_version: 1
         id: 1
         name: "High Temperature Alert"
         description: "Alert when temperature exceeds 30°C"
@@ -2233,8 +2230,7 @@ components:
         limit: 20
         offset: 0
         items:
-          - schema_version: 1
-            id: 1
+          - id: 1
             name: "High Temperature Alert"
             description: "Alert when temperature exceeds 30°C"
             is_active: true

@@ -118,7 +118,7 @@ def _validate_count(value: Any) -> int:
     """Ensure count is int > 0"""
     if isinstance(value, int) and value > 0:
         return value
-    raise ValueError(f"Invalid count value")
+    raise ValueError("Invalid count value")
 
 
 class ThresholdEvaluator:
