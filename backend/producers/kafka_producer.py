@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 
 class KafkaProducer:
     def __init__(
-            self,
-            *,
-            config: ProducerConfig,
-            topic: str,
-            poll_timeout: float = 0.0,
+        self,
+        *,
+        config: ProducerConfig,
+        topic: str,
+        poll_timeout: float = 0.0,
     ):
         self._producer = Producer(config.to_kafka_dict())
         self._topic = topic
@@ -45,10 +45,7 @@ class KafkaProducer:
         except BufferError:
             self._dropped_messages += 1
             self._producer.poll(0)
-            logger.warning(
-                'Kafka producer local buffer full. Dropped: %s',
-                self._dropped_messages
-            )
+            logger.warning('Kafka producer local buffer full. Dropped: %s', self._dropped_messages)
         except KafkaException:
             logger.exception('Kafka produce failed.')
             return
@@ -62,11 +59,7 @@ class KafkaProducer:
     @staticmethod
     def _encode_payload(payload: Any) -> Optional[bytes]:
         try:
-            return json.dumps(
-                payload,
-                separators=(',', ':'),
-                ensure_ascii=False
-            ).encode('utf-8')
+            return json.dumps(payload, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
         except (TypeError, ValueError):
             logger.exception('Failed to JSON-encode payload.')
             return None

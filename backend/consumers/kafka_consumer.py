@@ -13,15 +13,15 @@ logger = logging.getLogger(__name__)
 
 class KafkaConsumer:
     def __init__(
-            self,
-            *,
-            config: ConsumerConfig,
-            topics: list[str],
-            handler: KafkaPayloadHandler,
-            consume_timeout: float = 1.0,
-            decode_json: bool = False,
-            consume_batch: bool = False,
-            batch_max_size: int = 50,
+        self,
+        *,
+        config: ConsumerConfig,
+        topics: list[str],
+        handler: KafkaPayloadHandler,
+        consume_timeout: float = 1.0,
+        decode_json: bool = False,
+        consume_batch: bool = False,
+        batch_max_size: int = 50,
     ):
         self._consumer = Consumer(config.to_kafka_dict())
         self._consumer.subscribe(topics)
