@@ -56,7 +56,7 @@ class RuleView(View):
                 }
                 return JsonResponse({"rule": data})
             except Rule.DoesNotExist:
-                return JsonResponse({"error": "Rule not found"}, status=404)
+                return JsonResponse({"code": 404, "message": "Rule not found"}, status=404)
         else:
             try:
                 limit = int(request.GET.get("limit", 20))
@@ -66,7 +66,8 @@ class RuleView(View):
 
             if limit <= 0 or offset < 0:
                 return JsonResponse(
-                    {"error": "Limit must be > 0 and offset must be >= 0"}, status=400
+                    {"code": 400, "message": "Limit must be > 0 and offset must be >= 0"},
+                    status=400,
                 )
 
             all_rules = (
@@ -101,7 +102,9 @@ class RuleView(View):
 
         serializer = RuleCreateSerializer(data=data)
         if not serializer.is_valid():
-            return JsonResponse({'errors': serializer.errors}, status=400)
+            return JsonResponse(
+                {"code": 400, "message": json.dumps(serializer.errors)}, status=400
+            )
 
         # check if user has that device_metrics
         device_metric_id = serializer.validated_data.get("device_metric_id")
@@ -109,10 +112,21 @@ class RuleView(View):
             not is_admin
             and not DeviceMetric.objects.filter(id=device_metric_id, device__user=user).exists()
         ):
-            return JsonResponse({"error": "DeviceMetric does not belong to the user"}, status=403)
+            return JsonResponse(
+                {"code": 403, "message": "DeviceMetric does not belong to the user"}, status=403
+            )
 
         rule = rule_create(rule_data=serializer.validated_data)
-        return JsonResponse({"status": 200, "rule_id": rule.id})
+        data = {
+            "id": rule.id,
+            "name": rule.name,
+            "device_metric_id": rule.device_metric.id,
+            "description": rule.description,
+            "condition": rule.condition,
+            "action": rule.action,
+            "is_active": rule.is_active,
+        }
+        return JsonResponse(data, status=201)
 
     def put(self, request, rule_id):
         """Full update"""
@@ -127,14 +141,25 @@ class RuleView(View):
                 else Rule.objects.get(id=rule_id, device_metric__device__user=user)
             )
         except Rule.DoesNotExist:
-            return JsonResponse({"error": "Rule not found or access denied"}, status=404)
+            return JsonResponse({"code": 404, "message": "Rule not found"}, status=404)
 
         serializer = RuleCreateSerializer(data=data)
         if not serializer.is_valid():
-            return JsonResponse({'errors': serializer.errors}, status=400)
+            return JsonResponse(
+                {"code": 400, "message": json.dumps(serializer.errors)}, status=400
+            )
 
         rule = rule_put(rule_id=rule_id, rule_data=serializer.validated_data)
-        return JsonResponse({"status": 200, "rule_id": rule.id})
+        data = {
+            "id": rule.id,
+            "name": rule.name,
+            "device_metric_id": rule.device_metric.id,
+            "description": rule.description,
+            "condition": rule.condition,
+            "action": rule.action,
+            "is_active": rule.is_active,
+        }
+        return JsonResponse(data, status=200)
 
     def patch(self, request, rule_id):
         """Partial update"""
@@ -149,14 +174,14 @@ class RuleView(View):
                 else Rule.objects.get(id=rule_id, device_metric__device__user=user)
             )
         except Rule.DoesNotExist:
-            return JsonResponse({"error": "Rule not found or access denied"}, status=404)
+            return JsonResponse({"code": 404, "message": "Rule not found"}, status=404)
 
         serializer = RulePatchSerializer(data=data, partial=True)
         if not serializer.is_valid():
-            return JsonResponse({'errors': serializer.errors}, status=400)
+            return JsonResponse({"code": 400, "message": str(serializer.errors)}, status=400)
 
         rule = rule_patch(rule_id=rule_id, rule_data=serializer.validated_data)
-        return JsonResponse({"status": 200, "rule_id": rule.id})
+        return JsonResponse({"status": 200, "rule_id": rule.id}, status=200)
 
     def delete(self, request, rule_id):
         """Delete rule"""
@@ -170,10 +195,10 @@ class RuleView(View):
                 else Rule.objects.get(id=rule_id, device_metric__device__user=user)
             )
         except Rule.DoesNotExist:
-            return JsonResponse({"error": "Rule not found or access denied"}, status=404)
+            return JsonResponse({"code": 404, "message": "Rule not found"}, status=404)
 
         rule_delete(rule_id=rule_id)
-        return JsonResponse({"status": 200, "message": "deleted"})
+        return JsonResponse({}, status=204)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -195,15 +220,15 @@ class RuleEvaluateView(View):
 
         if device_id is not None:
             if not Device.objects.filter(id=device_id).exists():
-                return JsonResponse({"error": "Device not found"}, status=404)
+                return JsonResponse({"code": 404, "message": "Device not found"}, status=404)
 
             if not is_admin and not Device.objects.filter(id=device_id, user=user).exists():
-                return JsonResponse({"error": "Access denied"}, status=403)
+                return JsonResponse({"code": 403, "message": "Access denied"}, status=403)
             qs = qs.filter(device_metric__device_id=device_id)
 
         if device_metric_id is not None:
             if not DeviceMetric.objects.filter(id=device_metric_id).exists():
-                return JsonResponse({"error": "DeviceMetric not found"}, status=404)
+                return JsonResponse({"code": 404, "message": "DeviceMetric not found"}, status=404)
 
             if (
                 not is_admin
@@ -211,13 +236,14 @@ class RuleEvaluateView(View):
                     id=device_metric_id, device__user=user
                 ).exists()
             ):
-                return JsonResponse({"error": "Access denied"}, status=403)
+                return JsonResponse({"code": 403, "message": "Access denied"}, status=403)
             qs = qs.filter(device_metric_id=device_metric_id)
 
         if device_id is not None and device_metric_id is not None:
             if not DeviceMetric.objects.filter(id=device_metric_id, device_id=device_id).exists():
                 return JsonResponse(
-                    {"error": "DeviceMetric does not belong to this Device"}, status=400
+                    {"code": 400, "message": "DeviceMetric does not belong to this Device"},
+                    status=400,
                 )
 
         last_telemetries = qs.order_by('device_metric', '-created_at').distinct('device_metric')
