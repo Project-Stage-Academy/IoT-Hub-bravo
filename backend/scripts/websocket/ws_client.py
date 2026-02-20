@@ -44,7 +44,9 @@ async def listen_forever(ws_url: str):
     while True:
         try:
             print("Connecting to WS stream...")
-            async with websockets.connect(ws_url, ping_interval=20, ping_timeout=20, close_timeout=5) as ws:
+            async with websockets.connect(
+                ws_url, ping_interval=20, ping_timeout=20, close_timeout=5
+            ) as ws:
                 print("Connected. Waiting telemetry...")
                 retry = 1
                 async for msg in ws:

@@ -4,7 +4,9 @@ from channels.layers import get_channel_layer
 from django.utils.timezone import now
 
 
-def publish_telemetry_event(*, device_serial_id: str, device_id: int, metric: str, metric_type: str, value, ts):
+def publish_telemetry_event(
+    *, device_serial_id: str, device_id: int, metric: str, metric_type: str, value, ts
+):
     payload = {
         "event_id": str(uuid.uuid4()),
         "type": "telemetry.update",
@@ -21,6 +23,12 @@ def publish_telemetry_event(*, device_serial_id: str, device_id: int, metric: st
     }
 
     layer = get_channel_layer()
-    async_to_sync(layer.group_send)("telemetry.global", {"type": "telemetry_update", "payload": payload})
-    async_to_sync(layer.group_send)(f"telemetry.device.{device_serial_id}", {"type": "telemetry_update", "payload": payload})
-    async_to_sync(layer.group_send)(f"telemetry.metric.{metric}", {"type": "telemetry_update", "payload": payload})
+    async_to_sync(layer.group_send)(
+        "telemetry.global", {"type": "telemetry_update", "payload": payload}
+    )
+    async_to_sync(layer.group_send)(
+        f"telemetry.device.{device_serial_id}", {"type": "telemetry_update", "payload": payload}
+    )
+    async_to_sync(layer.group_send)(
+        f"telemetry.metric.{metric}", {"type": "telemetry_update", "payload": payload}
+    )

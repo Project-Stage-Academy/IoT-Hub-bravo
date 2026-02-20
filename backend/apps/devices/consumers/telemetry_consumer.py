@@ -2,6 +2,7 @@ import json
 from urllib.parse import parse_qs
 from channels.generic.websocket import AsyncWebsocketConsumer
 
+
 class TelemetryConsumer(AsyncWebsocketConsumer):
     ALLOWED_ROLES = {"admin", "client"}
     BASE_GROUP = "telemetry.global"
