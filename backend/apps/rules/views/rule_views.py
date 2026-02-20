@@ -131,7 +131,7 @@ class RuleView(View):
         user = request.user
         
         try:
-            rule = Rule.objects.get(id=rule_id, device_metric__device__user=user)
+            Rule.objects.get(id=rule_id, device_metric__device__user=user)
         except Rule.DoesNotExist:
             return JsonResponse({"error": "Rule not found or access denied"}, status=404)
         

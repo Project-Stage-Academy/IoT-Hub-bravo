@@ -832,7 +832,6 @@ paths:
   #                   code: 404
   #                   message: "Telemetry record not found."
 
-  # Note: The following endpoints for /api/rules are defined but commented out until the example/examples will be added to the spec.
   /api/rules/:
     get:
       tags:
@@ -868,7 +867,8 @@ paths:
             type: object
           description: Filter by action type in JSON format
           example:
-            type: "notify"
+            notification:
+              channel: "email"
       responses:
         '200':
           description: List of rules
@@ -907,7 +907,14 @@ paths:
                     type: "threshold"
                     operator: ">"
                     value: 30
-                  action: "notify"
+                  action: 
+                    webhook:
+                      url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                      enabled: true
+                    notification:
+                      channel: "email"
+                      enabled: true
+                      message: "High temperature in {device_name}: {value}°C"
               rate_rule:
                 summary: Event rate rule
                 value:
@@ -918,7 +925,14 @@ paths:
                     type: "rate"
                     count: 10
                     minutes: 300
-                  action: "webhook"
+                  action: 
+                    webhook:
+                      url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                      enabled: true
+                    notification:
+                      channel: "email"
+                      enabled: true
+                      message: "High temperature in {device_name}: {value}°C"
               composite_rule:
                 summary: Composite AND rule
                 value:
@@ -937,7 +951,14 @@ paths:
                         metric: "humidity"
                         operator: "<"
                         value: 20
-                  action: "notify"
+                  action: 
+                    webhook:
+                      url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                      enabled: true
+                    notification:
+                      channel: "email"
+                      enabled: true
+                      message: "High temperature in {device_name}: {value}°C"
       responses:
         '201':
           description: Rule created successfully
@@ -1127,60 +1148,6 @@ paths:
                       $ref: '#/components/schemas/Event'
         '400':
           description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/rules/{id}/events/:
-    get:
-      tags:
-        - Rules
-      summary: Get rule evaluation history
-      operationId: getRuleEvents
-      description: Returns all events (rule firings) for a specific rule with pagination
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-        - name: from_date
-          in: query
-          schema:
-            type: string
-            format: date-time
-          description: Filter events from this date
-        - name: to_date
-          in: query
-          schema:
-            type: string
-            format: date-time
-          description: Filter events until this date
-      responses:
-        '200':
-          description: List of events
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedEvents'
-        '404':
-          description: Rule not found
           content:
             application/json:
               schema:
@@ -1767,8 +1734,13 @@ components:
           type: object
           description: Rule action in JSON format (see docs/rules.md for full schema)
           example:
-            type: "notify"
-            message: "User_1 temperature is overwhelming"
+            webhook:
+              url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+              enabled: true
+            notification:
+              channel: "email"
+              enabled: true
+              message: "High temperature in {device_name}: {value}°C"
         device_metric_id:
           type: integer
           description: Foreign key to DeviceMetric model
@@ -1780,6 +1752,24 @@ components:
         - condition
         - action
         - device_metric_id
+      example:
+        id: 1
+        name: "High Temperature Alert"
+        description: "Alert when temperature exceeds 30°C"
+        is_active: true
+        condition:
+          type: "threshold"
+          operator: ">"
+          value: 30
+        action:
+          webhook:
+            url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+            enabled: true
+          notification:
+            channel: "email"
+            enabled: true
+            message: "High temperature in {device_name}: {value}°C"
+        device_metric: 44 
 
     RuleCreate:
       type: object
@@ -1811,8 +1801,15 @@ components:
             value: 30
         action:
           type: object
-          example: 
-            type: "notify"
+          description: Rule action in JSON format (see docs/rules.md for full schema)
+          example:
+            webhook:
+              url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+              enabled: true
+            notification:
+              channel: "email"
+              enabled: true
+              message: "High temperature in {device_name}: {value}°C"
         device_metric_id:
           type: integer
           description: Foreign key to DeviceMetric model
@@ -1823,6 +1820,25 @@ components:
         - is_active
         - action
         - device_metric_id
+      example:
+        id: 1
+        name: "High Temperature Alert"
+        description: "Alert when temperature exceeds 30°C"
+        is_active: true
+        condition:
+          type: "threshold"
+          operator: ">"
+          value: 30
+        action:
+          webhook:
+            url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+            enabled: true
+          notification:
+            channel: "email"
+            enabled: true
+            message: "High temperature in {device_name}: {value}°C"
+        device_metric: 44       
+
 
     RulePatch:
       type: object
@@ -1962,6 +1978,11 @@ components:
               operator: ">"
               value: 30
             action:
-              type: "notify"
-              message: "User_1 temperature is overwhelming"
+              webhook:
+                url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                enabled: true
+              notification:
+                channel: "email"
+                enabled: true
+                message: "High temperature in {device_name}: {value}°C"
             device_metric_id: 123
