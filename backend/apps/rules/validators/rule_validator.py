@@ -4,14 +4,6 @@ from enum import Enum
 from django.core.exceptions import ValidationError
 
 
-class ConditionTypes(str, Enum):
-    """Enumeration of supported rule condition types"""
-
-    THRESHOLD = "threshold"
-    RATE = "rate"
-    COMPOSITE = "composite"
-
-
 class NotificationChannels(str, Enum):
     """Enumeration of available notification delivery channels"""
 
