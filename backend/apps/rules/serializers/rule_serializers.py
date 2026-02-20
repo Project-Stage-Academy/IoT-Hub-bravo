@@ -28,7 +28,7 @@ class BaseSerializer:
 
     def _validate(self, data: Any):
         raise NotImplementedError
-    
+
 
 class RuleCreateSerializer(BaseSerializer):
     """
@@ -45,7 +45,7 @@ class RuleCreateSerializer(BaseSerializer):
         'is_active': bool,
         'device_metric_id': int,
     }
-    
+
     REQUIRED_FIELDS = {
         'schema_version': int,
         'name': str,
@@ -75,7 +75,9 @@ class RuleCreateSerializer(BaseSerializer):
             value = data.get(field)
             if value is not None:
                 if not isinstance(value, self.FIELDS_TYPE_MAP[field]):
-                    self._errors[field] = f"{field} must be of type {self.FIELDS_TYPE_MAP[field].__name__}."
+                    self._errors[field] = (
+                        f"{field} must be of type {self.FIELDS_TYPE_MAP[field].__name__}."
+                    )
                 else:
                     validated[field] = value
             else:
@@ -89,6 +91,7 @@ class RuleCreateSerializer(BaseSerializer):
 
 class RulePatchSerializer(BaseSerializer):
     """Serilizer for patch"""
+
     FIELDS_TYPE_MAP = {
         'schema_version': int,
         'name': str,

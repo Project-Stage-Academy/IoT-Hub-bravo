@@ -23,23 +23,14 @@ class RuleProcessor:
         rules = Rule.objects.filter(is_active=True, device_metric=telemetry.device_metric)
 
         for rule in rules:
-        
+
             condition = rule.condition
             device_metric = rule.device_metric
 
             if ConditionEvaluator.evaluate(condition, device_metric, telemetry):
                 Action.dispatch_action(rule, telemetry)
-                results.append({
-                    "rule_id": rule.id,
-                    "triggered": True
-                })
+                results.append({"rule_id": rule.id, "triggered": True})
             else:
-                results.append({
-                    "rule_id": rule.id,
-                    "triggered": False
-                })
+                results.append({"rule_id": rule.id, "triggered": False})
 
-        return {
-            "telemetry_id": telemetry.id,
-            "results": results
-        }
+        return {"telemetry_id": telemetry.id, "results": results}

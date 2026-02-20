@@ -161,7 +161,7 @@ class RateEvaluator:
         """
         count_required = _validate_count(condition.get("count"))
         duration_minutes = _validate_duration_minutes(_get_duration_minutes(condition))
-        
+
         if count_required is None or duration_minutes is None:
             logger.error("Rate rule missing 'count' or 'duration_minutes'")
             return False

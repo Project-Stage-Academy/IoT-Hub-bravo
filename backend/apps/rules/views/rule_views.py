@@ -22,13 +22,15 @@ logger = logging.getLogger("rules")
 @method_decorator(jwt_required, name='dispatch')
 @method_decorator(
     role_required(
-        {"GET": ["admin","client"], 
-         "POST": ["admin","client"], 
-         "PUT": ["admin","client"], 
-         "PATCH": ["admin","client"], 
-         "DELETE": ["admin","client"]}
-        ),
-        name='dispatch',
+        {
+            "GET": ["admin", "client"],
+            "POST": ["admin", "client"],
+            "PUT": ["admin", "client"],
+            "PATCH": ["admin", "client"],
+            "DELETE": ["admin", "client"],
+        }
+    ),
+    name='dispatch',
 )
 class RuleView(View):
     def get(self, request, rule_id=None):
@@ -38,7 +40,11 @@ class RuleView(View):
 
         if rule_id:
             try:
-                rule = Rule.objects.get(id=rule_id) if is_admin else Rule.objects.get(id=rule_id, device_metric__device__user=user)
+                rule = (
+                    Rule.objects.get(id=rule_id)
+                    if is_admin
+                    else Rule.objects.get(id=rule_id, device_metric__device__user=user)
+                )
                 data = {
                     "id": rule.id,
                     "name": rule.name,
@@ -57,42 +63,56 @@ class RuleView(View):
                 offset = int(request.GET.get("offset", 0))
             except ValueError:
                 raise ValueError("Limit and offset must be integer type")
-            
+
             if limit <= 0 or offset < 0:
-                return JsonResponse({"error": "Limit must be > 0 and offset must be >= 0"}, status=400)
-            
-            all_rules = Rule.objects.all() if is_admin else Rule.objects.filter(device_metric__device__user=user)
+                return JsonResponse(
+                    {"error": "Limit must be > 0 and offset must be >= 0"}, status=400
+                )
+
+            all_rules = (
+                Rule.objects.all()
+                if is_admin
+                else Rule.objects.filter(device_metric__device__user=user)
+            )
             total = all_rules.count()
             rules = all_rules[offset : offset + limit]
-            data = [{"id": r.id, 
+            data = [
+                {
+                    "id": r.id,
                     "name": r.name,
                     "device_metric_id": r.device_metric.id,
-                    "description": r.description, 
-                    "condition": r.condition, 
+                    "description": r.description,
+                    "condition": r.condition,
                     "action": r.action,
                     "is_active": r.is_active,
-                    } for r in rules]
+                }
+                for r in rules
+            ]
             return JsonResponse({"total": total, "limit": limit, "offset": offset, "items": data})
-        
 
-    def post(self, request, ):
+    def post(
+        self,
+        request,
+    ):
         """Create a new rule"""
         data = json.loads(request.body)
         user = request.user
         is_admin = user.role == "admin"
-        
+
         serializer = RuleCreateSerializer(data=data)
         if not serializer.is_valid():
             return JsonResponse({'errors': serializer.errors}, status=400)
-        
+
         # check if user has that device_metrics
         device_metric_id = serializer.validated_data.get("device_metric_id")
-        if not is_admin and not DeviceMetric.objects.filter(id=device_metric_id, device__user=user).exists():
+        if (
+            not is_admin
+            and not DeviceMetric.objects.filter(id=device_metric_id, device__user=user).exists()
+        ):
             return JsonResponse({"error": "DeviceMetric does not belong to the user"}, status=403)
-        
-        rule = rule_create(rule_data=serializer.validated_data)
-        return JsonResponse({"status": "ok", "rule_id": rule.id})
 
+        rule = rule_create(rule_data=serializer.validated_data)
+        return JsonResponse({"status": 200, "rule_id": rule.id})
 
     def put(self, request, rule_id):
         """Full update"""
@@ -101,17 +121,20 @@ class RuleView(View):
         is_admin = user.role == "admin"
 
         try:
-            rule = Rule.objects.get(id=rule_id) if is_admin else Rule.objects.get(id=rule_id, device_metric__device__user=user)
+            rule = (
+                Rule.objects.get(id=rule_id)
+                if is_admin
+                else Rule.objects.get(id=rule_id, device_metric__device__user=user)
+            )
         except Rule.DoesNotExist:
             return JsonResponse({"error": "Rule not found or access denied"}, status=404)
-        
+
         serializer = RuleCreateSerializer(data=data)
         if not serializer.is_valid():
             return JsonResponse({'errors': serializer.errors}, status=400)
-        
-        rule = rule_put(rule_id=rule_id, rule_data=serializer.validated_data)
-        return JsonResponse({"status": "ok", "rule_id": rule.id})
 
+        rule = rule_put(rule_id=rule_id, rule_data=serializer.validated_data)
+        return JsonResponse({"status": 200, "rule_id": rule.id})
 
     def patch(self, request, rule_id):
         """Partial update"""
@@ -120,17 +143,20 @@ class RuleView(View):
         is_admin = user.role == "admin"
 
         try:
-            rule = Rule.objects.get(id=rule_id) if is_admin else Rule.objects.get(id=rule_id, device_metric__device__user=user)
+            rule = (
+                Rule.objects.get(id=rule_id)
+                if is_admin
+                else Rule.objects.get(id=rule_id, device_metric__device__user=user)
+            )
         except Rule.DoesNotExist:
             return JsonResponse({"error": "Rule not found or access denied"}, status=404)
-        
+
         serializer = RulePatchSerializer(data=data, partial=True)
         if not serializer.is_valid():
             return JsonResponse({'errors': serializer.errors}, status=400)
-        
-        rule = rule_patch(rule_id=rule_id, rule_data=serializer.validated_data)
-        return JsonResponse({"status": "ok", "rule_id": rule.id})
 
+        rule = rule_patch(rule_id=rule_id, rule_data=serializer.validated_data)
+        return JsonResponse({"status": 200, "rule_id": rule.id})
 
     def delete(self, request, rule_id):
         """Delete rule"""
@@ -138,20 +164,21 @@ class RuleView(View):
         is_admin = user.role == "admin"
 
         try:
-            Rule.objects.get(id=rule_id) if is_admin else Rule.objects.get(id=rule_id, device_metric__device__user=user)
+            (
+                Rule.objects.get(id=rule_id)
+                if is_admin
+                else Rule.objects.get(id=rule_id, device_metric__device__user=user)
+            )
         except Rule.DoesNotExist:
             return JsonResponse({"error": "Rule not found or access denied"}, status=404)
-        
+
         rule_delete(rule_id=rule_id)
-        return JsonResponse({"status": "ok", "message": "deleted"})
+        return JsonResponse({"status": 200, "message": "deleted"})
 
 
 @method_decorator(csrf_exempt, name='dispatch')
 @method_decorator(jwt_required, name='dispatch')
-@method_decorator(
-    role_required({"POST": ["admin", "client"]}),
-    name='dispatch'
-)
+@method_decorator(role_required({"POST": ["admin", "client"]}), name='dispatch')
 class RuleEvaluateView(View):
     def post(self, request):
         user = request.user
@@ -160,12 +187,16 @@ class RuleEvaluateView(View):
         device_metric_id = data.get("device_metric_id")
         is_admin = user.role == "admin"
 
-        qs = Telemetry.objects.all() if is_admin else Telemetry.objects.filter(device_metric__device__user=user)
+        qs = (
+            Telemetry.objects.all()
+            if is_admin
+            else Telemetry.objects.filter(device_metric__device__user=user)
+        )
 
         if device_id is not None:
             if not Device.objects.filter(id=device_id).exists():
                 return JsonResponse({"error": "Device not found"}, status=404)
-            
+
             if not is_admin and not Device.objects.filter(id=device_id, user=user).exists():
                 return JsonResponse({"error": "Access denied"}, status=403)
             qs = qs.filter(device_metric__device_id=device_id)
@@ -174,27 +205,33 @@ class RuleEvaluateView(View):
             if not DeviceMetric.objects.filter(id=device_metric_id).exists():
                 return JsonResponse({"error": "DeviceMetric not found"}, status=404)
 
-            if not is_admin and not DeviceMetric.objects.filter(id=device_metric_id, device__user=user).exists():
+            if (
+                not is_admin
+                and not DeviceMetric.objects.filter(
+                    id=device_metric_id, device__user=user
+                ).exists()
+            ):
                 return JsonResponse({"error": "Access denied"}, status=403)
             qs = qs.filter(device_metric_id=device_metric_id)
 
         if device_id is not None and device_metric_id is not None:
             if not DeviceMetric.objects.filter(id=device_metric_id, device_id=device_id).exists():
-                return JsonResponse({"error": "DeviceMetric does not belong to this Device"}, status=400)
+                return JsonResponse(
+                    {"error": "DeviceMetric does not belong to this Device"}, status=400
+                )
 
-        last_telemetries = (
-            qs.order_by('device_metric', '-created_at')
-              .distinct('device_metric')
-        )
+        last_telemetries = qs.order_by('device_metric', '-created_at').distinct('device_metric')
 
         results = []
         for telemetry in last_telemetries:
             evaluation_result = RuleProcessor.run(telemetry)
-            results.append({
-                "telemetry_id": telemetry.id,
-                "device_metric_id": telemetry.device_metric.id,
-                "device_name": telemetry.device_metric.device.name,
-                "result": evaluation_result
-            })
+            results.append(
+                {
+                    "telemetry_id": telemetry.id,
+                    "device_metric_id": telemetry.device_metric.id,
+                    "device_name": telemetry.device_metric.device.name,
+                    "result": evaluation_result,
+                }
+            )
 
-        return JsonResponse({"status": "ok", "results": results})
+        return JsonResponse({"status": 200, "results": results})

@@ -5,13 +5,16 @@ from django.core.exceptions import ValidationError
 
 
 class ConditionTypes(str, Enum):
-    """"""
-    EMAIL = "email"
-    SMS = "sms"
+    """Enumeration of supported rule condition types"""
+
+    THRESHOLD = "threshold"
+    RATE = "rate"
+    COMPOSITE = "composite"
 
 
 class NotificationChannels(str, Enum):
-    """Availeble channels for notification"""
+    """Enumeration of available notification delivery channels"""
+
     EMAIL = "email"
     SMS = "sms"
 
@@ -39,27 +42,27 @@ def validate_condition(condition: dict[str, Any]) -> None:
     if not isinstance(condition_type, str):
         raise ValidationError("Condition 'type' must be string")
 
-    if condition_type == "threshold": # hardcoded ?
+    if condition_type == "threshold":
         if "operator" not in condition:
             raise ValidationError("Threshold condition requires 'operator'")
-        if condition.get("operator") not in [">", "<", ">=", "<=", "==", "!="]: # change?
+        if condition.get("operator") not in [">", "<", ">=", "<=", "==", "!="]:  # change?
             raise ValidationError("Invalid threshold operator")
         if "value" not in condition:
             raise ValidationError("Threshold condition requires 'value'")
         if not isinstance(condition.get("value"), (int, float)):
             raise ValidationError("Condition 'value' must be number")
 
-    elif condition_type == "rate": # hardcoded ?
+    elif condition_type == "rate":
         if "duration_minutes" not in condition:
             raise ValidationError("Rate condition requires 'duration_minutes'")
         if "count" not in condition:
             raise ValidationError("Rate condition requires 'count'")
-        
+
         if condition.get("duration_minutes") <= 0:
-             raise ValidationError("duration_minutes must be positive")
+            raise ValidationError("duration_minutes must be positive")
         if condition.get("count") <= 0:
             raise ValidationError("count must be positive")
-        
+
         if not isinstance(condition.get("duration_minutes"), int):
             raise ValidationError("duration_minutes must be int")
         if not isinstance(condition.get("count"), int):
@@ -72,10 +75,10 @@ def validate_condition(condition: dict[str, Any]) -> None:
             raise ValidationError("Composite condition requires 'operator'")
         if condition.get("operator") not in ["AND", "OR"]:
             raise ValidationError("Composite operator must be AND or OR")
-        
+
         conds_to_val = condition["conditions"]
         if not isinstance(conds_to_val, list):
-           raise ValidationError("'conditions' must be a list")
+            raise ValidationError("'conditions' must be a list")
         if not conds_to_val:
             raise ValidationError("'conditions' must not be empty")
         for cond_to_val in conds_to_val:
@@ -85,7 +88,7 @@ def validate_condition(condition: dict[str, Any]) -> None:
 
     else:
         raise ValidationError(f"Unsupported condition type: {condition_type}")
-    
+
 
 def validate_action_enabled(action_type: dict) -> None:
     """Validation for field 'enabled' in action"""
@@ -105,15 +108,15 @@ def validate_action(action: dict[str, Any]) -> None:
     Validate action JSON.
     Example:
     {'webhook': {
-             'url': 'https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e',    
+             'url': 'https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e',
              'enabled': true # is there any purposes in it?
-                }, 
+                },
     'notification': {
         'channel': 'email', # only one?
         'enabled': true,  # is there any purposes in it?
         'message': 'High temperature in {device_name}: {value}°C'
                 }
-    }   
+    }
     """
     if not isinstance(action, dict):
         raise ValidationError("Action must be a dictionary")
@@ -121,23 +124,23 @@ def validate_action(action: dict[str, Any]) -> None:
     if not action:
         raise ValidationError("Action cannot be empty")
 
-    if "webhook" in action: # maybe better remade to models 
+    if "webhook" in action:  # maybe better remade to models
         webhook = action.get("webhook")
-        
+
         if not isinstance(webhook, dict):
             raise ValidationError("Webhook must be object")
-        
+
         if "url" not in webhook:
             raise ValidationError("Webhook requires 'url'")
-        
+
         validate_action_enabled(webhook)
 
     if "notification" in action:
         notification = action.get("notification")
-        
+
         if not isinstance(notification, dict):
             raise ValidationError("Notification must be object")
-        
+
         if "channel" not in notification:
             raise ValidationError("Notification requires 'channel'")
 

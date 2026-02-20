@@ -9,6 +9,7 @@ from apps.rules.validators.rule_validator import validate_condition, validate_ac
 
 logger = logging.getLogger(__name__)
 
+
 @transaction.atomic
 def rule_create(rule_data: dict[str, Any]) -> Rule:
     logger.debug("Creating rule with data: %s", rule_data)
@@ -32,8 +33,7 @@ def rule_put(rule_id: int, rule_data: dict[str, Any]) -> Rule:
     # for field in required_fields:
     #     if field not in rule_data:
     #         raise ValidationError(f"{field} is required for PUT")
-   
-   
+
     rule = Rule.objects.get(id=rule_id)
 
     condition = rule_data.get("condition")
@@ -86,4 +86,4 @@ def rule_delete(rule_id: int) -> None:
         rule = Rule.objects.get(id=rule_id)
         rule.delete()
     except ObjectDoesNotExist:
-        logger.warning("Rule id=%s not found for deletion", rule_id)    
+        logger.warning("Rule id=%s not found for deletion", rule_id)

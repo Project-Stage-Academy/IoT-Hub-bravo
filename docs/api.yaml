@@ -893,7 +893,8 @@ paths:
                     limit: 20
                     offset: 0
                     items:
-                      - id: 12
+                      - schema_version: 1
+                        id: 12
                         name: "High Temperature Alert"
                         description: "Alert when temperature exceeds 30°C"
                         is_active: true
@@ -910,7 +911,8 @@ paths:
                             enabled: true
                             message: "High temperature in {device_name}: {value}°C"
                         device_metric_id: 1
-                      - id: 32
+                      - schema_version: 1
+                        id: 32
                         name: "Low Humidity Alert"
                         description: "Alert when humidity drops below 20%"
                         is_active: true
@@ -1034,6 +1036,7 @@ paths:
                 created:
                   summary: Created rule with full schema
                   value:
+                    schema_version: 1
                     id: 22
                     name: "High Temperature Alert"
                     description: "Alert when temperature exceeds 30°C"
@@ -1092,6 +1095,7 @@ paths:
                 updated:
                   summary: Updated rule
                   value:
+                    schema_version: 1
                     id: 31
                     name: "Updated Rule"
                     is_active: false
@@ -1159,6 +1163,7 @@ paths:
               update_example:
                 summary: Update rule example
                 value:
+                  schema_version: 1
                   name: "Updated Rule"
                   description: "Changed description"
                   is_active: false
@@ -1186,6 +1191,7 @@ paths:
                 updated:
                   summary: Updated rule
                   value:
+                    schema_version: 1
                     id: 44
                     name: "Updated Rule"
                     is_active: false
@@ -1252,6 +1258,7 @@ paths:
               replace_rule:
                 summary: Full rule replacement
                 value:
+                  schema_version: 1
                   name: "Updated Rule"
                   is_active: false
                   condition:
@@ -1274,27 +1281,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Rule'
+                $ref: '#/components/schemas/RuleUpdateResponse'
               examples:
                 updated:
                   summary: Updated rule
                   value:
-                    id: 16
-                    name: "Updated Rule"
-                    is_active: false
-                    action:
-                      webhook:
-                        url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
-                        enabled: true
-                      notification:
-                        channel: "email"
-                        enabled: true
-                        message: "High temperature in {device_name}: {value}°C"
-                    condition:
-                      type: "threshold"
-                      operator: ">"
-                      value: 13
-                    device_metric_id: 1    
+                    status: 200
+                    rule_id: 1  
         '400':
           description: Invalid request
           content:
@@ -1964,7 +1957,7 @@ components:
       description: Business logic rule for monitoring and alerting
       properties:
         schema_version:
-          type: int
+          type: integer
           description: Version of the rule schema definition
           example: 1
         id:
@@ -2013,6 +2006,7 @@ components:
         - device_metric_id
         - schema_version
       example:
+        schema_version: 1
         id: 1
         name: "High Temperature Alert"
         description: "Alert when temperature exceeds 30°C"
@@ -2036,7 +2030,7 @@ components:
       description: Data required to create a new rule
       properties:
         schema_version:
-          type: int
+          type: integer
           description: Version of the rule schema definition
           example: 1
         name:
@@ -2089,6 +2083,7 @@ components:
         - device_metric_id
         - schema_version
       example:
+        schema_version: 1
         name: "High Temperature Alert"
         description: "Alert when temperature exceeds 30°C"
         is_active: true
@@ -2112,7 +2107,7 @@ components:
       description: Partial update of rule fields
       properties:
         schema_version:
-          type: int
+          type: integer
         name:
           type: string
         description:
@@ -2238,7 +2233,8 @@ components:
         limit: 20
         offset: 0
         items:
-          - id: 1
+          - schema_version: 1
+            id: 1
             name: "High Temperature Alert"
             description: "Alert when temperature exceeds 30°C"
             is_active: true
@@ -2256,6 +2252,20 @@ components:
                 message: "High temperature in {device_name}: {value}°C"
             device_metric_id: 1
     
+    RuleUpdateResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        rule_id:
+          type: integer
+      required:
+        - status
+        - rule_id
+      example:
+        status: 200
+        rule_id: 1  
+
     RuleEvaluateRequest:
       type: object
       properties:
