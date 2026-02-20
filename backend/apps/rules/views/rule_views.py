@@ -15,7 +15,8 @@ from apps.users.decorators import jwt_required, role_required
 from apps.rules.services.rule_processor import RuleProcessor
 
 
-logger = logging.getLogger("rules")  # logger.setLevel(logging.INFO) - is default
+logger = logging.getLogger("rules")
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 @method_decorator(jwt_required, name='dispatch')
@@ -159,13 +160,12 @@ class RuleEvaluateView(View):
         device_metric_id = data.get("device_metric_id")
         is_admin = user.role == "admin"
 
-        # admin бачить все, client тільки своє
         qs = Telemetry.objects.all() if is_admin else Telemetry.objects.filter(device_metric__device__user=user)
 
         if device_id is not None:
             if not Device.objects.filter(id=device_id).exists():
                 return JsonResponse({"error": "Device not found"}, status=404)
-            # client device
+            
             if not is_admin and not Device.objects.filter(id=device_id, user=user).exists():
                 return JsonResponse({"error": "Access denied"}, status=403)
             qs = qs.filter(device_metric__device_id=device_id)
@@ -173,7 +173,7 @@ class RuleEvaluateView(View):
         if device_metric_id is not None:
             if not DeviceMetric.objects.filter(id=device_metric_id).exists():
                 return JsonResponse({"error": "DeviceMetric not found"}, status=404)
-            # client  device_metric
+
             if not is_admin and not DeviceMetric.objects.filter(id=device_metric_id, device__user=user).exists():
                 return JsonResponse({"error": "Access denied"}, status=403)
             qs = qs.filter(device_metric_id=device_metric_id)
