@@ -85,4 +85,39 @@ class RuleCreateSerializer(BaseSerializer):
             return None
 
         return validated
-        
+
+
+class RulePatchSerializer(BaseSerializer):
+    """Serilizer for patch"""
+    FIELDS_TYPE_MAP = {
+        'schema_version': int,
+        'name': str,
+        'description': str,
+        'condition': dict,
+        'action': dict,
+        'is_active': bool,
+        'device_metric_id': int,
+    }
+
+    def _validate(self, data: Any):
+        if not isinstance(data, dict):
+            self._errors['non_field_error'] = "Payload must be a JSON object."
+            return None
+
+        validated = {}
+
+        for field, expected_type in self.FIELDS_TYPE_MAP.items():
+            if field in data:
+                value = data[field]
+                if not isinstance(value, expected_type):
+                    self._errors[field] = f"{field} must be of type {expected_type.__name__}."
+                else:
+                    validated[field] = value
+
+        if not validated:
+            self._errors['non_field_error'] = "At least one field must be provided."
+
+        if self._errors:
+            return None
+
+        return validated

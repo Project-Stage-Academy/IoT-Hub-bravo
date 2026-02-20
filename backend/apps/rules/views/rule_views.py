@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import json
 
-from apps.rules.serializers.rule_serializers import RuleCreateSerializer
+from apps.rules.serializers.rule_serializers import RuleCreateSerializer, RulePatchSerializer
 from apps.rules.services.rule_service import rule_create, rule_put, rule_patch, rule_delete
 from apps.rules.models.rule import Rule
 from apps.devices.models.telemetry import Telemetry
@@ -118,7 +118,7 @@ class RuleView(View):
         except Rule.DoesNotExist:
             return JsonResponse({"error": "Rule not found or access denied"}, status=404)
         
-        serializer = RuleCreateSerializer(data=data, partial=True)
+        serializer = RulePatchSerializer(data=data, partial=True)
         if not serializer.is_valid():
             return JsonResponse({'errors': serializer.errors}, status=400)
         
