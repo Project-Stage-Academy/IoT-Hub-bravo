@@ -4,7 +4,7 @@ from typing import Any
 
 from apps.devices.models import Device, Metric, DeviceMetric
 from apps.devices.models.telemetry import Telemetry
-from validator.telemetry_validator import TelemetryValidator
+from validator.telemetry_validator import TelemetryBatchValidator
 
 
 @dataclass(slots=True)
@@ -15,9 +15,7 @@ class TelemetryIngestResult:
 
 def telemetry_create(
     *,
-    device_serial_id: str,
-    metrics: dict[str, Any],
-    ts: datetime.datetime,
+    payload: dict,
 ) -> TelemetryIngestResult:
     """
     Service function to ingest telemetry. Creates multiple
@@ -28,36 +26,25 @@ def telemetry_create(
     """
     result = TelemetryIngestResult()
 
-    validator = TelemetryValidator(
-        device_serial_id=device_serial_id,
-        metrics=metrics,
-        ts=ts,
+    validator = TelemetryBatchValidator(
+        payload=payload
     )
-    print("Validator created with:", device_serial_id, metrics, ts)
     if not validator.is_valid():
         result.errors = validator.errors
         # logging logic
     
     # initialize Telemetry objects for every valid matric-value pair
     to_create: list[Telemetry] = []
-    for name, info in validator.validated_metrics.items():
-        dm = info["device_metric"]
-        value = info["value"]
-        data_type = info["metric"].data_type
 
-        to_create.append(
-            Telemetry(
-                device_metric=dm,
-                ts=ts,
-                value_jsonb={
-                    't': data_type,
-                    'v': value,
-                },
-            )
-        )
-    
+    for row in validator.validated_rows:
+        to_create.append(Telemetry(**row))
+
     if to_create:
-        created = Telemetry.objects.bulk_create(to_create, ignore_conflicts=True)
+        created = Telemetry.objects.bulk_create(
+            to_create,
+            batch_size=1000,
+            ignore_conflicts=True,
+        )
         result.created_count = len(created)
 
     return result
