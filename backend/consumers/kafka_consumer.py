@@ -13,15 +13,15 @@ logger = logging.getLogger(__name__)
 
 class KafkaConsumer:
     def __init__(
-        self,
-        *,
-        config: ConsumerConfig,
-        topics: list[str],
-        handler: KafkaPayloadHandler,
-        consume_timeout: float = 1.0,
-        decode_json: bool = False,
-        consume_batch: bool = False,
-        batch_max_size: int = 50,
+            self,
+            *,
+            config: ConsumerConfig,
+            topics: list[str],
+            handler: KafkaPayloadHandler,
+            consume_timeout: float = 1.0,
+            decode_json: bool = False,
+            consume_batch: bool = False,
+            batch_max_size: int = 50,
     ):
         self._consumer = Consumer(config.to_kafka_dict())
         self._consumer.subscribe(topics)
@@ -79,7 +79,7 @@ class KafkaConsumer:
 
         payload = self._get_message_payload(message)
         if payload is None:
-            self._commit(message)
+            logger.error('Skipping commit due to decode failure at %s', message.offset())
             return
 
         self._handle_and_commit(payload, message)
@@ -97,13 +97,11 @@ class KafkaConsumer:
             return
 
         batch: list[Any] = []
-        last_message: Optional[Message] = None
+        last_valid_message: Optional[Message] = None
 
         for message in messages:
             if not self._is_valid_message(message):
                 continue
-
-            last_message = message
 
             payload = self._get_message_payload(message)
             if payload is None:
@@ -114,15 +112,10 @@ class KafkaConsumer:
             else:
                 batch.append(payload)
 
-        if not batch:
-            if last_message is not None:
-                self._commit(last_message)
-            return
+            last_valid_message = message
 
-        if last_message is None:
-            return
-
-        self._handle_and_commit(batch, last_message)
+        if last_valid_message is not None:
+            self._handle_and_commit(batch, last_valid_message)
 
     def _handle_payload(self, payload: Any) -> bool:
         """
