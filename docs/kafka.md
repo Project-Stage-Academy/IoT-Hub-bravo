@@ -25,7 +25,7 @@ Current topic convention:
 
 - `telemetry.raw` — raw telemetry events from ingestion (MQTT/HTTP). Primary entry point for downstream.
 - `telemetry.clean` — validated/normalized telemetry (output of validator).
-- `telemetry.dls` — invalid telemetry.
+- `telemetry.dlq` — invalid telemetry.
 
 ## Producer
 
