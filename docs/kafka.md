@@ -86,10 +86,16 @@ If `consume_batch=True`, the consumer collects up to `batch_max_size` messages p
 iteration and forwards a single list to the handler. This is useful for high-throughput 
 processing and downstream batch inserts.
 
+### Graceful shutdown (`stop()`)
+To stop the loop gracefully, call `consumer.stop()`. The `start()` loop will exit
+after the current poll/consume iteration completes, and the underlying Kafka
+consumer will be closed in `start()`'s `finally` block.
 
 ### Usage example
 
 ```python
+import signal
+
 from consumers.config import ConsumerConfig
 from consumers.kafka_consumer import KafkaConsumer
 
@@ -106,6 +112,10 @@ consumer = KafkaConsumer(
     consume_batch=True,
     batch_max_size=100,
 )
+
+# Register graceful shutdown
+signal.signal(signal.SIGTERM, consumer.stop)
+signal.signal(signal.SIGINT, consumer.stop)
 
 consumer.start()
 ```

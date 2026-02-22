@@ -1,7 +1,6 @@
 import json
 from typing import Optional, Any
 import logging
-import signal
 
 from confluent_kafka import Consumer, Message, KafkaException
 
@@ -13,15 +12,15 @@ logger = logging.getLogger(__name__)
 
 class KafkaConsumer:
     def __init__(
-            self,
-            *,
-            config: ConsumerConfig,
-            topics: list[str],
-            handler: KafkaPayloadHandler,
-            consume_timeout: float = 1.0,
-            decode_json: bool = False,
-            consume_batch: bool = False,
-            batch_max_size: int = 50,
+        self,
+        *,
+        config: ConsumerConfig,
+        topics: list[str],
+        handler: KafkaPayloadHandler,
+        consume_timeout: float = 1.0,
+        decode_json: bool = False,
+        consume_batch: bool = False,
+        batch_max_size: int = 50,
     ):
         self._consumer = Consumer(config.to_kafka_dict())
         self._consumer.subscribe(topics)
@@ -48,17 +47,9 @@ class KafkaConsumer:
         optionally decodes payloads to JSON, forwards them to the configured
         handler, commits offsets if handling succeeds and auto-commit is disabled.
 
-        Graceful shutdown: on SIGINT/SIGTERM the loop stops, pending work in the
-        current iteration is finished, and the consumer is closed.
+        Graceful shutdown: by calling self.stop() the loop stops, pending work
+        in the current iteration is finished, and the consumer is closed.
         """
-
-        def _stop(*_):
-            self._running = False
-            logger.info('Shutting down the consumer...')
-
-        signal.signal(signal.SIGINT, _stop)
-        signal.signal(signal.SIGTERM, _stop)
-
         try:
             while self._running:
                 self._consume()
@@ -67,6 +58,28 @@ class KafkaConsumer:
         finally:
             self._consumer.close()
             logger.info('Kafka consumer stopped.')
+
+    def stop(self, *_) -> None:
+        """
+        Request graceful shutdown of the consumer loop.
+
+        Does not close the Kafka connection immediately. It sets an internal
+        flag, so the consumer loop exits after the current iteration completes.
+
+        This method is intended to be called by the application entrypoint.
+
+        Typical usage in an entrypoint module:
+            import signal
+
+            consumer = KafkaConsumer(...)
+
+            signal.signal(signal.SIGTERM, consumer.stop)
+            signal.signal(signal.SIGINT, consumer.stop)
+
+            consumer.start()
+        """
+        self._running = False
+        logger.info('Shutting down the consumer...')
 
     def _consume_one(self) -> None:
         """
