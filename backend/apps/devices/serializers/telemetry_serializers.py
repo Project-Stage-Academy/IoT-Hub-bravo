@@ -140,7 +140,12 @@ class TelemetryCreateSerializer(BaseSerializer):
             return None
 
         if timezone.is_naive(ts):
-            ts = timezone.make_aware(ts)
+            ts = timezone.make_aware(ts, timezone.get_default_timezone())
+
+        ts = ts.astimezone(datetime.timezone.utc)
+
+        ts = ts.replace(microsecond=0)
+
 
         return ts
 

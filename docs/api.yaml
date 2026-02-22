@@ -1408,7 +1408,7 @@ components:
         - type: string
           example: "ok"
       example: 21.5
-
+    
     Telemetry:
       type: object
       properties:
@@ -1419,10 +1419,12 @@ components:
           type: integer
           example: 1
         metric:
-          type: string
-          example: "temperature"
-        value:
-          $ref: "#/components/schemas/TelemetryMetricValue"
+          type: array
+          example: 
+            temperature:
+              value: 
+                $ref: "#/components/schemas/TelemetryMetricValue"
+              unit: "celsius"
         ts:
           type: string
           format: date-time
@@ -1436,10 +1438,11 @@ components:
       example:
         id: 1
         device_id: 1
-        metric: "temperature"
-        value: 18.3
+        metric: 
+          temperature:
+              value: 21.5
+              unit: "celsius"
         ts: "2024-04-13T18:45:37Z"
-
 
     TelemetryIngest:
       type: object
@@ -1459,9 +1462,17 @@ components:
           additionalProperties:
             $ref: "#/components/schemas/TelemetryMetricValue"
           example:
-            temperature: 21.5
-            door_open: false
-            status: "ok"
+            temperature: 
+              value: 21.5
+              unit: "celsius"
+            door_open: 
+                value: false
+                unit: "closed"
+            metrics:
+              temperature: 21.6
+              status: 
+                value: "ok"
+                unit: "Online"
       required:
         - schema_version
         - device
@@ -1472,9 +1483,17 @@ components:
         device: "DEV-001"
         ts: "2026-02-04T12:00:00Z"
         metrics:
-          temperature: 21.5
-          door_open: false
-          status: "ok"
+          temperature: 
+              value: 21.5
+              unit: "celsius"
+          door_open: 
+              value: false
+              unit: "closed"
+          metrics:
+            temperature: 21.6
+            status: 
+              value: "ok"
+              unit: "Online"
 
     TelemetryIngestBatch:
       type: array
@@ -1485,14 +1504,20 @@ components:
           device: "DEV-001"
           ts: "2026-02-04T12:00:00Z"
           metrics:
-            temperature: 21.5
-            door_open: false
+            temperature: 
+              value: 21.5
+              unit: "celsius"
+            door_open: 
+              value: false
+              unit: "closed"
         - schema_version: 1
           device: "DEV-001"
           ts: "2026-02-04T12:00:01Z"
           metrics:
             temperature: 21.6
-            status: "ok"
+            status: 
+              value: "ok"
+              unit: "Online"
 
     TelemetryIngestSingleResponse:
       type: object

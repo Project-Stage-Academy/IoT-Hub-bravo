@@ -53,17 +53,17 @@ def inactive_device(db, user):
 
 @pytest.fixture
 def metric_temperature_numeric(db):
-    return Metric.objects.create(metric_type='temperature', data_type='numeric')
+    return Metric.objects.create(metric_type='temperature', data_type='numeric', unit='celsius')
 
 
 @pytest.fixture
 def metric_door_open_bool(db):
-    return Metric.objects.create(metric_type='door_open', data_type='bool')
+    return Metric.objects.create(metric_type='door_open', data_type='bool', unit='open')
 
 
 @pytest.fixture
 def metric_status_str(db):
-    return Metric.objects.create(metric_type='status', data_type='str')
+    return Metric.objects.create(metric_type='status', data_type='str', unit='Online')
 
 
 @pytest.fixture

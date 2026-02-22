@@ -1,11 +1,11 @@
-import datetime
+import logging
 from dataclasses import dataclass, field
-from typing import Any
 
 from apps.devices.models import Device, Metric, DeviceMetric
 from apps.devices.models.telemetry import Telemetry
 from validator.telemetry_validator import TelemetryBatchValidator
 
+logger = logging.getLogger(__name__)
 
 @dataclass(slots=True)
 class TelemetryIngestResult:
@@ -15,7 +15,7 @@ class TelemetryIngestResult:
 
 def telemetry_create(
     *,
-    payload: dict,
+    payload: list[dict],
 ) -> TelemetryIngestResult:
     """
     Service function to ingest telemetry. Creates multiple
@@ -24,21 +24,36 @@ def telemetry_create(
     given device, or contain values that do not match metric
     data type are skipped.
     """
-    result = TelemetryIngestResult()
+    logger.info("Starting telemetry ingestion for %d items", len(payload))
 
+    result = TelemetryIngestResult()
     validator = TelemetryBatchValidator(
         payload=payload
     )
     if not validator.is_valid():
         result.errors = validator.errors
-        # logging logic
+        logger.warning(
+            "Telemetry validation failed for %d items. Errors: %s",
+            len(payload),
+            validator.errors
+        )
+        # If no valid rows, we can return early
+        if not validator.validated_rows:
+            logger.info("No valid telemetry rows to create. Exiting.")
+            return result
+
+    logger.info(
+        "Telemetry validation succeeded. %d valid rows ready for creation.",
+        len(validator.validated_rows)
+    )
     
     # initialize Telemetry objects for every valid matric-value pair
     to_create: list[Telemetry] = []
-
     for row in validator.validated_rows:
         to_create.append(Telemetry(**row))
 
+    logger.debug("Prepared %d Telemetry objects to create", len(to_create))
+    
     if to_create:
         created = Telemetry.objects.bulk_create(
             to_create,
@@ -46,5 +61,10 @@ def telemetry_create(
             ignore_conflicts=True,
         )
         result.created_count = len(created)
+        logger.info("Successfully created %d Telemetry records in DB", result.created_count)
+    else:
+        logger.info("No Telemetry records to create after validation")
+
+    logger.info("Telemetry ingestion completed")
 
     return result
