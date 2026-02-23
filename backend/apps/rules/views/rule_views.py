@@ -3,7 +3,6 @@ from django.http import JsonResponse
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-import json
 
 from apps.rules.serializers.rule_serializers import RuleCreateSerializer, RulePatchSerializer
 from apps.rules.services.rule_service import rule_create, rule_put, rule_patch, rule_delete
@@ -13,6 +12,7 @@ from apps.devices.models.device import Device
 from apps.devices.models.device_metric import DeviceMetric
 from apps.users.decorators import jwt_required, role_required
 from apps.rules.services.rule_processor import RuleProcessor
+from apps.rules.utils.views_utils import parse_json_request
 
 
 logger = logging.getLogger("rules")
@@ -62,7 +62,10 @@ class RuleView(View):
                 limit = int(request.GET.get("limit", 20))
                 offset = int(request.GET.get("offset", 0))
             except ValueError:
-                raise ValueError("Limit and offset must be integer type")
+                    return JsonResponse(
+                        {"code": 400, "message": "Limit and offset must be integer type"},
+                        status=400
+                    )
 
             if limit <= 0 or offset < 0:
                 return JsonResponse(
@@ -91,19 +94,18 @@ class RuleView(View):
             ]
             return JsonResponse({"total": total, "limit": limit, "offset": offset, "items": data})
 
-    def post(
-        self,
-        request,
-    ):
+    def post(self, request):
         """Create a new rule"""
-        data = json.loads(request.body)
+        data = parse_json_request(request.body)
+        if isinstance(data, JsonResponse): # JSON parsing error, return response
+            return data
         user = request.user
         is_admin = user.role == "admin"
 
         serializer = RuleCreateSerializer(data=data)
         if not serializer.is_valid():
             return JsonResponse(
-                {"code": 400, "message": json.dumps(serializer.errors)}, status=400
+                {"code": 400, "message": serializer.errors}, status=400
             )
 
         # check if user has that device_metrics
@@ -130,7 +132,9 @@ class RuleView(View):
 
     def put(self, request, rule_id):
         """Full update"""
-        data = json.loads(request.body)
+        data = parse_json_request(request.body)
+        if isinstance(data, JsonResponse): # JSON parsing error, return response
+            return data
         user = request.user
         is_admin = user.role == "admin"
 
@@ -146,7 +150,7 @@ class RuleView(View):
         serializer = RuleCreateSerializer(data=data)
         if not serializer.is_valid():
             return JsonResponse(
-                {"code": 400, "message": json.dumps(serializer.errors)}, status=400
+                {"code": 400, "message": serializer.errors}, status=400
             )
 
         rule = rule_put(rule_id=rule_id, rule_data=serializer.validated_data)
@@ -163,7 +167,9 @@ class RuleView(View):
 
     def patch(self, request, rule_id):
         """Partial update"""
-        data = json.loads(request.body)
+        data = parse_json_request(request.body)
+        if isinstance(data, JsonResponse): # JSON parsing error, return response
+            return data
         user = request.user
         is_admin = user.role == "admin"
 
@@ -176,9 +182,9 @@ class RuleView(View):
         except Rule.DoesNotExist:
             return JsonResponse({"code": 404, "message": "Rule not found"}, status=404)
 
-        serializer = RulePatchSerializer(data=data, partial=True)
+        serializer = RulePatchSerializer(data=data)
         if not serializer.is_valid():
-            return JsonResponse({"code": 400, "message": str(serializer.errors)}, status=400)
+            return JsonResponse({"code": 400, "message": serializer.errors}, status=400)
 
         rule = rule_patch(rule_id=rule_id, rule_data=serializer.validated_data)
         return JsonResponse({"status": 200, "rule_id": rule.id}, status=200)
@@ -207,7 +213,9 @@ class RuleView(View):
 class RuleEvaluateView(View):
     def post(self, request):
         user = request.user
-        data = json.loads(request.body)
+        data = parse_json_request(request.body)
+        if isinstance(data, JsonResponse): # JSON parsing error, return response
+            return data
         device_id = data.get("device_id")
         device_metric_id = data.get("device_metric_id")
         is_admin = user.role == "admin"

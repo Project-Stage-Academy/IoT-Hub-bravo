@@ -1,5 +1,8 @@
 from typing import Optional, Any
 import logging
+from django.core.exceptions import ValidationError
+
+from apps.rules.utils.serializers_utils import validate_field
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +26,11 @@ class BaseSerializer:
 
     def is_valid(self) -> bool:
         self._errors = {}
-        self._validated_data = self._validate(self.initial_data)
+        try:
+            self._validated_data = self._validate(self.initial_data)
+        except Exception as exc:
+            self._validated_data = None
+            self._errors["non_field_error"] = str(exc)
         return not self._errors
 
     def _validate(self, data: Any):
@@ -57,31 +64,25 @@ class RuleCreateSerializer(BaseSerializer):
 
     def _validate(self, data: Any):
         if not isinstance(data, dict):
-            self._errors['non_field_error'] = "Payload must be a JSON object."
-            return None
+            raise ValidationError("Payload must be a JSON object")
 
         validated = {}
 
         for field, expected_type in self.REQUIRED_FIELDS.items():
-            if field not in data:
-                self._errors[field] = "This field is required."
-            elif not isinstance(data[field], expected_type):
-                self._errors[field] = f"{field} must be of type {expected_type.__name__}."
+            value, field_errors = validate_field(self.initial_data, field, expected_type, required=True)
+            if field_errors:
+                self._errors.update(field_errors)
             else:
-                validated[field] = data[field]
+                validated[field] = value
 
         optional_fields = set(self.FIELDS_TYPE_MAP.keys()) - set(self.REQUIRED_FIELDS.keys())
         for field in optional_fields:
-            value = data.get(field)
-            if value is not None:
-                if not isinstance(value, self.FIELDS_TYPE_MAP[field]):
-                    self._errors[field] = (
-                        f"{field} must be of type {self.FIELDS_TYPE_MAP[field].__name__}."
-                    )
-                else:
-                    validated[field] = value
+            expected_type = self.FIELDS_TYPE_MAP[field]
+            value, field_errors = validate_field(self.initial_data, field, expected_type, required=False)
+            if field_errors:
+                self._errors.update(field_errors)
             else:
-                validated[field] = "" if field == "description" else None
+                validated[field] = value
 
         if self._errors:
             return None
@@ -104,23 +105,22 @@ class RulePatchSerializer(BaseSerializer):
 
     def _validate(self, data: Any):
         if not isinstance(data, dict):
-            self._errors['non_field_error'] = "Payload must be a JSON object."
-            return None
+            raise ValidationError("Payload must be a JSON object")
 
         validated = {}
 
         for field, expected_type in self.FIELDS_TYPE_MAP.items():
             if field in data:
-                value = data[field]
-                if not isinstance(value, expected_type):
-                    self._errors[field] = f"{field} must be of type {expected_type.__name__}."
+                value, field_errors = validate_field(self.initial_data, field, expected_type, required=False)
+                if field_errors:
+                    self._errors.update(field_errors)
                 else:
                     validated[field] = value
 
-        if not validated:
-            self._errors['non_field_error'] = "At least one field must be provided."
-
         if self._errors:
             return None
+        
+        if not validated:
+            raise ValidationError("At least one field must be provided")
 
         return validated
