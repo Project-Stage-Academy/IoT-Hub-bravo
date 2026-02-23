@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 
 class KafkaProducer:
     def __init__(
-        self,
-        *,
-        config: ProducerConfig,
-        topic: str,
-        poll_timeout: float = 0.0,
+            self,
+            *,
+            config: ProducerConfig,
+            topic: str,
+            poll_timeout: float = 0.0,
     ):
         self._producer = Producer(config.to_kafka_dict())
         self._topic = topic
@@ -64,6 +64,7 @@ class KafkaProducer:
 
     def flush(self, timeout: float = 2.0) -> None:
         """Graceful shutdown: flush pending messages."""
+        logger.info('Shutting down the producer...')
         self._producer.flush(timeout)
 
     @staticmethod
