@@ -102,7 +102,7 @@ class TelemetryBatchValidator(BaseValidator):
     def _validate(self):
         for index, item in enumerate(self._initial_data):
             serial = item.get("device_serial_id")
-            metrics = item.get("metrics", {})   
+            metrics = item.get("metrics", {})
             ts = item.get("ts")
 
             if serial not in self._validated_devices:
