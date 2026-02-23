@@ -102,7 +102,7 @@ class TelemetryBatchValidator(BaseValidator):
     def _validate(self):
         for index, item in enumerate(self._initial_data):
             serial = item.get("device_serial_id")
-            metrics = item.get("metrics", {})
+            metrics = item.get("metrics", {})   
             ts = item.get("ts")
 
             if serial not in self._validated_devices:
@@ -179,7 +179,7 @@ class TelemetryBatchValidator(BaseValidator):
         type_checkers = {
             "numeric": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
             "bool": lambda v: isinstance(v, bool),
-            "str": lambda v: isinstance(v, str),
+            "str": lambda v: isinstance(v, str) and bool(v.strip()),
         }
         return type_checkers.get(data_type, lambda v: False)(value)
 
