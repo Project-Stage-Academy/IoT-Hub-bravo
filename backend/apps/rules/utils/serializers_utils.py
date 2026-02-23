@@ -1,10 +1,8 @@
 from typing import Any
 
+
 def validate_field(
-    data: dict[str, Any],
-    field: str,
-    expected_type: type,
-    required: bool = True
+    data: dict[str, Any], field: str, expected_type: type, required: bool = True
 ) -> tuple[Any, dict[str, Any]]:
     """
     Validate a single field

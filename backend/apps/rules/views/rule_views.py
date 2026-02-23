@@ -62,10 +62,9 @@ class RuleView(View):
                 limit = int(request.GET.get("limit", 20))
                 offset = int(request.GET.get("offset", 0))
             except ValueError:
-                    return JsonResponse(
-                        {"code": 400, "message": "Limit and offset must be integer type"},
-                        status=400
-                    )
+                return JsonResponse(
+                    {"code": 400, "message": "Limit and offset must be integer type"}, status=400
+                )
 
             if limit <= 0 or offset < 0:
                 return JsonResponse(
@@ -97,16 +96,14 @@ class RuleView(View):
     def post(self, request):
         """Create a new rule"""
         data = parse_json_request(request.body)
-        if isinstance(data, JsonResponse): # JSON parsing error, return response
+        if isinstance(data, JsonResponse):  # JSON parsing error, return response
             return data
         user = request.user
         is_admin = user.role == "admin"
 
         serializer = RuleCreateSerializer(data=data)
         if not serializer.is_valid():
-            return JsonResponse(
-                {"code": 400, "message": serializer.errors}, status=400
-            )
+            return JsonResponse({"code": 400, "message": serializer.errors}, status=400)
 
         # check if user has that device_metrics
         device_metric_id = serializer.validated_data.get("device_metric_id")
@@ -133,7 +130,7 @@ class RuleView(View):
     def put(self, request, rule_id):
         """Full update"""
         data = parse_json_request(request.body)
-        if isinstance(data, JsonResponse): # JSON parsing error, return response
+        if isinstance(data, JsonResponse):  # JSON parsing error, return response
             return data
         user = request.user
         is_admin = user.role == "admin"
@@ -149,9 +146,7 @@ class RuleView(View):
 
         serializer = RuleCreateSerializer(data=data)
         if not serializer.is_valid():
-            return JsonResponse(
-                {"code": 400, "message": serializer.errors}, status=400
-            )
+            return JsonResponse({"code": 400, "message": serializer.errors}, status=400)
 
         rule = rule_put(rule_id=rule_id, rule_data=serializer.validated_data)
         data = {
@@ -168,7 +163,7 @@ class RuleView(View):
     def patch(self, request, rule_id):
         """Partial update"""
         data = parse_json_request(request.body)
-        if isinstance(data, JsonResponse): # JSON parsing error, return response
+        if isinstance(data, JsonResponse):  # JSON parsing error, return response
             return data
         user = request.user
         is_admin = user.role == "admin"
@@ -214,7 +209,7 @@ class RuleEvaluateView(View):
     def post(self, request):
         user = request.user
         data = parse_json_request(request.body)
-        if isinstance(data, JsonResponse): # JSON parsing error, return response
+        if isinstance(data, JsonResponse):  # JSON parsing error, return response
             return data
         device_id = data.get("device_id")
         device_metric_id = data.get("device_metric_id")

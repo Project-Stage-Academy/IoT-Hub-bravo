@@ -69,7 +69,9 @@ class RuleCreateSerializer(BaseSerializer):
         validated = {}
 
         for field, expected_type in self.REQUIRED_FIELDS.items():
-            value, field_errors = validate_field(self.initial_data, field, expected_type, required=True)
+            value, field_errors = validate_field(
+                self.initial_data, field, expected_type, required=True
+            )
             if field_errors:
                 self._errors.update(field_errors)
             else:
@@ -78,7 +80,9 @@ class RuleCreateSerializer(BaseSerializer):
         optional_fields = set(self.FIELDS_TYPE_MAP.keys()) - set(self.REQUIRED_FIELDS.keys())
         for field in optional_fields:
             expected_type = self.FIELDS_TYPE_MAP[field]
-            value, field_errors = validate_field(self.initial_data, field, expected_type, required=False)
+            value, field_errors = validate_field(
+                self.initial_data, field, expected_type, required=False
+            )
             if field_errors:
                 self._errors.update(field_errors)
             else:
@@ -111,7 +115,9 @@ class RulePatchSerializer(BaseSerializer):
 
         for field, expected_type in self.FIELDS_TYPE_MAP.items():
             if field in data:
-                value, field_errors = validate_field(self.initial_data, field, expected_type, required=False)
+                value, field_errors = validate_field(
+                    self.initial_data, field, expected_type, required=False
+                )
                 if field_errors:
                     self._errors.update(field_errors)
                 else:
@@ -119,7 +125,7 @@ class RulePatchSerializer(BaseSerializer):
 
         if self._errors:
             return None
-        
+
         if not validated:
             raise ValidationError("At least one field must be provided")
 
