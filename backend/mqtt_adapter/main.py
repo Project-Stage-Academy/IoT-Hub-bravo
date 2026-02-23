@@ -1,4 +1,5 @@
 import logging
+import signal
 
 from decouple import config
 
@@ -32,12 +33,13 @@ def main() -> None:
         key_field='device',
     )
 
+    signal.signal(signal.SIGTERM, lambda *_: kafka_producer.flush())
+    signal.signal(signal.SIGINT, lambda *_: kafka_producer.flush())
+
     run_mqtt_client(
         config=MqttConfig(),
         handler=message_handler,
     )
-
-    kafka_producer.flush()
 
 
 if __name__ == '__main__':
