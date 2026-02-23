@@ -76,12 +76,12 @@ def test_batch_validator_success(
 ):
     payload = [
         {
-            "device": active_device.serial_id,
+            "device_serial_id": active_device.serial_id,
             "metrics": {"humidity": {"value": 55, "unit": "percent"}},
             "ts": datetime(2026, 1, 25, 11, 0),
         },
         {
-            "device": second_device.serial_id,
+            "device_serial_id": second_device.serial_id,
             "metrics": {"temperature": {"value": 22.5, "unit": "celsius"}},
             "ts": datetime(2026, 1, 25, 11, 5),
         },
@@ -97,7 +97,7 @@ def test_batch_validator_success(
 def test_batch_validator_missing_device(active_device, device_metric):
     payload = [
         {
-            "device": "NON_EXISTENT",
+            "device_serial_id": "NON_EXISTENT",
             "metrics": {"humidity": {"value": 55, "unit": "percent"}},
             "ts": datetime(2026, 1, 25, 11, 0),
         }
@@ -112,7 +112,7 @@ def test_batch_validator_missing_device(active_device, device_metric):
 def test_batch_validator_unit_mismatch(active_device, device_metric):
     payload = [
         {
-            "device": active_device.serial_id,
+            "device_serial_id": active_device.serial_id,
             "metrics": {"humidity": {"value": 55, "unit": "wrong_unit"}},
             "ts": datetime(2026, 1, 25, 11, 0),
         }
@@ -128,7 +128,7 @@ def test_batch_validator_unit_mismatch(active_device, device_metric):
 def test_batch_validator_type_mismatch(active_device, device_metric):
     payload = [
         {
-            "device": active_device.serial_id,
+            "device_serial_id": active_device.serial_id,
             "metrics": {"humidity": {"value": "not_numeric", "unit": "percent"}},
             "ts": datetime(2026, 1, 25, 11, 0),
         }
@@ -144,7 +144,7 @@ def test_batch_validator_type_mismatch(active_device, device_metric):
 def test_batch_validator_multiple_metrics(active_device, device_metric, temperature_metric):
     payload = [
         {
-            "device": active_device.serial_id,
+            "device_serial_id": active_device.serial_id,
             "metrics": {
                 "humidity": {"value": 61, "unit": "percent"},
                 "temperature": {"value": 33.3, "unit": "celsius"},

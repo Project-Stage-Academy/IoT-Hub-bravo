@@ -7,7 +7,7 @@ from apps.devices.services.telemetry_services import telemetry_create
 def test_telemetry_create_device_not_found(ts):
     payload = [
         {
-            "device": "unknown-device",
+            "device_serial_id": "unknown-device",
             "metrics": {"temperature": {"value": 21.5, "unit": "celsius"}},
             "ts": ts,
         }
@@ -24,7 +24,7 @@ def test_telemetry_create_device_not_found(ts):
 def test_telemetry_create_device_not_active(inactive_device, ts):
     payload = [
         {
-            "device": inactive_device.serial_id,
+            "device_serial_id": inactive_device.serial_id,
             "metrics": {"temperature": {"value": 21.5, "unit": "celsius"}},
             "ts": ts,
         }
@@ -44,7 +44,7 @@ def test_telemetry_create_metric_does_not_exist(active_device, ts):
 
     payload = [
         {
-            "device": active_device.serial_id,
+            "device_serial_id": active_device.serial_id,
             "metrics": {
                 "temperature": {"value": 21.5, "unit": "celsius"},
                 "status": {"value": "ok", "unit": "Online"},
@@ -69,7 +69,7 @@ def test_telemetry_create_metric_not_configured_for_device(
 
     payload = [
         {
-            "device": active_device.serial_id,
+            "device_serial_id": active_device.serial_id,
             "metrics": {"temperature": {"value": 21.5, "unit": "celsius"}},
             "ts": ts,
         }
@@ -90,7 +90,7 @@ def test_telemetry_create_metric_not_configured_for_device(
 def test_telemetry_create_type_mismatch_numeric(active_device, device_metric_numeric, ts, value):
     payload = [
         {
-            "device": active_device.serial_id,
+            "device_serial_id": active_device.serial_id,
             "metrics": {"temperature": {"value": value, "unit": "celsius"}},
             "ts": ts,
         }
@@ -112,7 +112,7 @@ def test_telemetry_create_type_mismatch_numeric(active_device, device_metric_num
 def test_telemetry_create_type_mismatch_bool(active_device, device_metric_bool, ts, value):
     payload = [
         {
-            "device": active_device.serial_id,
+            "device_serial_id": active_device.serial_id,
             "metrics": {"door_open": {"value": value, "unit": "open"}},
             "ts": ts,
         }
@@ -134,7 +134,7 @@ def test_telemetry_create_type_mismatch_bool(active_device, device_metric_bool, 
 def test_telemetry_create_type_mismatch_str(active_device, device_metric_str, ts, value):
     payload = [
         {
-            "device": active_device.serial_id,
+            "device_serial_id": active_device.serial_id,
             "metrics": {"status": {"value": value, "unit": "Online"}},
             "ts": ts,
         }
@@ -158,7 +158,7 @@ def test_telemetry_create_creates_rows_for_valid_metrics_only(
 ):
     payload = [
         {
-            "device": active_device.serial_id,
+            "device_serial_id": active_device.serial_id,
             "metrics": {
                 "temperature": {"value": 21.5, "unit": "celsius"},
                 "door_open": {"value": False, "unit": "open"},

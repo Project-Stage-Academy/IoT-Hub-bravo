@@ -40,8 +40,6 @@ def ingest_telemetry_payload(self, payload: dict | list, **kwargs) -> None:
     total_created += r.created_count
     total_errors += len(r.errors)
 
-    return total_created
-
     invalid_items = serializer.item_errors
     invalid_count = len(invalid_items) if invalid_items else 0
 

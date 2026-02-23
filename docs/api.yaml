@@ -555,7 +555,7 @@ paths:
                     items:
                       - id: 1
                         device_id: 1
-                        metrics:
+                        metric:
                           temperature:
                             value: 23.5
                             unit: "celsius"
@@ -610,7 +610,7 @@ paths:
                   schema_version: 1
                   device: "DEV-001"
                   ts: "2026-02-04T12:00:00Z"
-                  metrics:
+                  metric:
                     temperature: 
                       value: 21.6
                       unit: "celsius"
@@ -626,14 +626,14 @@ paths:
                   - schema_version: 1
                     device: "DEV-001"
                     ts: "2026-02-04T12:00:00Z"
-                    metrics:
+                    metric:
                       temperature: 
                         value: 21.5
                         unit: "celsius"
                   - schema_version: 1
                     device: "DEV-001"
                     ts: "2026-02-04T12:00:01Z"
-                    metrics:
+                    metric:
                       temperature:
                         value: 21.6
                         unit: "celsius"
@@ -1458,7 +1458,6 @@ components:
         - id
         - device_id
         - metric
-        - value
         - ts
       example:
         id: 1
@@ -1482,7 +1481,7 @@ components:
           type: string
           format: date-time
           example: "2026-02-04T12:00:00Z"
-        metrics:
+        metric:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/TelemetryMetricValue"
@@ -1499,13 +1498,13 @@ components:
       required:
         - schema_version
         - device
-        - metrics
+        - metric
         - ts
       example:
         schema_version: 1
         device: "DEV-001"
         ts: "2026-02-04T12:00:00Z"
-        metrics:
+        metric:
           temperature: 
               value: 21.5
               unit: "celsius"
@@ -1524,7 +1523,7 @@ components:
         - schema_version: 1
           device: "DEV-001"
           ts: "2026-02-04T12:00:00Z"
-          metrics:
+          metric:
             temperature: 
               value: 21.5
               unit: "celsius"
@@ -1534,7 +1533,7 @@ components:
         - schema_version: 1
           device: "DEV-001"
           ts: "2026-02-04T12:00:01Z"
-          metrics:
+          metric:
             temperature:
               value: 21.5
               unit: "celsius"
@@ -1824,13 +1823,17 @@ components:
           example:
             - id: 1
               device_id: 1
-              metric: "temperature"
-              value: 18.3
+              metric: 
+                "temperature":
+                  value: 18.3
+                  unit: "celsius"
               ts: "2024-04-13T18:45:37Z"
             - id: 2
               device_id: 1
-              metric: "humidity"
-              value: 6.73
+              metric: 
+                "humidity":
+                  value: 6.73
+                  unit: "percent"
               ts: "2024-04-13T18:50:00Z"
       required:
         - total
@@ -1844,13 +1847,17 @@ components:
         items:
           - id: 1
             device_id: 1
-            metric: "temperature"
-            value: 18.3
+            metric: 
+                "temperature":
+                  value: 18.3
+                  unit: "celsius"
             ts: "2024-04-13T18:45:37Z"
           - id: 2
             device_id: 1
-            metric: "humidity"
-            value: 6.73
+            metric: 
+                "humidity":
+                  value: 6.73
+                  unit: "percent"
             ts: "2024-04-13T18:50:00Z"
 
     # Note: The following schemas for rules and events are defined but commented out until the example/examples will be added to the spec.
