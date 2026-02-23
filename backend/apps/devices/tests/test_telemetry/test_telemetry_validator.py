@@ -5,6 +5,7 @@ from validator.telemetry_validator import TelemetryBatchValidator
 from apps.devices.models import Device, Metric, DeviceMetric
 from apps.users.models import User
 
+
 @pytest.fixture
 def temperature_metric():
     return Metric.objects.create(
@@ -12,6 +13,7 @@ def temperature_metric():
         unit="celsius",
         data_type="numeric",
     )
+
 
 @pytest.fixture
 def second_device(client_user):
@@ -22,12 +24,14 @@ def second_device(client_user):
         is_active=True,
     )
 
+
 @pytest.fixture
 def second_device_metric(second_device, temperature_metric):
     return DeviceMetric.objects.create(
         device=second_device,
         metric=temperature_metric,
     )
+
 
 @pytest.fixture
 def client_user(db):
@@ -37,6 +41,7 @@ def client_user(db):
         password="password123",
         role="client",
     )
+
 
 @pytest.fixture
 def active_device(client_user):
@@ -64,8 +69,11 @@ def device_metric(active_device, humidity_metric):
         metric=humidity_metric,
     )
 
+
 @pytest.mark.django_db
-def test_batch_validator_success(active_device, device_metric, second_device, second_device_metric):
+def test_batch_validator_success(
+    active_device, device_metric, second_device, second_device_metric
+):
     payload = [
         {
             "device": active_device.serial_id,

@@ -75,9 +75,7 @@ class TelemetryCreateSerializer(BaseSerializer):
             if field not in data:
                 self._errors[field] = f"{field} field is required."
             elif not isinstance(data[field], expected_type):
-                self._errors[field] = (
-                    f"{field} must be of type {expected_type.__name__}."
-                )
+                self._errors[field] = f"{field} must be of type {expected_type.__name__}."
 
     def _validate_device(self, value: str) -> Optional[str]:
         value = value.strip()
@@ -134,8 +132,7 @@ class TelemetryCreateSerializer(BaseSerializer):
         ts = parse_datetime(ts_raw)
         if ts is None:
             self._errors["ts"] = (
-                "ts must be a valid ISO-8601 datetime "
-                "(e.g. 2026-02-19T11:52:45Z)."
+                "ts must be a valid ISO-8601 datetime " "(e.g. 2026-02-19T11:52:45Z)."
             )
             return None
 
@@ -145,7 +142,6 @@ class TelemetryCreateSerializer(BaseSerializer):
         ts = ts.astimezone(datetime.timezone.utc)
 
         ts = ts.replace(microsecond=0)
-
 
         return ts
 

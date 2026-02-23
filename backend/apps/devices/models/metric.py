@@ -13,7 +13,7 @@ class Metric(models.Model):
         max_length=100, null=False, db_collation='case_insensitive', db_index=True
     )
     unit = models.CharField(
-        max_length=10, null=False,  db_collation='case_insensitive', db_index=True
+        max_length=10, null=False, db_collation='case_insensitive', db_index=True
     )
     data_type = models.CharField(
         max_length=10, choices=MetricDataType.choices, default=MetricDataType.NUMERIC

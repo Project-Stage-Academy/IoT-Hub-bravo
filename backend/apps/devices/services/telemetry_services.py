@@ -1,11 +1,11 @@
 import logging
 from dataclasses import dataclass, field
 
-from apps.devices.models import Device, Metric, DeviceMetric
 from apps.devices.models.telemetry import Telemetry
 from validator.telemetry_validator import TelemetryBatchValidator
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass(slots=True)
 class TelemetryIngestResult:
@@ -27,15 +27,11 @@ def telemetry_create(
     logger.info("Starting telemetry ingestion for %d items", len(payload))
 
     result = TelemetryIngestResult()
-    validator = TelemetryBatchValidator(
-        payload=payload
-    )
+    validator = TelemetryBatchValidator(payload=payload)
     if not validator.is_valid():
         result.errors = validator.errors
         logger.warning(
-            "Telemetry validation failed for %d items. Errors: %s",
-            len(payload),
-            validator.errors
+            "Telemetry validation failed for %d items. Errors: %s", len(payload), validator.errors
         )
         # If no valid rows, we can return early
         if not validator.validated_rows:
@@ -44,16 +40,16 @@ def telemetry_create(
 
     logger.info(
         "Telemetry validation succeeded. %d valid rows ready for creation.",
-        len(validator.validated_rows)
+        len(validator.validated_rows),
     )
-    
+
     # initialize Telemetry objects for every valid matric-value pair
     to_create: list[Telemetry] = []
     for row in validator.validated_rows:
         to_create.append(Telemetry(**row))
 
     logger.debug("Prepared %d Telemetry objects to create", len(to_create))
-    
+
     if to_create:
         created = Telemetry.objects.bulk_create(
             to_create,

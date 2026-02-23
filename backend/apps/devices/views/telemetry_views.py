@@ -90,7 +90,7 @@ def _ingest_telemetry_single(
     if not serializer.is_valid():
         return JsonResponse({'errors': serializer.errors}, status=400)
 
-    result = service(**serializer.validated_data)
+    result = service(payload=[serializer.validated_data])
 
     return _ingest_telemetry_json_response(
         created=result.created_count,

@@ -36,6 +36,7 @@ def test_telemetry_create_device_not_active(inactive_device, ts):
     assert "Missing serials" in result.errors["device"]
     assert Telemetry.objects.count() == 0
 
+
 @pytest.mark.django_db
 def test_telemetry_create_metric_does_not_exist(active_device, ts):
     DeviceMetric.objects.all().delete()
@@ -44,8 +45,10 @@ def test_telemetry_create_metric_does_not_exist(active_device, ts):
     payload = [
         {
             "device": active_device.serial_id,
-            "metrics": {"temperature": {"value": 21.5, "unit": "celsius"},
-                        "status": {"value": "ok", "unit": "Online"}},
+            "metrics": {
+                "temperature": {"value": 21.5, "unit": "celsius"},
+                "status": {"value": "ok", "unit": "Online"},
+            },
             "ts": ts,
         }
     ]
@@ -59,7 +62,9 @@ def test_telemetry_create_metric_does_not_exist(active_device, ts):
 
 
 @pytest.mark.django_db
-def test_telemetry_create_metric_not_configured_for_device(active_device, metric_temperature_numeric, ts):
+def test_telemetry_create_metric_not_configured_for_device(
+    active_device, metric_temperature_numeric, ts
+):
     DeviceMetric.objects.all().delete()
 
     payload = [

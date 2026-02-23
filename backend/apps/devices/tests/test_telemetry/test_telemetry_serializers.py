@@ -6,10 +6,6 @@ from apps.devices.serializers.telemetry_serializers import (
     TelemetryBatchCreateSerializer,
 )
 
-import copy
-import pytest
-
-
 '''@pytest.fixture
 def valid_telemetry_payload():
     return {
@@ -33,6 +29,7 @@ def valid_telemetry_payload():
     }
 '''
 
+
 def test_create_serializer_valid_payload(valid_telemetry_payload):
     serializer = TelemetryCreateSerializer(valid_telemetry_payload)
 
@@ -55,9 +52,7 @@ def test_create_serializer_valid_payload(valid_telemetry_payload):
     assert status['value'] == 'ok'
     assert status['unit'] == 'Online'
 
-
     assert timezone.is_aware(data["ts"])
-
 
 
 def test_create_serializer_rejects_non_dict_payload():
@@ -66,7 +61,6 @@ def test_create_serializer_rejects_non_dict_payload():
 
     assert not serializer.is_valid()
     assert serializer.errors["non_field_errors"] == "Payload must be a JSON object."
-
 
 
 @pytest.mark.parametrize(
