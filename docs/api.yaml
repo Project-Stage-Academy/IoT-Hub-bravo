@@ -555,13 +555,17 @@ paths:
                     items:
                       - id: 1
                         device_id: 1
-                        metric: "temperature"
-                        value: 23.5
+                        metrics:
+                          temperature:
+                            value: 23.5
+                            unit: "celsius"
                         ts: "2026-02-09T12:00:00Z"
                       - id: 2
                         device_id: 1
-                        metric: "temperature"
-                        value: 24.0
+                        metric: 
+                          temperature:
+                            value: 24.0
+                            unit: "celsius"
                         ts: "2026-02-09T12:05:00Z"
 
         '404':
@@ -1410,14 +1414,25 @@ components:
           is_active: true
 
     TelemetryMetricValue:
-      oneOf:
-        - type: boolean
-          example: false
-        - type: number
-          example: 21.5
-        - type: string
-          example: "ok"
-      example: 21.5
+      type: object
+      properties:
+        value:
+          oneOf:
+            - type: boolean
+              example: false
+            - type: number
+              example: 21.5
+            - type: string
+              example: "ok"
+        unit:
+          type: string
+          example: "celsius"
+      required:
+        - value
+        - unit
+      example:
+        value: 21.5
+        unit: "celsius"
     
     Telemetry:
       type: object
@@ -1429,7 +1444,7 @@ components:
           type: integer
           example: 1
         metric:
-          type: array
+          type: object
           example: 
             temperature:
               value: 
