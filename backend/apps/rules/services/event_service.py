@@ -1,10 +1,8 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from django.db.models import QuerySet
 
 from apps.rules.models.event import Event
-from apps.devices.models.telemetry import Telemetry
 from apps.rules.serializers.event_serializer import EventListQuery
 
 

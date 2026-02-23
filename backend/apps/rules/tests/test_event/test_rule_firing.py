@@ -8,7 +8,7 @@ Strategy: patch task .delay() so no broker is needed.
 """
 
 import pytest
-from unittest.mock import patch, call, MagicMock
+from unittest.mock import patch
 from django.utils import timezone
 from datetime import timedelta
 
@@ -217,7 +217,7 @@ def test_dispatch_action_enqueues_both_tasks(rule, telemetry):
         patch("apps.rules.tasks.notify_event.delay") as mock_notify,
         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
     ):
-        event = Action.dispatch_action(rule=rule, telemetry=telemetry)
+        Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     assert mock_notify.call_count == 1
     assert mock_webhook.call_count == 1
