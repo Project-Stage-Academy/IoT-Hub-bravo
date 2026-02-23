@@ -6,6 +6,7 @@ from typing import Any, Optional
 # Base serializer
 # =========================
 
+
 class BaseSerializer:
     """
     Minimal serializer for plain Django.
@@ -43,6 +44,7 @@ class BaseSerializer:
 # =========================
 # Input serializer (GET list)
 # =========================
+
 
 @dataclass(slots=True)
 class EventListQuery:
@@ -184,6 +186,7 @@ class EventListQuerySerializer(BaseSerializer):
 # Output serializers
 # =========================
 
+
 class EventListItemSerializer:
     """
     Serializes Event for list endpoint.
@@ -207,8 +210,8 @@ class EventListItemSerializer:
 
 
 class EventDetailSerializer:
-    """ 
-    Serializes Event for detail endpoint. 
+    """
+    Serializes Event for detail endpoint.
     """
 
     @staticmethod

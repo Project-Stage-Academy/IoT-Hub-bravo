@@ -26,6 +26,7 @@ class Action:
         """
         try:
             from apps.rules import tasks
+
             getattr(tasks, task_name).delay(event_id)
         except Exception:
             logger.exception(f"Failed to enqueue task: {task_name}")

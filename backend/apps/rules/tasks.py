@@ -95,7 +95,6 @@ def deliver_webhook(self, event_id: int):
         logger_celery.warning("Webhook enabled but url missing", extra={"rule_id": event.rule_id})
         return
 
-
     body = {
         "event_id": event.id,
         "rule_id": event.rule.id,
@@ -111,11 +110,14 @@ def deliver_webhook(self, event_id: int):
         resp = requests.post(resolved_url, json=body, headers=headers, timeout=10)
         if not (200 <= resp.status_code < 300):
             logger_celery.warning(
-                "Webhook delivery failed (status)", extra={"status": resp.status_code, "url": resolved_url, "event_id": event.id}
+                "Webhook delivery failed (status)",
+                extra={"status": resp.status_code, "url": resolved_url, "event_id": event.id},
             )
             raise RequestException(f"Non-2xx response: {resp.status_code}")
 
         logger_celery.info("Webhook delivered", extra={"url": resolved_url, "event_id": event.id})
     except RequestException as exc:
-        logger_celery.warning("Webhook delivery error, will retry", extra={"error": str(exc), "event_id": event.id})
+        logger_celery.warning(
+            "Webhook delivery error, will retry", extra={"error": str(exc), "event_id": event.id}
+        )
         raise

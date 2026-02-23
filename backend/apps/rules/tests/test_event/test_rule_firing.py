@@ -6,6 +6,7 @@ Tests verifying that rule firing:
 
 Strategy: patch task .delay() so no broker is needed.
 """
+
 import pytest
 from unittest.mock import patch, call, MagicMock
 from django.utils import timezone
@@ -80,8 +81,10 @@ def telemetry_below(device_metric):
 
 
 def test_dispatch_action_creates_event(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay"), \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay"),
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     assert event is not None
@@ -89,24 +92,30 @@ def test_dispatch_action_creates_event(rule, telemetry):
 
 
 def test_dispatch_action_event_links_correct_rule(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay"), \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay"),
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     assert event.rule_id == rule.id
 
 
 def test_dispatch_action_event_stores_trigger_telemetry_id(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay"), \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay"),
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     assert event.trigger_telemetry_id == telemetry.id
 
 
 def test_dispatch_action_event_stores_trigger_device_id(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay"), \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay"),
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     assert event.trigger_device_id == telemetry.device_metric.device_id
@@ -114,8 +123,10 @@ def test_dispatch_action_event_stores_trigger_device_id(rule, telemetry):
 
 def test_dispatch_action_event_timestamp_is_recent(rule, telemetry):
     before = timezone.now()
-    with patch("apps.rules.tasks.notify_event.delay"), \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay"),
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
     after = timezone.now()
 
@@ -123,16 +134,20 @@ def test_dispatch_action_event_timestamp_is_recent(rule, telemetry):
 
 
 def test_dispatch_action_event_acknowledged_defaults_false(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay"), \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay"),
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     assert event.acknowledged is False
 
 
 def test_dispatch_action_persists_event_to_db(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay"), \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay"),
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     db_event = Event.objects.get(id=event.id)
@@ -146,16 +161,20 @@ def test_dispatch_action_persists_event_to_db(rule, telemetry):
 
 
 def test_dispatch_action_enqueues_notify_event(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     mock_notify.assert_called_once_with(event.id)
 
 
 def test_dispatch_action_enqueues_notify_event_with_correct_event_id(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     args, _ = mock_notify.call_args
@@ -168,16 +187,20 @@ def test_dispatch_action_enqueues_notify_event_with_correct_event_id(rule, telem
 
 
 def test_dispatch_action_enqueues_deliver_webhook(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay"), \
-         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook:
+    with (
+        patch("apps.rules.tasks.notify_event.delay"),
+        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     mock_webhook.assert_called_once_with(event.id)
 
 
 def test_dispatch_action_enqueues_deliver_webhook_with_correct_event_id(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay"), \
-         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook:
+    with (
+        patch("apps.rules.tasks.notify_event.delay"),
+        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     args, _ = mock_webhook.call_args
@@ -190,8 +213,10 @@ def test_dispatch_action_enqueues_deliver_webhook_with_correct_event_id(rule, te
 
 
 def test_dispatch_action_enqueues_both_tasks(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook:
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     assert mock_notify.call_count == 1
@@ -199,8 +224,10 @@ def test_dispatch_action_enqueues_both_tasks(rule, telemetry):
 
 
 def test_dispatch_action_tasks_receive_same_event_id(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook:
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     notify_id = mock_notify.call_args[0][0]
@@ -218,8 +245,10 @@ def test_event_is_created_even_if_task_enqueue_fails(rule, telemetry):
     """
     _enqueue swallows all exceptions — Event must exist even when broker is down.
     """
-    with patch("apps.rules.tasks.notify_event.delay", side_effect=Exception("broker down")), \
-         patch("apps.rules.tasks.deliver_webhook.delay", side_effect=Exception("broker down")):
+    with (
+        patch("apps.rules.tasks.notify_event.delay", side_effect=Exception("broker down")),
+        patch("apps.rules.tasks.deliver_webhook.delay", side_effect=Exception("broker down")),
+    ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     assert Event.objects.filter(id=event.id).exists()
@@ -227,8 +256,10 @@ def test_event_is_created_even_if_task_enqueue_fails(rule, telemetry):
 
 def test_enqueue_failure_does_not_raise(rule, telemetry):
     """dispatch_action must not propagate task-level exceptions."""
-    with patch("apps.rules.tasks.notify_event.delay", side_effect=RuntimeError("oops")), \
-         patch("apps.rules.tasks.deliver_webhook.delay", side_effect=RuntimeError("oops")):
+    with (
+        patch("apps.rules.tasks.notify_event.delay", side_effect=RuntimeError("oops")),
+        patch("apps.rules.tasks.deliver_webhook.delay", side_effect=RuntimeError("oops")),
+    ):
         try:
             Action.dispatch_action(rule=rule, telemetry=telemetry)
         except Exception:
@@ -237,8 +268,10 @@ def test_enqueue_failure_does_not_raise(rule, telemetry):
 
 def test_first_task_failure_does_not_prevent_second_task(rule, telemetry):
     """If notify_event.delay raises, deliver_webhook.delay must still be attempted."""
-    with patch("apps.rules.tasks.notify_event.delay", side_effect=Exception("fail")), \
-         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook:
+    with (
+        patch("apps.rules.tasks.notify_event.delay", side_effect=Exception("fail")),
+        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
+    ):
         Action.dispatch_action(rule=rule, telemetry=telemetry)
 
     mock_webhook.assert_called_once()
@@ -250,32 +283,40 @@ def test_first_task_failure_does_not_prevent_second_task(rule, telemetry):
 
 
 def test_rule_processor_fires_creates_event(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay"), \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay"),
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         RuleProcessor.run(telemetry)
 
     assert Event.objects.filter(rule=rule).count() == 1
 
 
 def test_rule_processor_fires_enqueues_notify_event(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         RuleProcessor.run(telemetry)
 
     mock_notify.assert_called_once()
 
 
 def test_rule_processor_fires_enqueues_deliver_webhook(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay"), \
-         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook:
+    with (
+        patch("apps.rules.tasks.notify_event.delay"),
+        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
+    ):
         RuleProcessor.run(telemetry)
 
     mock_webhook.assert_called_once()
 
 
 def test_rule_processor_enqueues_tasks_with_created_event_id(rule, telemetry):
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook:
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
+    ):
         RuleProcessor.run(telemetry)
 
     event = Event.objects.filter(rule=rule).first()
@@ -291,8 +332,10 @@ def test_rule_processor_enqueues_tasks_with_created_event_id(rule, telemetry):
 
 def test_rule_processor_no_event_when_condition_false(rule, telemetry_below):
     """Telemetry value 10 does NOT satisfy '>50' — no event, no tasks."""
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook:
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
+    ):
         RuleProcessor.run(telemetry_below)
 
     assert Event.objects.filter(rule=rule).count() == 0
@@ -301,8 +344,10 @@ def test_rule_processor_no_event_when_condition_false(rule, telemetry_below):
 
 
 def test_rule_processor_no_tasks_when_condition_false(rule, telemetry_below):
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook:
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
+    ):
         RuleProcessor.run(telemetry_below)
 
     assert mock_notify.call_count == 0
@@ -323,8 +368,10 @@ def test_inactive_rule_does_not_fire_event(device_metric, telemetry):
         is_active=False,
     )
 
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook:
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
+    ):
         RuleProcessor.run(telemetry)
 
     assert Event.objects.filter(rule=inactive).count() == 0
@@ -353,8 +400,10 @@ def test_multiple_rules_each_create_own_event(device_metric, telemetry):
         is_active=True,
     )
 
-    with patch("apps.rules.tasks.notify_event.delay"), \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay"),
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         RuleProcessor.run(telemetry)
 
     assert Event.objects.filter(rule=rule_a).count() == 1
@@ -377,8 +426,10 @@ def test_multiple_rules_enqueue_tasks_per_rule(device_metric, telemetry):
         is_active=True,
     )
 
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook:
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
+    ):
         RuleProcessor.run(telemetry)
 
     assert mock_notify.call_count == 2
@@ -401,8 +452,10 @@ def test_multiple_rules_tasks_called_with_distinct_event_ids(device_metric, tele
         is_active=True,
     )
 
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         RuleProcessor.run(telemetry)
 
     called_event_ids = {c.args[0] for c in mock_notify.call_args_list}
@@ -426,8 +479,10 @@ def test_only_matching_rule_fires_when_mixed_conditions(device_metric, telemetry
         is_active=True,
     )
 
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay"):
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay"),
+    ):
         RuleProcessor.run(telemetry_below)
 
     assert Event.objects.filter(rule=low_rule).count() == 1
@@ -456,8 +511,10 @@ def test_rate_rule_fires_creates_event_and_enqueues_tasks(device_metric):
         is_active=True,
     )
 
-    with patch("apps.rules.tasks.notify_event.delay") as mock_notify, \
-         patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook:
+    with (
+        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
+        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
+    ):
         RuleProcessor.run(Telemetry.objects.filter(device_metric=device_metric).last())
 
     assert Event.objects.filter(rule=rate_rule).count() == 1

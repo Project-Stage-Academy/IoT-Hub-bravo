@@ -71,7 +71,7 @@ def event_ack(*, event_id: int) -> Event:
 
 def _apply_filters(qs: QuerySet[Event], *, query: EventListQuery) -> QuerySet[Event]:
     """TODO: severity filter is reserved for future use when severity field is added to Event model"""
-    
+
     if query.rule_id is not None:
         qs = qs.filter(rule_id=query.rule_id)
 
@@ -86,4 +86,3 @@ def _apply_filters(qs: QuerySet[Event], *, query: EventListQuery) -> QuerySet[Ev
         qs = qs.filter(trigger_device_id=query.device_id)
 
     return qs
-

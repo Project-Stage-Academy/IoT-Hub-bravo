@@ -479,5 +479,3 @@ def test_ack_event_does_not_change_other_events(client, client_token, rule):
 
     e2.refresh_from_db()
     assert e2.acknowledged is False
-
-

@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand
 import csv
 import os
-import sys
 from django.utils.dateparse import parse_datetime
 from apps.rules.models import Event
 
@@ -45,20 +44,28 @@ class Command(BaseCommand):
             with open(output_file, 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile)
 
-                writer.writerow([
-                    'id', 'timestamp', 'rule', 'acknowledged',
-                    'trigger_telemetry_id', 'trigger_device_id'
-                ])
+                writer.writerow(
+                    [
+                        'id',
+                        'timestamp',
+                        'rule',
+                        'acknowledged',
+                        'trigger_telemetry_id',
+                        'trigger_device_id',
+                    ]
+                )
 
                 for event in qs:
-                    writer.writerow([
-                        event.id,
-                        event.timestamp,
-                        event.rule.name,
-                        event.acknowledged,
-                        event.trigger_telemetry_id,
-                        event.trigger_device_id
-                    ])
+                    writer.writerow(
+                        [
+                            event.id,
+                            event.timestamp,
+                            event.rule.name,
+                            event.acknowledged,
+                            event.trigger_telemetry_id,
+                            event.trigger_device_id,
+                        ]
+                    )
 
             self.stdout.write(self.style.SUCCESS(f"Exported {qs.count()} events to {output_file}"))
 

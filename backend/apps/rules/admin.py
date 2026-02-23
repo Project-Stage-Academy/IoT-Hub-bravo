@@ -33,7 +33,7 @@ class RuleAdmin(admin.ModelAdmin):
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     list_select_related = ("rule__device_metric__device",)
-    
+
     list_display = (
         "id",
         "rule_link",
@@ -43,9 +43,14 @@ class EventAdmin(admin.ModelAdmin):
         "telemetry_link",
         "device_link",
     )
-    
+
     list_filter = ("timestamp", "created_at", "rule", "acknowledged")
-    search_fields = ("id", "rule__name", "rule__device_metric__device__name", "trigger_telemetry_id")
+    search_fields = (
+        "id",
+        "rule__name",
+        "rule__device_metric__device__name",
+        "trigger_telemetry_id",
+    )
     readonly_fields = ("id", "timestamp", "created_at")
     date_hierarchy = "timestamp"
     ordering = ("-timestamp",)

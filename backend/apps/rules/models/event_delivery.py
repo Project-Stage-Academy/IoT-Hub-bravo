@@ -1,9 +1,11 @@
 from django.db import models
 from django.utils import timezone
 
+
 class DeliveryType(models.TextChoices):
-        WEBHOOK = "webhook"
-        NOTIFICATION = "notification"
+    WEBHOOK = "webhook"
+    NOTIFICATION = "notification"
+
 
 class Status(models.TextChoices):
     PENDING = "pending"
@@ -48,6 +50,10 @@ class EventDelivery(models.Model):
         verbose_name_plural = "Event Deliveries"
         indexes = [
             models.Index(fields=["status"], name="idx_event_deliveries_status"),
-            models.Index(fields=["status", "next_retry_at"], name="idx_event_deliveries_status_retry"),
-            models.Index(fields=["status", "updated_at"], name="idx_event_deliveries_status_updated"),
+            models.Index(
+                fields=["status", "next_retry_at"], name="idx_event_deliveries_status_retry"
+            ),
+            models.Index(
+                fields=["status", "updated_at"], name="idx_event_deliveries_status_updated"
+            ),
         ]
