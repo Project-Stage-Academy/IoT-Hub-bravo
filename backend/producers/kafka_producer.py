@@ -22,18 +22,25 @@ class KafkaProducer:
         self._poll_timeout = poll_timeout
         self._dropped_messages = 0
 
-    def produce(self, payload: Any, key: Any = None) -> None:
+    def produce(self, payload: Any, key: Any = None) -> bool:
         """
-        Publish a single message to Kafka.
+        Produce a message to the configured Kafka topic asynchronously.
 
         Serializes payload to UTF-8 JSON bytes, encodes key to bytes if provided
-        and produces a message asynchronously to the configured topic.
+        and submits the message to the Kafka producer for asynchronous delivery
+        to the configured topic.
+
+        Returns:
+            True - the message was accepted by the producer and queued for delivery;
+            False - the message was not accepted (serialization failed, the local
+                    producer queue is full, or a producer error occurred).
         """
         value = self._encode_payload(payload)
         if value is None:
-            return
+            return False
 
         key_bytes = self._encode_key(key)
+        message_enqueued = True
 
         try:
             self._producer.produce(
@@ -44,13 +51,16 @@ class KafkaProducer:
             )
         except BufferError:
             self._dropped_messages += 1
+            message_enqueued = False
             self._producer.poll(0)
             logger.warning('Kafka producer local buffer full. Dropped: %s', self._dropped_messages)
         except KafkaException:
+            message_enqueued = False
             logger.exception('Kafka produce failed.')
-            return
         finally:
             self._producer.poll(self._poll_timeout)
+
+        return message_enqueued
 
     def flush(self, timeout: float = 2.0) -> None:
         """Graceful shutdown: flush pending messages."""
