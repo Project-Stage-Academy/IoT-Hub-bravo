@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 
 class KafkaProducer:
     def __init__(
-            self,
-            *,
-            config: ProducerConfig,
-            topic: str,
-            poll_timeout: float = 0.0,
+        self,
+        *,
+        config: ProducerConfig,
+        topic: str,
+        poll_timeout: float = 0.0,
     ):
         self._producer = Producer(config.to_kafka_dict())
         self._topic = topic
