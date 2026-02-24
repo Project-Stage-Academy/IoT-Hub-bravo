@@ -7,7 +7,6 @@ from django.utils import timezone
 from apps.rules.models import Event
 from tests.fixtures.factories import EventFactory, RuleFactory
 
-
 pytestmark = pytest.mark.django_db
 
 

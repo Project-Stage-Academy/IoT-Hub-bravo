@@ -13,7 +13,6 @@ from tests.fixtures.factories import (
     RuleFactory,
 )
 
-
 pytestmark = pytest.mark.django_db
 
 

@@ -38,13 +38,11 @@ class Command(BaseCommand):
         try:
             with connection.cursor() as cursor:
                 # 1. Is extension available at all?
-                cursor.execute(
-                    """
+                cursor.execute("""
                     SELECT 1
                     FROM pg_available_extensions
                     WHERE name = 'timescaledb'
-                """
-                )
+                """)
                 extension_available = cursor.fetchone() is not None
 
                 if not extension_available:
@@ -57,13 +55,11 @@ class Command(BaseCommand):
                     sys.exit(1)
 
                 # 2. Is it already installed?
-                cursor.execute(
-                    """
+                cursor.execute("""
                     SELECT extversion
                     FROM pg_extension
                     WHERE extname = 'timescaledb'
-                """
-                )
+                """)
                 extension_installed = cursor.fetchone() is not None
 
                 if not extension_installed:
@@ -85,14 +81,12 @@ class Command(BaseCommand):
         if extension_installed:
             try:
                 with connection.cursor() as cursor:
-                    cursor.execute(
-                        """
+                    cursor.execute("""
                         SELECT 1
                         FROM timescaledb_information.hypertables
                         WHERE hypertable_schema = 'public'
                           AND hypertable_name = 'telemetries'
-                    """
-                    )
+                    """)
                     is_already_hypertable = cursor.fetchone() is not None
             except DatabaseError:
                 # view does not exist or other issue → assume not hypertable

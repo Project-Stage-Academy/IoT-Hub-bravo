@@ -8,7 +8,6 @@ from apps.devices.models import Metric
 from apps.devices.models.metric import MetricDataType
 from tests.fixtures.factories import MetricFactory
 
-
 pytestmark = pytest.mark.django_db
 
 

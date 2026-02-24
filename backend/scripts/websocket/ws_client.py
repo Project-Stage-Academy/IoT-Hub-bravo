@@ -6,7 +6,6 @@ import urllib.parse
 import requests
 import websockets
 
-
 BASE_HTTP = os.getenv("IOTHUB_HTTP", "http://localhost:8000")
 BASE_WS = os.getenv("IOTHUB_WS", "ws://localhost:8000")
 USERNAME = os.getenv("IOTHUB_USER")
