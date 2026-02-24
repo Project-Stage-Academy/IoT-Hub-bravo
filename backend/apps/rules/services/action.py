@@ -59,7 +59,7 @@ class Action:
                 'event_id': event.id,
                 'rule_id': rule.id,
                 'severity': severity,
-            }
+            },
         )
 
         for task_name in Action.TASKS:
