@@ -1,8 +1,10 @@
 import uuid
+import logging
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.utils.timezone import now
 
+logger = logging.getLogger(__name__)
 
 def publish_telemetry_event(
     *, device_serial_id: str, device_id: int, metric: str, metric_type: str, value, ts
@@ -23,12 +25,20 @@ def publish_telemetry_event(
     }
 
     layer = get_channel_layer()
-    async_to_sync(layer.group_send)(
-        "telemetry.global", {"type": "telemetry_update", "payload": payload}
-    )
-    async_to_sync(layer.group_send)(
-        f"telemetry.device.{device_serial_id}", {"type": "telemetry_update", "payload": payload}
-    )
-    async_to_sync(layer.group_send)(
-        f"telemetry.metric.{metric}", {"type": "telemetry_update", "payload": payload}
-    )
+
+    if layer is None:
+        logger.error("Channel layer is not configured")
+        return
+
+    try: 
+        async_to_sync(layer.group_send)(
+            "telemetry.global", {"type": "telemetry_update", "payload": payload}
+        )
+        async_to_sync(layer.group_send)(
+            f"telemetry.device.{device_serial_id}", {"type": "telemetry_update", "payload": payload}
+        )
+        async_to_sync(layer.group_send)(
+            f"telemetry.metric.{metric}", {"type": "telemetry_update", "payload": payload}
+        )
+    except Exception as e:
+        logger.error(f"Error publishing telemetry event: {e}")

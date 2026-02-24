@@ -34,9 +34,14 @@ class TelemetryConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        if self.channel_layer is None:
+            await self.close(code=4404)
+            return
+
     async def disconnect(self, close_code):
-        for group_name in getattr(self, "groups_to_join", []):
-            await self.channel_layer.group_discard(group_name, self.channel_name)
+        if self.channel_layer is None:
+            for group_name in getattr(self, "groups_to_join", []):
+                await self.channel_layer.group_discard(group_name, self.channel_name)
 
     async def telemetry_update(self, event):
         await self.send(text_data=json.dumps(event["payload"]))
