@@ -3,6 +3,7 @@ import pytest
 from unittest.mock import Mock, patch
 from django.test import override_settings
 
+
 def post_json(client, url, payload, headers=None):
     headers = headers or {}
     return client.post(
