@@ -1,6 +1,6 @@
 import pytest
 from apps.devices.models import Metric, DeviceMetric, Telemetry
-from apps.devices.services.telemetry_services import telemetry_create
+from apps.devices.services.telemetry_services import telemetry_create, telemetry_validate
 
 
 @pytest.mark.django_db
@@ -12,11 +12,15 @@ def test_telemetry_create_device_not_found(ts):
             "ts": ts,
         }
     ]
-    result = telemetry_create(payload=payload)
+    validation = telemetry_validate(payload=payload)
+    result = telemetry_create(
+        valid_data=validation.validated_rows, validation_errors=validation.errors
+    )
 
     assert result.created_count == 0
-    assert "device" in result.errors
-    assert "Missing serials" in result.errors["device"]
+    device_errors = [e for e in result.errors if e["field"] == "device"]
+    assert device_errors
+    assert any("Missing serials" in e["error"] for e in device_errors)
     assert Telemetry.objects.count() == 0
 
 
@@ -29,11 +33,15 @@ def test_telemetry_create_device_not_active(inactive_device, ts):
             "ts": ts,
         }
     ]
-    result = telemetry_create(payload=payload)
+    validation = telemetry_validate(payload)
+    result = telemetry_create(
+        valid_data=validation.validated_rows, validation_errors=validation.errors
+    )
 
     assert result.created_count == 0
-    assert "device" in result.errors
-    assert "Missing serials" in result.errors["device"]
+    device_errors = [e for e in result.errors if e["field"] == "device"]
+    assert device_errors
+    assert any("Missing serials" in e["error"] for e in device_errors)
     assert Telemetry.objects.count() == 0
 
 
@@ -52,12 +60,16 @@ def test_telemetry_create_metric_does_not_exist(active_device, ts):
             "ts": ts,
         }
     ]
-    result = telemetry_create(payload=payload)
+    validation = telemetry_validate(payload)
+    result = telemetry_create(
+        valid_data=validation.validated_rows, validation_errors=validation.errors
+    )
 
     assert result.created_count == 0
-    assert 0 in result.errors
-    assert "temperature" in result.errors[0]
-    assert "status" in result.errors[0]
+    metric_errors = [e for e in result.errors if e["index"] == 0]
+    fields = [e["field"] for e in metric_errors]
+    assert "temperature" in fields
+    assert "status" in fields
     assert Telemetry.objects.count() == 0
 
 
@@ -74,19 +86,20 @@ def test_telemetry_create_metric_not_configured_for_device(
             "ts": ts,
         }
     ]
-    result = telemetry_create(payload=payload)
+    validation = telemetry_validate(payload)
+    result = telemetry_create(
+        valid_data=validation.validated_rows, validation_errors=validation.errors
+    )
 
     assert result.created_count == 0
-    assert 0 in result.errors
-    assert "temperature" in result.errors[0]
+    metric_errors = [e for e in result.errors if e["index"] == 0]
+    fields = [e["field"] for e in metric_errors]
+    assert "temperature" in fields
     assert Telemetry.objects.count() == 0
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    'value',
-    [True, '21.5', {'v': 21.5}],
-)
+@pytest.mark.parametrize("value", [True, "21.5", {"v": 21.5}])
 def test_telemetry_create_type_mismatch_numeric(active_device, device_metric_numeric, ts, value):
     payload = [
         {
@@ -95,20 +108,20 @@ def test_telemetry_create_type_mismatch_numeric(active_device, device_metric_num
             "ts": ts,
         }
     ]
-    result = telemetry_create(payload=payload)
+    validation = telemetry_validate(payload)
+    result = telemetry_create(
+        valid_data=validation.validated_rows, validation_errors=validation.errors
+    )
 
     assert result.created_count == 0
-    assert 0 in result.errors
-    assert "temperature" in result.errors[0]
-    assert result.errors[0]["temperature"] in ("Type mismatch", "Unit mismatch")
+    metric_errors = [e for e in result.errors if e["index"] == 0 and e["field"] == "temperature"]
+    assert metric_errors
+    assert metric_errors[0]["error"] in ("Type mismatch", "Unit mismatch")
     assert Telemetry.objects.count() == 0
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    'value',
-    [1, 0.0, 'true'],
-)
+@pytest.mark.parametrize("value", [1, 0.0, "true"])
 def test_telemetry_create_type_mismatch_bool(active_device, device_metric_bool, ts, value):
     payload = [
         {
@@ -117,20 +130,20 @@ def test_telemetry_create_type_mismatch_bool(active_device, device_metric_bool, 
             "ts": ts,
         }
     ]
-    result = telemetry_create(payload=payload)
+    validation = telemetry_validate(payload)
+    result = telemetry_create(
+        valid_data=validation.validated_rows, validation_errors=validation.errors
+    )
 
     assert result.created_count == 0
-    assert 0 in result.errors
-    assert "door_open" in result.errors[0]
-    assert result.errors[0]["door_open"] in ("Type mismatch", "Unit mismatch")
+    metric_errors = [e for e in result.errors if e["index"] == 0 and e["field"] == "door_open"]
+    assert metric_errors
+    assert metric_errors[0]["error"] in ("Type mismatch", "Unit mismatch")
     assert Telemetry.objects.count() == 0
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    'value',
-    [1, False, 9.99],
-)
+@pytest.mark.parametrize("value", [1, False, 9.99])
 def test_telemetry_create_type_mismatch_str(active_device, device_metric_str, ts, value):
     payload = [
         {
@@ -139,12 +152,15 @@ def test_telemetry_create_type_mismatch_str(active_device, device_metric_str, ts
             "ts": ts,
         }
     ]
-    result = telemetry_create(payload=payload)
+    validation = telemetry_validate(payload)
+    result = telemetry_create(
+        valid_data=validation.validated_rows, validation_errors=validation.errors
+    )
 
     assert result.created_count == 0
-    assert 0 in result.errors
-    assert "status" in result.errors[0]
-    assert result.errors[0]["status"] in ("Type mismatch", "Unit mismatch")
+    metric_errors = [e for e in result.errors if e["index"] == 0 and e["field"] == "status"]
+    assert metric_errors
+    assert metric_errors[0]["error"] in ("Type mismatch", "Unit mismatch")
     assert Telemetry.objects.count() == 0
 
 
@@ -169,9 +185,15 @@ def test_telemetry_create_creates_rows_for_valid_metrics_only(
         }
     ]
 
-    result = telemetry_create(payload=payload)
+    validation = telemetry_validate(payload)
+    result = telemetry_create(
+        valid_data=validation.validated_rows, validation_errors=validation.errors
+    )
 
     assert result.created_count == 3
     assert Telemetry.objects.count() == 3
-    assert 0 in result.errors
-    assert "unknown_metric" in result.errors[0]
+
+    unknown_errors = [
+        e for e in result.errors if e["index"] == 0 and e["field"] == "unknown_metric"
+    ]
+    assert unknown_errors

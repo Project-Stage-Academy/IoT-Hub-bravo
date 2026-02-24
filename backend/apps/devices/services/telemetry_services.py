@@ -10,43 +10,28 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True)
 class TelemetryIngestResult:
     created_count: int = 0
-    errors: dict[str, str] = field(default_factory=dict)
+    errors: list[dict] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class TelemetryValidationResult:
+    validated_rows: list[dict] = field(default_factory=list)
+    errors: list[dict] = field(default_factory=list)
 
 
 def telemetry_create(
-    *,
-    payload: list[dict],
+    *, valid_data: list[dict], validation_errors: list[dict] | None = None
 ) -> TelemetryIngestResult:
     """
     Service function to ingest telemetry. Creates multiple
     Telemetry objects for each metric-value pair provided.
-    Metrics that do not exist, are not configured for
-    given device, or contain values that do not match metric
-    data type are skipped.
     """
-    logger.info("Starting telemetry ingestion for %d items", len(payload))
+    logger.info("Starting telemetry ingestion for %d items", len(valid_data))
 
     result = TelemetryIngestResult()
-    validator = TelemetryBatchValidator(payload=payload)
-    if not validator.is_valid():
-        result.errors = validator.errors
-        logger.warning(
-            "Telemetry validation failed for %d items. Errors: %s", len(payload), validator.errors
-        )
-        # If no valid rows, we can return early
-        if not validator.validated_rows:
-            logger.info("No valid telemetry rows to create. Exiting.")
-            return result
+    result.errors = validation_errors or []
 
-    logger.info(
-        "Telemetry validation succeeded. %d valid rows ready for creation.",
-        len(validator.validated_rows),
-    )
-
-    # initialize Telemetry objects for every valid matric-value pair
-    to_create: list[Telemetry] = []
-    for row in validator.validated_rows:
-        to_create.append(Telemetry(**row))
+    to_create: list[Telemetry] = [Telemetry(**row) for row in valid_data]
 
     logger.debug("Prepared %d Telemetry objects to create", len(to_create))
 
@@ -64,3 +49,29 @@ def telemetry_create(
     logger.info("Telemetry ingestion completed")
 
     return result
+
+
+def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
+    if isinstance(payload, dict):
+        payload_list = [payload]
+    else:
+        payload_list = payload
+
+    validator = TelemetryBatchValidator(payload=payload_list)
+    validator.is_valid()
+
+    if validator.errors:
+        logger.warning(
+            "Telemetry validation completed with errors for %d items. Errors: %s",
+            len(payload),
+            validator.errors,
+        )
+
+    logger.info(
+        "Telemetry validation completed. %d valid rows ready for creation.",
+        len(validator.validated_rows),
+    )
+
+    return TelemetryValidationResult(
+        validated_rows=validator.validated_rows, errors=validator.errors
+    )

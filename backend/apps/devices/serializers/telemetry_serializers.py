@@ -100,6 +100,9 @@ class TelemetryCreateSerializer(BaseSerializer):
             if not isinstance(metric_data, dict):
                 errors[name] = "Metric must be a dictionary with 'value' and 'unit'."
                 continue
+            if "value" not in metric_data or "unit" not in metric_data:
+                errors[name] = "Metric must contain both 'value' and 'unit' keys."
+                continue
 
             value = metric_data.get("value")
             unit = metric_data.get("unit")

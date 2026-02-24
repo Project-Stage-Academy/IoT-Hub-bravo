@@ -45,7 +45,9 @@ class TelemetryBatchValidator(BaseValidator):
 
         missing = device_serials - active_serials
         if missing:
-            self._errors["device"] = f"Missing serials: {missing}"
+            self._errors.append(
+                {"index": None, "field": "device", "error": f"Missing serials: {missing}"}
+            )
             logger.warning("Missing devices in DB: %s", missing)
 
         self._validated_devices = active_serials
@@ -106,7 +108,9 @@ class TelemetryBatchValidator(BaseValidator):
             ts = item.get("ts")
 
             if serial not in self._validated_devices:
-                self._errors.setdefault(index, {})["device"] = "Device not found"
+                self._errors.append(
+                    {"index": index, "field": "device", "error": "Device not found"}
+                )
                 logger.warning("[%d] Device not found: %s", index, serial)
                 continue
 
@@ -118,7 +122,9 @@ class TelemetryBatchValidator(BaseValidator):
                 device_metric_data = device_metrics_map.get(metric_name)
 
                 if not device_metric_data:
-                    self._errors.setdefault(index, {})[metric_name] = "Metric not configured"
+                    self._errors.append(
+                        {"index": index, "field": metric_name, "error": "Metric not configured"}
+                    )
                     logger.warning(
                         "[%d] Metric not configured for device %s: %s", index, serial, metric_name
                     )
@@ -128,7 +134,9 @@ class TelemetryBatchValidator(BaseValidator):
                 normalized_db_unit = self._normalize_unit(device_metric_data["unit"])
 
                 if normalized_payload_unit != normalized_db_unit:
-                    self._errors.setdefault(index, {})[metric_name] = "Unit mismatch"
+                    self._errors.append(
+                        {"index": index, "field": metric_name, "error": "Unit mismatch"}
+                    )
 
                     logger.warning(
                         "[%d] Unit mismatch for device %s metric %s: payload=%s, db=%s",
@@ -141,7 +149,9 @@ class TelemetryBatchValidator(BaseValidator):
                     continue
 
                 if not self._value_matches_data_type(value, device_metric_data["data_type"]):
-                    self._errors.setdefault(index, {})[metric_name] = "Type mismatch"
+                    self._errors.append(
+                        {"index": index, "field": metric_name, "error": "Type mismatch"}
+                    )
 
                     logger.warning(
                         "[%d] Type mismatch for device %s metric %s: value=%s, expected=%s",

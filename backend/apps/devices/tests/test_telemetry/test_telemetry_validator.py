@@ -90,7 +90,7 @@ def test_batch_validator_success(
     validator = TelemetryBatchValidator(payload)
     assert validator.is_valid() is True
     assert len(validator.validated_rows) == 2
-    assert validator.errors == {}
+    assert validator.errors == []
 
 
 @pytest.mark.django_db
@@ -104,8 +104,9 @@ def test_batch_validator_missing_device(active_device, device_metric):
     ]
     validator = TelemetryBatchValidator(payload)
     assert validator.is_valid() is False
-    assert "device" in validator.errors
-    assert "NON_EXISTENT" in validator.errors["device"]
+    device_errors = [e for e in validator.errors if e["field"] == "device"]
+    assert device_errors
+    assert "NON_EXISTENT" in device_errors[0]["error"]
 
 
 @pytest.mark.django_db
@@ -119,9 +120,9 @@ def test_batch_validator_unit_mismatch(active_device, device_metric):
     ]
     validator = TelemetryBatchValidator(payload)
     assert validator.is_valid() is False
-    assert 0 in validator.errors
-    assert "humidity" in validator.errors[0]
-    assert validator.errors[0]["humidity"] == "Unit mismatch"
+    metric_errors = [e for e in validator.errors if e["index"] == 0 and e["field"] == "humidity"]
+    assert metric_errors
+    assert metric_errors[0]["error"] == "Unit mismatch"
 
 
 @pytest.mark.django_db
@@ -135,9 +136,9 @@ def test_batch_validator_type_mismatch(active_device, device_metric):
     ]
     validator = TelemetryBatchValidator(payload)
     assert validator.is_valid() is False
-    assert 0 in validator.errors
-    assert "humidity" in validator.errors[0]
-    assert validator.errors[0]["humidity"] == "Type mismatch"
+    metric_errors = [e for e in validator.errors if e["index"] == 0 and e["field"] == "humidity"]
+    assert metric_errors
+    assert metric_errors[0]["error"] == "Type mismatch"
 
 
 @pytest.mark.django_db
@@ -154,7 +155,10 @@ def test_batch_validator_multiple_metrics(active_device, device_metric, temperat
     ]
     validator = TelemetryBatchValidator(payload)
     assert validator.is_valid() is False
-    assert 0 in validator.errors
-    assert "temperature" in validator.errors[0]
+    metric_errors = [
+        e for e in validator.errors if e["index"] == 0 and e["field"] == "temperature"
+    ]
+    assert metric_errors
+    assert metric_errors[0]["error"] == "Metric not configured"
     validated_metrics = [r["device_metric_id"] for r in validator.validated_rows]
     assert len(validated_metrics) == 1

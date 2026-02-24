@@ -11,6 +11,7 @@ from apps.devices.serializers.telemetry_serializers import (
 )
 from apps.devices.services.telemetry_services import (
     telemetry_create,
+    telemetry_validate,
     TelemetryIngestResult,
 )
 from apps.devices.tasks import ingest_telemetry_payload
@@ -90,11 +91,13 @@ def _ingest_telemetry_single(
     if not serializer.is_valid():
         return JsonResponse({'errors': serializer.errors}, status=400)
 
-    result = service(payload=[serializer.validated_data])
+    validation = telemetry_validate(serializer.validated_data)
+
+    result = service(valid_data=validation.validated_rows)
 
     return _ingest_telemetry_json_response(
         created=result.created_count,
-        errors=result.errors,
+        errors=validation.errors,
     )
 
 
@@ -113,15 +116,16 @@ def _ingest_telemetry_batch(
     total_created = 0
     items = []
 
-    for item in serializer.valid_items:
-        result = service(**item)
-        total_created += result.created_count
-        items.append(
-            {
-                'created': result.created_count,
-                'errors': result.errors,
-            }
-        )
+    validation = telemetry_validate(serializer.valid_items)
+
+    result = service(validation.validated_rows)
+    total_created += result.created_count
+    items.append(
+        {
+            'created': result.created_count,
+            'errors': validation.errors,
+        }
+    )
 
     return _ingest_telemetry_json_response(
         created=total_created,
