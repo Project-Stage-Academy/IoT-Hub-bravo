@@ -235,6 +235,8 @@ CELERY_TASK_MAX_RETRIES = 10
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_RESULT_EXPIRES = 60 * 60
 
+RULES_ALLOW_WEBHOOKS = config('RULES_ALLOW_WEBHOOKS', default=False, cast=bool)
+
 # scheduler conf
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 

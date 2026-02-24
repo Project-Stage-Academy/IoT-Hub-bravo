@@ -20,6 +20,8 @@ tags:
     description: CRUD operations for telemetry
   - name: Rules
     description: Business logic rules and event management
+  - name: Events
+    description: Events triggered by rules
 
 
 paths:
@@ -832,424 +834,799 @@ paths:
   #                   code: 404
   #                   message: "Telemetry record not found."
 
-  # Note: The following endpoints for /api/rules are defined but commented out until the example/examples will be added to the spec.
-  # /api/rules:
-  #   get:
-  #     tags:
-  #       - Rules
-  #     operationId: listRules
-  #     summary: List rules with pagination and filters
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: limit
-  #         in: query
-  #         schema:
-  #           type: integer
-  #           minimum: 1
-  #           maximum: 100
-  #           default: 20
-  #         description: Maximum number of rules to return
-  #       - name: offset
-  #         in: query
-  #         schema:
-  #           type: integer
-  #           minimum: 0
-  #           default: 0
-  #         description: Number of items to skip
-  #       - name: is_active
-  #         in: query
-  #         schema:
-  #           type: boolean
-  #         description: Filter by enabled status
-  #       - name: action
-  #         in: query
-  #         schema:
-  #           type: object
-  #         description: Filter by action type in JSON format
-  #         example:
-  #           type: "notify"
-  #     responses:
-  #       '200':
-  #         description: List of rules
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/PaginatedRules'
-  #       '400':
-  #         description: Invalid request
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #   post:
-  #     tags:
-  #       - Rules
-  #     operationId: createRule
-  #     summary: Create a new rule
-  #     description: Creates a rule
-  #     security:
-  #       - BearerAuth: []
-  #     requestBody:
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: '#/components/schemas/RuleCreate'
-  #           examples:
-  #             threshold_rule:
-  #               summary: Temperature threshold rule
-  #               value:
-  #                 name: "High Temperature Alert"
-  #                 description: "Alert when temperature exceeds 30°C"
-  #                 is_active: true
-  #                 condition:
-  #                   type: "threshold"
-  #                   operator: ">"
-  #                   value: 30
-  #                 action: "notify"
-  #             rate_rule:
-  #               summary: Event rate rule
-  #               value:
-  #                 name: "Too Many Errors"
-  #                 description: "Alert when more than 10 errors occur in 5 minutes"
-  #                 is_active: true
-  #                 condition:
-  #                   type: "rate"
-  #                   count: 10
-  #                   minutes: 300
-  #                 action: "webhook"
-  #             composite_rule:
-  #               summary: Composite AND rule
-  #               value:
-  #                 name: "Critical System State"
-  #                 description: "Alert when temperature high AND humidity low"
-  #                 is_active: true
-  #                 condition:
-  #                   type: "composite"
-  #                   operator: "AND"
-  #                   conditions:
-  #                     - type: "threshold"
-  #                       metric: "temperature"
-  #                       operator: ">"
-  #                       value: 35
-  #                     - type: "threshold"
-  #                       metric: "humidity"
-  #                       operator: "<"
-  #                       value: 20
-  #                 action: "notify"
-  #     responses:
-  #       '201':
-  #         description: Rule created successfully
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Rule'
-  #       '400':
-  #         description: Invalid rule definition
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
+  /api/rules/:
+    get:
+      tags:
+        - Rules
+      operationId: listRules
+      summary: List rules with pagination and filters
+      description: |
+        Returns a paginated list of rules.
+        Supports filtering by activation status and action type.
+        Used to browse, search, and manage existing rules.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Maximum number of rules to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of items to skip
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+          description: Filter by enabled status
+        - name: action
+          in: query
+          schema:
+            type: object
+          description: Filter by action type in JSON format
+          example:
+            webhook:
+              url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+              enabled: true
+            notification:
+              channel: "email"
+              enabled: true
+              message: "High temperature in {device_name}: {value}°C"
+      responses:
+        '200':
+          description: List of rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRules'
+              examples:
+                default:
+                  summary: Paginated list of rules
+                  value:
+                    total: 3
+                    limit: 20
+                    offset: 0
+                    items:
+                      - id: 12
+                        name: "High Temperature Alert"
+                        description: "Alert when temperature exceeds 30°C"
+                        is_active: true
+                        condition:
+                          type: "threshold"
+                          operator: ">"
+                          value: 30
+                        action:
+                          webhook:
+                            url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                            enabled: true
+                          notification:
+                            channel: "email"
+                            enabled: true
+                            message: "High temperature in {device_name}: {value}°C"
+                        device_metric_id: 1
+                      - schema_version: 1
+                        id: 32
+                        name: "Low Humidity Alert"
+                        description: "Alert when humidity drops below 20%"
+                        is_active: true
+                        condition:
+                          type: "threshold"
+                          operator: "<"
+                          value: 20
+                        action:
+                          webhook:
+                            url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                            enabled: true
+                          notification:
+                            channel: "email"
+                            enabled: true
+                            message: "High temperature in {device_name}: {value}°C"
+                        device_metric_id: 1
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_filter:
+                  summary: Invalid query parameters
+                  value:
+                    code: 400
+                    message: "Invalid filter parameters"
+    post:
+      tags:
+        - Rules
+      operationId: createRule
+      summary: Create a new rule
+      description:  |
+        Creates a new rule and persists it for future evaluation.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleCreate'
+            examples:
+              threshold_rule:
+                summary: Temperature threshold rule
+                value:
+                  schema_version: 1
+                  name: "High Temperature Alert"
+                  description: "Alert when temperature exceeds 30°C"
+                  is_active: true
+                  condition:
+                    type: "threshold"
+                    operator: ">"
+                    value: 30
+                  action:
+                    webhook:
+                      url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                      enabled: true
+                    notification:
+                      channel: "email"
+                      enabled: true
+                      message: "High temperature in {device_name}: {value}°C"
+                  device_metric_id: 1
+              rate_rule:
+                summary: Event rate rule
+                value:
+                  schema_version: 1
+                  name: "Too Many Errors"
+                  description: "Alert when more than 10 errors occur in 5 minutes"
+                  is_active: true
+                  condition:
+                    type: "rate"
+                    count: 10
+                    minutes: 300
+                  action:
+                    webhook:
+                      url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                      enabled: true
+                    notification:
+                      channel: "email"
+                      enabled: true
+                      message: "High temperature in {device_name}: {value}°C"
+                  device_metric_id: 2
+              composite_rule:
+                summary: Composite AND rule
+                value:
+                  schema_version: 1
+                  name: "Critical System State"
+                  description: "Alert when temperature high AND humidity low"
+                  is_active: true
+                  condition:
+                    type: "composite"
+                    operator: "AND"
+                    conditions:
+                      - type: "threshold"
+                        operator: ">"
+                        value: 35
+                        device_metric_id: 1
+                      - type: "threshold"
+                        device_metric_id: 2
+                        operator: "<"
+                        value: 20
+                  action:
+                    webhook:
+                      url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                      enabled: true
+                    notification:
+                      channel: "email"
+                      enabled: true
+                      message: "High temperature in {device_name}: {value}°C"
+                  device_metric_id: 1
+      responses:
+        '201':
+          description: Rule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+              examples:
+                created:
+                  summary: Created rule with full schema
+                  value:
+                    schema_version: 1
+                    id: 22
+                    name: "High Temperature Alert"
+                    description: "Alert when temperature exceeds 30°C"
+                    is_active: true
+                    condition:
+                      type: "threshold"
+                      operator: ">"
+                      value: 30
+                    action:
+                      webhook:
+                        url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                        enabled: true
+                      notification:
+                        channel: "email"
+                        enabled: true
+                        message: "High temperature in {device_name}: {value}°C"
+                    device_metric_id: 1
+        '400':
+          description: Invalid rule definition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_condition:
+                  summary: Invalid condition definition
+                  value:
+                    code: 400
+                    message: "Invalid rule condition: Unsupported operator"     
 
-  # /api/rules/{id}:
-  #   get:
-  #     tags:
-  #       - Rules
-  #     operationId: getRuleById
-  #     summary: Get rule by ID
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: string
-  #           format: uuid
-  #         description: Rule UUID
-  #     responses:
-  #       '200':
-  #         description: Rule found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Rule'
-  #       '404':
-  #         description: Rule not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #   put:
-  #     tags:
-  #       - Rules
-  #     operationId: replaceRule
-  #     summary: Replace rule completely
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: string
-  #           format: uuid
-  #     requestBody:
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: '#/components/schemas/RuleCreate'
-  #     responses:
-  #       '200':
-  #         description: Rule updated
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Rule'
-  #       '400':
-  #         description: Invalid request
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #       '404':
-  #         description: Rule not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #   patch:
-  #     tags:
-  #       - Rules
-  #     summary: Partially update rule
-  #     operationId: patchRule
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: string
-  #           format: uuid
-  #     requestBody:
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: '#/components/schemas/RulePatch'
-  #     responses:
-  #       '200':
-  #         description: Rule updated
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Rule'
-  #       '400':
-  #         description: Invalid patch
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #       '404':
-  #         description: Rule not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #   delete:
-  #     tags:
-  #       - Rules
-  #     summary: Delete rule
-  #     operationId: deleteRule
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: string
-  #           format: uuid
-  #     responses:
-  #       '204':
-  #         description: Rule deleted
-  #       '404':
-  #         description: Rule not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
+  /api/rules/{id}/:
+    get:
+      tags:
+        - Rules
+      operationId: getRuleById
+      summary: Get rule by ID
+      description: |
+        Returns full rule details by its unique identifier.
+        Includes condition definition, action configuration, and current state.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer  
+      responses:
+        '200':
+          description: Rule found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+              examples:
+                updated:
+                  summary: Updated rule
+                  value:
+                    schema_version: 1
+                    id: 31
+                    name: "Updated Rule"
+                    is_active: false
+                    action:
+                      webhook:
+                        url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                        enabled: true
+                      notification:
+                        channel: "email"
+                        enabled: true
+                        message: "High temperature in {device_name}: {value}°C"
+                    condition:
+                      type: "threshold"
+                      operator: ">"
+                      value: 13
+                    device_metric_id: 2  
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_payload:
+                  summary: Invalid rule payload
+                  value:
+                    message: "Invalid rule definition"
+                    code: 400   
+        '404':
+          description: Rule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Rule not found
+                  value:
+                    message: "Rule not found"
+                    code: 404
+    put:
+      tags:
+        - Rules
+      operationId: replaceRule
+      summary: Replace rule completely
+      description: |
+        Replaces the entire rule definition.
+        All rule fields must be provided in the request body.
+        Missing fields will be overwritten with new values.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleCreate'
+            examples:
+              update_example:
+                summary: Update rule example
+                value:
+                  schema_version: 1
+                  name: "Updated Rule"
+                  description: "Changed description"
+                  is_active: false
+                  condition:
+                    type: "threshold"
+                    operator: ">"
+                    value: 13
+                  action:
+                    webhook:
+                      url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                      enabled: true
+                    notification:
+                      channel: "email"
+                      enabled: true
+                      message: "High temperature in {device_name}: {value}°C"
+                  device_metric_id: 2
+      responses:
+        '200':
+          description: Rule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+              examples:
+                updated:
+                  summary: Updated rule
+                  value:
+                    schema_version: 1
+                    id: 44
+                    name: "Updated Rule"
+                    is_active: false
+                    action:
+                      webhook:
+                        url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                        enabled: true
+                      notification:
+                        channel: "email"
+                        enabled: true
+                        message: "High temperature in {device_name}: {value}°C"
+                    condition:
+                      type: "threshold"
+                      operator: ">"
+                      value: 13
+                    device_metric_id: 1   
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_payload:
+                  summary: Invalid rule payload
+                  value:
+                    message: "Invalid rule definition"
+                    code: 400
+        '404':
+          description: Rule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Rule not found
+                  value:
+                    message: "Rule not found"
+                    code: 404
+    patch:
+      tags:
+        - Rules
+      summary: Partially update rule
+      description: |
+        Updates one or more fields of an existing rule.
+        Only provided fields are modified; all others remain unchanged.
+      operationId: patchRule
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RulePatch'
+            examples:
+              replace_rule:
+                summary: Full rule replacement
+                value:
+                  schema_version: 1
+                  name: "Updated Rule"
+                  is_active: false
+                  condition:
+                    type: "threshold"
+                    operator: "<"
+                    value: 10
+                  device_metric_id: 1
+                  action:
+                    webhook:
+                      url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                      enabled: true
+                    notification:
+                      channel: "email"
+                      enabled: true
+                      message: "High temperature in {device_name}: {value}°C"
+  
+      responses:
+        '200':
+          description: Rule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleUpdateResponse'
+              examples:
+                updated:
+                  summary: Updated rule
+                  value:
+                    status: 200
+                    rule_id: 1  
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_payload:
+                  summary: Invalid rule payload
+                  value:
+                    message: "Invalid rule definition"
+                    code: 400
+        '404':
+          description: Rule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Rule not found
+                  value:
+                    message: "Rule not found"
+                    code: 404
+    delete:
+      tags:
+        - Rules
+      summary: Delete rule
+      description: |
+        Permanently deletes a rule.
+        Deleted rules are no longer evaluated and cannot be restored.
+      operationId: deleteRule
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Rule deleted
+          content:
+            application/json:
+              examples:
+                no_content:
+                  summary: No response body
+                  value: {}
+        '404':
+          description: Rule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Rule does not exist
+                  value:
+                    code: 404
+                    message: "Rule not found"
 
-  # /api/rules/{id}/enable:
-  #   post:
-  #     tags:
-  #       - Rules
-  #     summary: Enable a rule
-  #     operationId: enableRule
-  #     description: Activates a rule so it will be evaluated during rule processing
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: string
-  #           format: uuid
-  #     responses:
-  #       '200':
-  #         description: Rule enabled successfully
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Rule'
-  #       '404':
-  #         description: Rule not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
+  /api/rules/evaluate/:
+    post:
+      tags:
+        - Rules
+      summary: Manually trigger rule evaluation
+      operationId: evaluateRules
+      description: |
+        Triggers manual evaluation of all enabled rules for debugging and demo purposes.
+        This endpoint runs the rule processor immediately instead of waiting for the scheduled task.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleEvaluateRequest'
+            examples:
+              evaluate_example:
+                summary: Evaluate telemetry data against rules
+                value:
+                  device_id: 9
+      responses:
+        '200':
+          description: Evaluation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RuleEvaluationResult'
+              example:
+                status: 200
+                results:
+                  - telemetry_id: 2
+                    device_metric_id: 1
+                    device_name: "device 1"
+                    result:
+                      telemetry_id: 2
+                      results:
+                        - rule_id: 1
+                          triggered: true
+                        - rule_id: 4
+                          triggered: true        
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_request:
+                  summary: Invalid telemetry payload
+                  value:
+                    code: 400
+                    message: "Telemetry value missing"
 
-  # /api/rules/{id}/disable:
-  #   post:
-  #     tags:
-  #       - Rules
-  #     summary: Disable a rule
-  #     operationId: disableRule
-  #     description: Deactivates a rule so it will not be evaluated
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: string
-  #           format: uuid
-  #     responses:
-  #       '200':
-  #         description: Rule disabled successfully
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Rule'
-  #       '404':
-  #         description: Rule not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
+  /api/events/:
+    get:
+      tags:
+        - Events
+      operationId: listEvents
+      summary: List events
+      description: Retrieve a paginated list of events. Supports filtering by rule_id, device_id, acknowledged, and severity (reserved).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rule_id
+          in: query
+          description: Filter events by rule ID
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: device_id
+          in: query
+          description: Filter events by trigger device ID
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: acknowledged
+          in: query
+          description: Filter events by acknowledgment status
+          required: false
+          schema:
+            type: boolean
+        - name: severity
+          in: query
+          description: Filter events by severity (currently reserved, not implemented)
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of events to return (max 200)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          description: Number of events to skip
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: A paginated list of events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: Total number of events
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+              example:
+                count: 2
+                limit: 50
+                offset: 0
+                results:
+                  - id: 123
+                    timestamp: "2026-01-25T09:53:00+00:00"
+                    created_at: "2026-01-25T09:55:00+00:00"
+                    acknowledged: false
+                    rule:
+                      id: 1
+                      name: "High Temperature"
+                    trigger_telemetry_id: 2
+                    trigger_device_id: 1
+                  - id: 124
+                    timestamp: "2026-01-25T09:52:00+00:00"
+                    created_at: "2026-01-25T09:53:00+00:00"
+                    acknowledged: true
+                    rule:
+                      id: 2
+                      name: "Low Battery"
+                    trigger_telemetry_id: 43
+                    trigger_device_id: 3
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_request:
+                  value:
+                    code: 400
+                    message: "Invalid query parameters."  
 
-  # /api/rules/evaluate:
-  #   post:
-  #     tags:
-  #       - Rules
-  #     summary: Manually trigger rule evaluation
-  #     operationId: evaluateRules
-  #     description: |
-  #       Triggers manual evaluation of all enabled rules for debugging and demo purposes.
-  #       This endpoint runs the rule processor immediately instead of waiting for the scheduled task.
-  #     security:
-  #       - BearerAuth: []
-  #     requestBody:
-  #       required: false
-  #       content:
-  #         application/json:
-  #           schema:
-  #             type: object
-  #             properties:
-  #               rule_id:
-  #                 type: string
-  #                 format: uuid
-  #                 description: Optional - evaluate only this specific rule
-  #               device_id:
-  #                 type: integer
-  #                 description: Optional - evaluate rules only for this device
-  #     responses:
-  #       '200':
-  #         description: Evaluation completed
-  #         content:
-  #           application/json:
-  #             schema:
-  #               type: object
-  #               properties:
-  #                 rules_evaluated:
-  #                   type: integer
-  #                   example: 15
-  #                 events_created:
-  #                   type: integer
-  #                   example: 3
-  #                 evaluation_time_ms:
-  #                   type: integer
-  #                   example: 245
-  #                 events:
-  #                   type: array
-  #                   items:
-  #                     $ref: '#/components/schemas/Event'
-  #       '400':
-  #         description: Invalid request
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
+  /api/events/{event_id}/:
+    get:
+      tags:
+        - Events
+      operationId: getEventById
+      summary: Retrieve event details
+      description: Get detailed information about a single event by ID, including optional trigger telemetry info.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          description: ID of the event
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+              example:
+                id: 123
+                timestamp: "2026-01-25T09:53:00+00:00"
+                created_at: "2026-01-25T09:55:00+00:00"
+                acknowledged: false
+                rule:
+                  id: 1
+                  name: "High Temperature"
+                trigger_telemetry_id: 2
+                trigger_device_id: 1
 
-  # /api/rules/{id}/events:
-  #   get:
-  #     tags:
-  #       - Rules
-  #     summary: Get rule evaluation history
-  #     operationId: getRuleEvents
-  #     description: Returns all events (rule firings) for a specific rule with pagination
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: string
-  #           format: uuid
-  #       - name: limit
-  #         in: query
-  #         schema:
-  #           type: integer
-  #           minimum: 1
-  #           maximum: 100
-  #           default: 20
-  #       - name: offset
-  #         in: query
-  #         schema:
-  #           type: integer
-  #           minimum: 0
-  #           default: 0
-  #       - name: from_date
-  #         in: query
-  #         schema:
-  #           type: string
-  #           format: date-time
-  #         description: Filter events from this date
-  #       - name: to_date
-  #         in: query
-  #         schema:
-  #           type: string
-  #           format: date-time
-  #         description: Filter events until this date
-  #     responses:
-  #       '200':
-  #         description: List of events
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/PaginatedEvents'
-  #       '404':
-  #         description: Rule not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+              example:
+                detail: "Event not found"
+
+  /api/events/{event_id}/ack/:
+    post:
+      tags:
+        - Events
+      operationId: acknowledgeEvent
+      summary: Acknowledge an event
+      description: Marks an event as acknowledged. Idempotent.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          description: ID of the event
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        description: No body required
+        required: false
+        content: { }
+      responses:
+        '200':
+          description: Event acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  event_id:
+                    type: integer
+                  acknowledged:
+                    type: boolean
+              example:
+                example:
+                id: 123
+                timestamp: "2026-01-25T09:53:00+00:00"
+                created_at: "2026-01-25T09:55:00+00:00"
+                acknowledged: true
+                rule:
+                  id: 1
+                  name: "High Temperature"
+                trigger_telemetry_id: 2
+                trigger_device_id: 1
+
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+              example:
+                detail: "Event not found"
+
 
 components:
   securitySchemes:
@@ -1805,203 +2182,425 @@ components:
             value: 6.73
             ts: "2024-04-13T18:50:00Z"
 
-    # Note: The following schemas for rules and events are defined but commented out until the example/examples will be added to the spec.
-    # Rule:
+    Rule:
+      type: object
+      description: Business logic rule for monitoring and alerting
+      properties:
+        id:
+          type: integer
+          example: 111
+        name:
+          type: string
+          example: "High Temperature Alert"
+        description:
+          type: string
+          example: "Alert when temperature exceeds 30°C"
+        is_active:
+          type: boolean
+          example: true
+        condition:
+          description: Rule condition in JSON format (see docs/rules.md for full schema)
+          oneOf:
+            - $ref: '#/components/schemas/RuleConditionThreshold'
+            - $ref: '#/components/schemas/RuleConditionRate'
+            - $ref: '#/components/schemas/RuleConditionComposite'  
+          example:
+            type: "threshold"
+            operator: ">"
+            value: 30
+        action:
+          type: object
+          description: Rule action in JSON format (see docs/rules.md for full schema)
+          example:
+            webhook:
+              url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+              enabled: true
+            notification:
+              channel: "email"
+              enabled: true
+              message: "High temperature in {device_name}: {value}°C"
+        device_metric_id:
+          type: integer
+          description: Foreign key to DeviceMetric model
+          example: 333 
+      required:
+        - id
+        - name
+        - is_active
+        - condition
+        - action
+        - device_metric_id
+      example:
+        id: 1
+        name: "High Temperature Alert"
+        description: "Alert when temperature exceeds 30°C"
+        is_active: true
+        condition:
+          type: "threshold"
+          operator: ">"
+          value: 30
+        action:
+          webhook:
+            url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+            enabled: true
+          notification:
+            channel: "email"
+            enabled: true
+            message: "High temperature in {device_name}: {value}°C"
+        device_metric_id: 1
+
+    RuleCreate:
+      type: object
+      description: Data required to create a new rule
+      properties:
+        schema_version:
+          type: integer
+          description: Version of the rule schema definition
+          example: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: "High Temperature Alert"
+        description:
+          type: string
+          maxLength: 1000
+          example: "Alert when temperature exceeds 30°C"
+        is_active:
+          type: boolean
+          default: true
+          example: true
+        condition:
+          description: |
+            Rule condition structure. Supported types:
+            - threshold: Compare metric to value
+            - rate: Count events in time window
+            - composite: Combine multiple conditions with AND/OR
+          oneOf:
+            - $ref: '#/components/schemas/RuleConditionThreshold'
+            - $ref: '#/components/schemas/RuleConditionRate'
+            - $ref: '#/components/schemas/RuleConditionComposite'  
+          example:
+            type: "threshold"
+            operator: ">"
+            value: 30
+        action:
+          type: object
+          description: Rule action in JSON format (see docs/rules.md for full schema)
+          example:
+            webhook:
+              url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+              enabled: true
+            notification:
+              channel: "email"
+              enabled: true
+              message: "High temperature in {device_name}: {value}°C"
+        device_metric_id:
+          type: integer
+          description: Foreign key to DeviceMetric model
+          example: 1
+      required:
+        - name
+        - condition
+        - is_active
+        - action
+        - device_metric_id
+        - schema_version
+      example:
+        schema_version: 1
+        name: "High Temperature Alert"
+        description: "Alert when temperature exceeds 30°C"
+        is_active: true
+        condition:
+          type: "threshold"
+          operator: ">"
+          value: 30
+        action:
+          webhook:
+            url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+            enabled: true
+          notification:
+            channel: "email"
+            enabled: true
+            message: "High temperature in {device_name}: {value}°C"
+        device_metric_id: 1       
+
+
+    RulePatch:
+      type: object
+      description: Partial update of rule fields
+      properties:
+        schema_version:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+        condition:
+          type: object
+        action:
+          type: object
+      example:
+        is_active: false
+
+    RuleConditionThreshold:
+      type: object
+      description: Threshold-based rule condition
+      properties:
+        type:
+          type: string
+          enum: [threshold]
+          example: "threshold"
+        operator:
+          type: string
+          enum: [">", ">=", "<", "<=", "==", "!="]
+          example: ">"
+        value:
+          type: number
+          example: 30
+      required:
+        - type
+        - operator
+        - value
+      example:
+        type: "threshold"
+        operator: ">"
+        value: 30
+
+    RuleConditionRate:
+      type: object
+      description: Rate-based rule condition (event frequency)
+      properties:
+        type:
+          type: string
+          enum: [rate]
+          example: "rate"
+        count:
+          type: integer
+          minimum: 1
+          description: Number of events threshold
+          example: 10
+        minutes:
+          type: integer
+          minimum: 1
+          description: Time window in seconds
+          example: 300
+      required:
+        - type
+        - count
+        - minutes
+      example:
+        type: "rate"
+        count: 10
+        minutes: 300
+
+    RuleConditionComposite:
+      type: object
+      description: Composite rule combining multiple conditions
+      properties:
+        type:
+          type: string
+          enum: [composite]
+          example: "composite"
+        operator:
+          type: string
+          enum: [AND, OR]
+          example: "AND"
+        conditions:
+          type: array
+          description: Array of sub-conditions (threshold or rate)
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/RuleConditionThreshold'
+              - $ref: '#/components/schemas/RuleConditionRate'
+          minItems: 2
+      required:
+        - type
+        - operator
+        - conditions
+      example:
+        type: "composite"
+        operator: "AND"
+        conditions:
+          - type: "threshold"
+            operator: ">"
+            value: 35
+          - type: "rate"
+            count: 5
+            minutes: 20
+
+    PaginatedRules:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 25
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rule'
+      required:
+        - total
+        - limit
+        - offset
+        - items
+      example:
+        total: 25
+        limit: 20
+        offset: 0
+        items:
+          - id: 1
+            name: "High Temperature Alert"
+            description: "Alert when temperature exceeds 30°C"
+            is_active: true
+            condition:
+              type: "threshold"
+              operator: ">"
+              value: 30
+            action:
+              webhook:
+                url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
+                enabled: true
+              notification:
+                channel: "email"
+                enabled: true
+                message: "High temperature in {device_name}: {value}°C"
+            device_metric_id: 1
+    
+    RuleUpdateResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        rule_id:
+          type: integer
+      required:
+        - status
+        - rule_id
+      example:
+        status: 200
+        rule_id: 1  
+
+    RuleEvaluateRequest:
+      type: object
+      properties:
+        rule_id:
+          type: integer
+          description: Optional - evaluate only this specific rule
+        device_id:
+          type: integer
+          description: Optional - evaluate rules only for this device
+      example:
+        rule_id: 12
+        device_id: 5
+
+    RuleEvaluationResult:
+      type: object
+      properties:
+        telemetry_id:
+          type: integer
+          example: 101
+        device_metric_id:
+          type: integer
+          example: 5
+        device_name:
+          type: string
+          example: "Temperature Sensor"
+        result:
+          $ref: '#/components/schemas/RuleProcessorOutput'
+      example:
+        telemetry_id: 2
+        device_metric_id: 1
+        device_name: "device 1"
+        result:
+          telemetry_id: 2
+          results:
+            - rule_id: 1
+              triggered: true
+
+    RuleProcessorOutput:
+      type: object
+      properties:
+        telemetry_id:
+          type: integer
+          example: 2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/IndividualRuleResult'
+      example:
+        telemetry_id: 2
+        results:
+          - rule_id: 1
+            triggered: true      
+
+    IndividualRuleResult:
+      type: object
+      properties:
+        rule_id:
+          type: integer
+          example: 1
+        triggered:
+          type: boolean
+          example: true
+      example:
+        rule_id: 1
+        triggered: true    
+    
+    # NOTE: for future usage
+    # Event:
     #   type: object
-    #   description: Business logic rule for monitoring and alerting
+    #   description: Rule evaluation event (rule firing)
     #   properties:
     #     id:
-    #       type: string
-    #       format: uuid
-    #       example: "550e8400-e29b-41d4-a716-446655440000"
-    #     name:
-    #       type: string
-    #       example: "High Temperature Alert"
-    #     description:
-    #       type: string
-    #       example: "Alert when temperature exceeds 30°C"
-    #     is_active:
+    #       type: integer
+    #       example: 11
+    #     rule_id:
+    #       type: integer
+    #       example: 66
+    #     acknowledged:
     #       type: boolean
-    #       example: true
-    #     condition:
-    #       type: object
-    #       description: Rule condition in JSON format (see docs/rules.md for full schema)
-    #       example:
-    #         type: "threshold"
-    #         operator: ">"
-    #         value: 30
-    #     action:
-    #       type: object
-    #       description: Rule action in JSON format (see docs/rules.md for full schema)
-    #       example:
-    #         type: "notify"
-    #         message: "User_1 temperature is overwhelming"
-    #     device_metric:
+    #       example: false
+    #     timestamp:
     #       type: string
-    #       format: uuid
-    #       description: Foreign key to DeviceMetric model
-    #       example: "123e4567-e89b-12d3-a456-426614174000" 
+    #       format: date-time
+    #       example: "2026-01-22T16:30:00Z"
+    #     created_at:
+    #       type: string
+    #       format: date-time
+    #       example: "2026-01-22T16:31:00Z"
+    #     trigger_telemetry_id:
+    #       type: integer
+    #       nullable: true
+    #       example: 11
     #   required:
     #     - id
-    #     - name
-    #     - is_active
-    #     - condition
-    #     - action
-    #     - device_metric
-
-    # RuleCreate:
-    #   type: object
-    #   description: Data required to create a new rule
-    #   properties:
-    #     name:
-    #       type: string
-    #       minLength: 1
-    #       maxLength: 255
-    #       example: "High Temperature Alert"
-    #     description:
-    #       type: string
-    #       maxLength: 1000
-    #       example: "Alert when temperature exceeds 30°C"
-    #     is_active:
-    #       type: boolean
-    #       default: true
-    #       example: true
-    #     condition:
-    #       type: object
-    #       description: |
-    #         Rule condition structure. Supported types:
-    #         - threshold: Compare metric to value
-    #         - rate: Count events in time window
-    #         - composite: Combine multiple conditions with AND/OR
-    #       example:
-    #         type: "threshold"
-    #         operator: ">"
-    #         value: 30
-    #     action:
-    #       type: object
-    #       example: 
-    #         type: "notify"
-    #     device_metric:
-    #       type: string
-    #       format: uuid
-    #       description: Foreign key to DeviceMetric model
-    #       example: "123e4567-e89b-12d3-a456-426614174000" 
-    #   required:
-    #     - name
-    #     - condition
-    #     - is_active
-    #     - action
-    #     - device_metric
-
-    # RulePatch:
-    #   type: object
-    #   description: Partial update of rule fields
-    #   properties:
-    #     name:
-    #       type: string
-    #     description:
-    #       type: string
-    #     is_active:
-    #       type: boolean
-    #     condition:
-    #       type: object
-    #     action:
-    #       type: object
+    #     - rule_id
+    #     - timestamp
+    #     - created_at
     #   example:
-    #     enabled: false
+    #     id: 1
+    #     rule_id: 1
+    #     acknowledged: false
+    #     timestamp: "2026-01-22T16:30:00Z"
+    #     created_at: "2026-01-22T16:31:00Z"
+    #     trigger_telemetry_id: 1
 
-    # RuleConditionThreshold:
-    #   type: object
-    #   description: Threshold-based rule condition
-    #   properties:
-    #     type:
-    #       type: string
-    #       enum: [threshold]
-    #       example: "threshold"
-    #     operator:
-    #       type: string
-    #       enum: [">", ">=", "<", "<=", "==", "!="]
-    #       example: ">"
-    #     value:
-    #       type: number
-    #       example: 30
-    #   required:
-    #     - type
-    #     - operator
-    #     - value
-    #   example:
-    #     type: "threshold"
-    #     operator: ">"
-    #     value: 30
 
-    # RuleConditionRate:
-    #   type: object
-    #   description: Rate-based rule condition (event frequency)
-    #   properties:
-    #     type:
-    #       type: string
-    #       enum: [rate]
-    #       example: "rate"
-    #     count:
-    #       type: integer
-    #       minimum: 1
-    #       description: Number of events threshold
-    #       example: 10
-    #     minutes:
-    #       type: integer
-    #       minimum: 1
-    #       description: Time window in seconds
-    #       example: 300
-    #   required:
-    #     - type
-    #     - count
-    #     - minutes
-    #   example:
-    #     type: "rate"
-    #     count: 10
-    #     minutes: 300
-
-    # RuleConditionComposite:
-    #   type: object
-    #   description: Composite rule combining multiple conditions
-    #   properties:
-    #     type:
-    #       type: string
-    #       enum: [composite]
-    #       example: "composite"
-    #     operator:
-    #       type: string
-    #       enum: [AND, OR]
-    #       example: "AND"
-    #     conditions:
-    #       type: array
-    #       description: Array of sub-conditions (threshold or rate)
-    #       items:
-    #         oneOf:
-    #           - $ref: '#/components/schemas/RuleConditionThreshold'
-    #           - $ref: '#/components/schemas/RuleConditionRate'
-    #       minItems: 2
-    #   required:
-    #     - type
-    #     - operator
-    #     - conditions
-    #   example:
-    #     type: "composite"
-    #     operator: "AND"
-    #     conditions:
-    #       - type: "threshold"
-    #         operator: ">"
-    #         value: 35
-    #       - type: "rate"
-    #         count: 5
-    #         minutes: 20
-
-    # PaginatedRules:
+    # PaginatedEvents:
     #   type: object
     #   properties:
     #     total:
     #       type: integer
-    #       example: 25
+    #       example: 50
     #     limit:
     #       type: integer
     #       example: 20
@@ -2011,14 +2610,14 @@ components:
     #     items:
     #       type: array
     #       items:
-    #         $ref: '#/components/schemas/Rule'
+    #         $ref: '#/components/schemas/Event'
     #   required:
     #     - total
     #     - limit
     #     - offset
     #     - items
     #   example:
-    #     total: 25
+    #     total: 50
     #     limit: 20
     #     offset: 0
     #     items:
@@ -2034,3 +2633,45 @@ components:
     #           type: "notify"
     #           message: "User_1 temperature is overwhelming"
     #         device_metric: "123e4567-e89b-12d3-a456-426614174000"
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        acknowledged:
+          type: boolean
+        rule:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        trigger_telemetry_id:
+          type: integer
+          nullable: true
+        trigger_device_id:
+          type: integer
+          nullable: true
+      example:
+        id: 123
+        timestamp: "2026-01-25T09:20:00+00:00"
+        created_at: "2026-01-25T09:55:00+00:00"
+        acknowledged: false
+        rule:
+          id: 2
+          name: "High Temperature Alert"
+        trigger_telemetry_id: 2
+        trigger_device_id: 1
+    #       - id: 1
+    #         rule_id: 1
+    #         acknowledged: false
+    #         timestamp: "2026-01-22T16:30:00Z"
+    #         created_at: "2026-01-22T16:31:00Z"
+    #         trigger_telemetry_id: 1        

@@ -30,8 +30,9 @@ urlpatterns = [
     path("api/auth/login/", login, name="user-auth"),
     path("api/devices/", include("apps.devices.urls.device_urls")),
     path("api/telemetry/", include("apps.devices.urls.telemetry_urls")),
+    path("api/events/", include("apps.rules.urls.event_urls")),
     path('prometheus/', include('apps.common.urls')),
-    path('rules/', include('apps.rules.urls')),
+    path('api/rules/', include('apps.rules.urls.rule_urls')),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
