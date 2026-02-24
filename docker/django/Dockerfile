@@ -79,6 +79,11 @@ RUN sed -i "s/\r$//g" /start-web-dev.sh
 # change scripts permissions
 RUN chmod 555 /entrypoint.sh /start-web.sh /start-web-dev.sh
 
+# create prometheus multiprocess directory with correct permissions
+RUN mkdir -p /tmp/prometheus_multiproc && \
+    chown django:django /tmp/prometheus_multiproc && \
+    chmod 755 /tmp/prometheus_multiproc
+
 # switch to created user
 USER django
 
