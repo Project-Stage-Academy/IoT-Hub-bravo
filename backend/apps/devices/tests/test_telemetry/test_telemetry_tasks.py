@@ -19,6 +19,8 @@ def test_dict_payload_calls_service_once(
     valid_telemetry_payload,
 ):
     """Test dict payload is treated as a batch of one and calls service once."""
+    telemetry_create_mock.return_value.created_count = 1
+    telemetry_create_mock.return_value.errors = []
     ingest_telemetry_payload(payload=valid_telemetry_payload)
     telemetry_create_mock.assert_called_once()
 
@@ -33,8 +35,11 @@ def test_batch_payload_calls_service_for_every_item(
     valid_telemetry_payload,
 ):
     """Test dict payload is treated as a batch of one and calls service once."""
+    telemetry_create_mock.return_value.created_count = 1
+    telemetry_create_mock.return_value.errors = []
     ingest_telemetry_payload(payload=[valid_telemetry_payload] * 3)
     assert telemetry_create_mock.call_count == 3
+
 
 
 @patch('apps.devices.tasks.telemetry_create')
@@ -59,6 +64,8 @@ def test_service_called_for_valid_items_only(
     valid_telemetry_payload,
 ):
     """Test task calls service only for valid items in a batch."""
+    telemetry_create_mock.return_value.created_count = 1
+    telemetry_create_mock.return_value.errors = []
     valid_item1 = dict(valid_telemetry_payload)
     valid_item2 = dict(valid_telemetry_payload)
 
@@ -67,3 +74,4 @@ def test_service_called_for_valid_items_only(
 
     ingest_telemetry_payload(payload=[valid_item1, invalid_item, valid_item2])
     assert telemetry_create_mock.call_count == 2
+
