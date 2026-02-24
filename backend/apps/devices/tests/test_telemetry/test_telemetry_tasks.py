@@ -41,7 +41,6 @@ def test_batch_payload_calls_service_for_every_item(
     assert telemetry_create_mock.call_count == 3
 
 
-
 @patch('apps.devices.tasks.telemetry_create')
 def test_invalid_batch_does_not_call_service(
     telemetry_create_mock,
@@ -74,4 +73,3 @@ def test_service_called_for_valid_items_only(
 
     ingest_telemetry_payload(payload=[valid_item1, invalid_item, valid_item2])
     assert telemetry_create_mock.call_count == 2
-
