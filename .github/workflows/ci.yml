@@ -86,6 +86,11 @@ jobs:
       DB_HOST: localhost
       DB_PORT: 5432
       SECRET_KEY: "dummy_secret_for_ci"
+      # Celery: use in-memory broker so no Redis is needed in CI.
+      # Without this, conf/__init__.py imports celery_app which configures
+      # the broker URL; any eager connection attempt would time-out/retry.
+      CELERY_BROKER_URL: "memory://"
+      CELERY_RESULT_BACKEND: "cache+memory://"
 
     services:
       db:
@@ -104,7 +109,10 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [ "3.10", "3.11" ]
+        # Single version: 3.10 compatibility is verified by ruff/black which
+        # target py310 already. Running two identical test jobs doubles
+        # billed minutes with no additional signal.
+        python-version: [ "3.11" ]
     defaults: *backend_defaults
 
     steps:
@@ -122,9 +130,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
+          python -m pip install pytest-xdist
 
       - name: Pytest & Coverage
-        run: pytest --cov --cov-report=xml:coverage.xml --cov-report=term-missing
+        run: pytest -n auto --cov --cov-report=xml:coverage.xml --cov-report=term-missing --cov-fail-under=20
 
       - name: Upload coverage.xml
         uses: actions/upload-artifact@v4

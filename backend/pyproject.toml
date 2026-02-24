@@ -19,11 +19,10 @@ DJANGO_SETTINGS_MODULE = "conf.settings"
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = [
-    "--cov",
-    "--cov-report=term-missing",
-    "--cov-fail-under=20",
-]
+# --cov intentionally excluded from addopts.
+# CI passes --cov explicitly (see .github/workflows/ci.yml).
+# Run locally with: pytest --cov --cov-report=term-missing --cov-fail-under=20
+addopts = []
 filterwarnings = [
     "ignore::DeprecationWarning:pythonjsonlogger.*",
 ]
