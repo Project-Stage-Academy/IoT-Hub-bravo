@@ -6,7 +6,6 @@ import pytest
 
 from tests.fixtures.factories import UserFactory
 
-
 pytestmark = pytest.mark.django_db
 
 

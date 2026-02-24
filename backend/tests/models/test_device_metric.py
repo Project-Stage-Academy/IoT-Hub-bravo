@@ -10,7 +10,6 @@ from tests.fixtures.factories import (
     DeviceMetricFactory,
 )
 
-
 pytestmark = pytest.mark.django_db
 
 

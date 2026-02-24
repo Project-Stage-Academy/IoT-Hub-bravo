@@ -23,16 +23,26 @@ INSTALLED_APPS = [
 # Third party apps
 INSTALLED_APPS += [
     'corsheaders',
+    'channels',
     'django_prometheus',
     'django_celery_beat',
 ]
-
 # Local apps
 INSTALLED_APPS += [
     'apps.devices',
     'apps.users',
     'apps.rules',
 ]
+
+ASGI_APPLICATION = 'conf.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(config('REDIS_HOST', default='redis'), config('REDIS_PORT', default=6379, cast=int))],
+        },
+    },
+}
 
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',

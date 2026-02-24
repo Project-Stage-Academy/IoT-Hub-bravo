@@ -12,7 +12,6 @@ from tests.fixtures.factories import (
     TelemetryStringFactory,
 )
 
-
 pytestmark = pytest.mark.django_db
 
 
