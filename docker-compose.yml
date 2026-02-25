@@ -35,6 +35,7 @@ services:
     container_name: web
     volumes:
       - media_data:/app/media
+      - prometheus_multiproc:/tmp/prometheus_multiproc
     ports:
       - "8000:8000"
 
@@ -80,6 +81,8 @@ services:
     image: iot-hub-worker
     container_name: worker
     command: [ "celery", "-A", "conf.celery_app", "worker", "-l", "INFO", "--concurrency=${CELERY_CONCURRENCY:-2}" ]
+    volumes:
+      - prometheus_multiproc:/tmp/prometheus_multiproc
 
   flower:
     image: mher/flower:2.0
@@ -140,6 +143,7 @@ services:
     container_name: prometheus
     volumes:
       - ./devops/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./devops/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml
     ports:
       - "9090:9090"
     networks:
@@ -242,6 +246,7 @@ volumes:
   redis_data:
   flower_data:
   kafka_data:
+  prometheus_multiproc:
 
 networks:
   backend:

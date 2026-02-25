@@ -5,6 +5,9 @@ from apps.rules.models.event import Event
 from apps.rules.models.rule import Rule
 from apps.devices.models.telemetry import Telemetry
 
+# Import Prometheus metrics
+from apps.common.metrics import events_created_total
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,12 +46,18 @@ class Action:
         """
         Create Event and dispatch async side-effects.
         """
+        severity = 'info'
+        if rule.action and isinstance(rule.action, dict):
+            severity = rule.action.get('severity', 'info')
+
         event = Event.objects.create(
             rule=rule,
             timestamp=timezone.now(),
             trigger_telemetry_id=telemetry.id,
             trigger_device_id=telemetry.device_metric.device_id,
         )
+
+        events_created_total.labels(severity=severity).inc()
 
         logger.info(
             "Event created",
@@ -59,6 +68,7 @@ class Action:
                     "rule_name": rule.name,
                     "trigger_telemetry_id": telemetry.id,
                     "trigger_device_id": telemetry.device_metric.device_id,
+                    "severity": severity,
                 }
             },
         )

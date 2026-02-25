@@ -216,3 +216,8 @@ certs/
 
 # Exported data
 exports/
+# macOS system files
+.DS_Store
+
+# IDE
+.idea/

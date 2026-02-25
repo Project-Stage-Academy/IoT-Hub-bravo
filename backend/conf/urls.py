@@ -1,4 +1,4 @@
-'''
+"""
 URL configuration for conf project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -13,7 +13,8 @@ Class-based views
 Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-'''
+"""
+
 from django.contrib import admin
 from django.urls import path, include
 
@@ -30,7 +31,7 @@ urlpatterns = [
     path("api/devices/", include("apps.devices.urls.device_urls")),
     path("api/telemetry/", include("apps.devices.urls.telemetry_urls")),
     path("api/events/", include("apps.rules.urls.event_urls")),
-    path('prometheus/', include('django_prometheus.urls')),  # access metrics at "prometheus/metrics/"
+    path('prometheus/', include('apps.common.urls')),
     path('api/rules/', include('apps.rules.urls.rule_urls')),
 ]
 
