@@ -14,8 +14,12 @@ django.setup()
 
 from apps.devices.tasks import ingest_telemetry_payload  # noqa
 
-# TODO: switch to KAFKA_TOPIC_TELEMETRY_CLEAN (telemetry.clean)
-topic = config('KAFKA_TOPIC_TELEMETRY_RAW', default='telemetry.raw')
+# TODO: switch topic to KAFKA_TOPIC_TELEMETRY_CLEAN (telemetry.clean)
+TOPIC = config('KAFKA_TOPIC_TELEMETRY_RAW', default='telemetry.raw')
+CONSUME_TIMEOUT = config('KAFKA_CONSUMER_CONSUME_TIMEOUT', default=1.0, cast=float)
+DECODE_JSON = config('KAFKA_CONSUMER_DECODE_JSON', default=True, cast=bool)
+CONSUME_BATCH = config('KAFKA_CONSUMER_CONSUME_BATCH', default=True, cast=bool)
+BATCH_MAX_SIZE = config('KAFKA_CONSUMER_BATCH_MAX_SIZE', default=100, cast=int)
 
 
 def setup_logging() -> None:
@@ -53,12 +57,12 @@ def main():
 
     consumer = KafkaConsumer(
         config=ConsumerConfig(),
-        topics=[topic],
+        topics=[TOPIC],
         handler=CeleryPayloadHandler(ingest_telemetry_payload),
-        consume_timeout=1.0,
-        decode_json=True,
-        consume_batch=True,
-        batch_max_size=100,
+        consume_timeout=CONSUME_TIMEOUT,
+        decode_json=DECODE_JSON,
+        consume_batch=CONSUME_BATCH,
+        batch_max_size=BATCH_MAX_SIZE,
     )
 
     signal.signal(signal.SIGTERM, consumer.stop)
