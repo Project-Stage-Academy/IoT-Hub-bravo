@@ -311,9 +311,4 @@ LOGGING = {
     },
 }
 
-TELEMETRY_ASYNC_HEADER = 'Ingest-Async'
-TELEMETRY_ASYNC_BATCH_THRESHOLD = config(
-    'TELEMETRY_ASYNC_BATCH_THRESHOLD',
-    default='50',
-    cast=int
-)
+TELEMETRY_SYNC_HEADER = 'Ingest-Sync'

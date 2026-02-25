@@ -1,11 +1,17 @@
 import json
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, create_autospec
+
 from django.test import override_settings
 
+from producers.kafka_producer import KafkaProducer
 
-def post_json(client, url, payload, headers=None):
+
+def post_json(client, url, payload, sync: bool = True, headers=None):
     headers = headers or {}
+    if sync:
+        headers['HTTP_INGEST_SYNC'] = '1'
+
     return client.post(
         url,
         data=json.dumps(payload),
@@ -15,6 +21,35 @@ def post_json(client, url, payload, headers=None):
 
 
 @pytest.mark.django_db
+@patch('apps.devices.views.telemetry_views.get_telemetry_raw_producer')
+def test_request_triggers_telemetry_producer(
+    get_producer_mock,
+    client,
+    telemetry_ingest_url,
+    valid_telemetry_payload,
+):
+    """Test view triggers 202 and activates KafkaProducer produce()."""
+    producer = create_autospec(KafkaProducer, instance=True)
+    get_producer_mock.return_value = producer
+
+    res = post_json(
+        client,
+        telemetry_ingest_url,
+        valid_telemetry_payload,
+        sync=False,
+    )
+
+    assert res.status_code == 202
+    producer.produce.assert_called_once()
+
+    data = res.json()
+    assert data['status'] == 'accepted'
+
+
+# ------------ tests for dev-only sync mode ------------
+
+
+@override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_single_valid_returns_201(
     telemetry_create_mock, client, telemetry_ingest_url, valid_telemetry_payload
@@ -34,6 +69,7 @@ def test_ingest_single_valid_returns_201(
 
 
 @pytest.mark.django_db
+@override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_single_service_rejects_returns_400(
     telemetry_create_mock,
@@ -56,6 +92,7 @@ def test_ingest_single_service_rejects_returns_400(
 
 
 @pytest.mark.django_db
+@override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_batch_valid_returns_201(
     telemetry_create_mock,
@@ -81,6 +118,7 @@ def test_ingest_batch_valid_returns_201(
 
 
 @pytest.mark.django_db
+@override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_batch_mixed_valid_invalid(
     telemetry_create_mock,
@@ -114,6 +152,7 @@ def test_ingest_batch_mixed_valid_invalid(
 
 
 @pytest.mark.django_db
+@override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_batch_all_invalid_returns_400(
     telemetry_create_mock, client, telemetry_ingest_url, valid_telemetry_payload
@@ -134,6 +173,7 @@ def test_ingest_batch_all_invalid_returns_400(
     assert 'errors' in data
 
 
+@override_settings(DEBUG=True)
 def test_ingest_malformed_json_returns_400(client, telemetry_ingest_url):
     """Test malformed JSON returns 400."""
     res = client.post(
@@ -148,6 +188,7 @@ def test_ingest_malformed_json_returns_400(client, telemetry_ingest_url):
     assert 'json' in data['errors']
 
 
+@override_settings(DEBUG=True)
 def test_ingest_wrong_payload_type_returns_400(client, telemetry_ingest_url):
     """Test payload that is not object/array returns 400."""
     res = client.post(
@@ -160,47 +201,3 @@ def test_ingest_wrong_payload_type_returns_400(client, telemetry_ingest_url):
     data = res.json()
     assert 'errors' in data
     assert 'json' in data['errors']
-
-
-@override_settings(TELEMETRY_ASYNC_HEADER='Ingest-Async')
-@patch('apps.devices.views.telemetry_views.ingest_telemetry_payload')
-def test_ingest_async_header_triggers_celery_delay(
-    ingest_task_mock,
-    client,
-    telemetry_ingest_url,
-    valid_telemetry_payload,
-):
-    """Test Ingest-Async header triggers 202 and schedules celery task."""
-    res = post_json(
-        client,
-        telemetry_ingest_url,
-        valid_telemetry_payload,
-        headers={'HTTP_INGEST_ASYNC': '1'},
-    )
-
-    assert res.status_code == 202
-    ingest_task_mock.delay.assert_called_once()
-
-    data = res.json()
-    assert data['status'] == 'accepted'
-
-
-@override_settings(TELEMETRY_ASYNC_HEADER='Ingest-Async')
-@override_settings(TELEMETRY_ASYNC_BATCH_THRESHOLD=5)
-@patch('apps.devices.views.telemetry_views.ingest_telemetry_payload')
-def test_ingest_async_large_batch_triggers_celery_delay(
-    ingest_task_mock,
-    client,
-    telemetry_ingest_url,
-    valid_telemetry_payload,
-):
-    """Test large batch triggers async ingestion and returns 202."""
-    batch = [valid_telemetry_payload] * 6
-
-    res = post_json(client, telemetry_ingest_url, batch)
-
-    assert res.status_code == 202
-    ingest_task_mock.delay.assert_called_once()
-
-    data = res.json()
-    assert data['status'] == 'accepted'
