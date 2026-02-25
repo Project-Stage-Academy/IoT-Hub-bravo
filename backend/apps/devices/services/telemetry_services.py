@@ -45,7 +45,7 @@ def telemetry_create(
     if not valid_data:
         logger.info("No valid telemetry rows to create.")
 
-        result.status = "failed" if result.validation_errors else "success"
+        result.status = "failed" if result.errors else "success"
         return result
 
     to_create = [Telemetry(**row) for row in valid_data]
@@ -64,10 +64,10 @@ def telemetry_create(
         result.created_count,
     )
 
-    if result.validation_errors and result.created_count == 0:
+    if result.errors and result.created_count == 0:
         result.status = "failed"
 
-    elif result.validation_errors:
+    elif result.errors:
         result.status = "partial_success"
 
     else:
