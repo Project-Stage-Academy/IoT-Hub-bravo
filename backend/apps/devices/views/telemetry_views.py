@@ -93,7 +93,7 @@ def _ingest_telemetry_single(
 
     validation = telemetry_validate(serializer.validated_data)
 
-    result = service(valid_data=validation.validated_rows)
+    result = service(valid_data=validation.validated_rows, validation_errors=validation.errors)
 
     return _ingest_telemetry_json_response(
         created=result.created_count,
@@ -118,7 +118,7 @@ def _ingest_telemetry_batch(
 
     validation = telemetry_validate(serializer.valid_items)
 
-    result = service(validation.validated_rows)
+    result = service(valid_data=validation.validated_rows, validation_errors=validation.errors)
     total_created += result.created_count
     items.append(
         {
