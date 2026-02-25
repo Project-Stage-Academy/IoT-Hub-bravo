@@ -121,10 +121,15 @@ def build_client(config: MqttConfig, callbacks: MqttCallbacks) -> mqtt.Client:
     return client
 
 
-def run_mqtt_client(*, config: MqttConfig, handler: MessageHandler) -> None:
+def get_mqtt_client(*, config: MqttConfig, handler: MessageHandler) -> mqtt.Client:
+    """
+    Builds and configures the client and schedules an async connection.
+    Caller must start the network loop.
+    """
     callbacks = MqttCallbacks(config=config, handler=handler)
     client = build_client(config, callbacks)
 
     logger.info('Connecting to MQTT broker %s:%s...', config.host, config.port)
     client.connect_async(config.host, config.port, keepalive=config.keepalive)
-    client.loop_forever(retry_first_connection=True)
+
+    return client
