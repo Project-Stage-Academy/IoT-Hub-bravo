@@ -1,5 +1,5 @@
 import json
-from typing import Any, Callable, Optional, Protocol
+from typing import Any, Callable, Optional
 
 from django.conf import settings
 from django.http import JsonResponse
@@ -13,16 +13,14 @@ from apps.devices.services.telemetry_services import (
     telemetry_create,
     TelemetryIngestResult,
 )
-from apps.devices.tasks import ingest_telemetry_payload
-
-
-class CeleryDelayTask(Protocol):
-    def delay(self, payload) -> Any: ...
-
+from apps.devices.producers import get_telemetry_raw_producer
+from producers.kafka_producer import KafkaProducer, ProduceResult
 
 _RESERVED_RESPONSE_KEYS = {'status', 'created', 'errors'}
 
 TelemetryIngestService = Callable[..., TelemetryIngestResult]
+
+TELEMETRY_KEY_FIELD = getattr(settings, 'TELEMETRY_KEY_FIELD', 'device')
 
 
 @csrf_exempt
@@ -32,13 +30,12 @@ def ingest_telemetry(request):
     if error_response:
         return error_response
 
-    if _should_ingest_async(request, payload):
-        return _enqueue_async_ingest(payload)
+    if _should_ingest_sync(request):
+        if isinstance(payload, dict):
+            return _ingest_telemetry_single(payload)
+        return _ingest_telemetry_batch(payload)
 
-    if isinstance(payload, dict):
-        return _ingest_telemetry_single(payload)
-
-    return _ingest_telemetry_batch(payload)
+    return _produce_telemetry_records(payload=payload)
 
 
 def _parse_json_body(body: bytes) -> tuple:
@@ -55,27 +52,75 @@ def _parse_json_body(body: bytes) -> tuple:
     return payload, None
 
 
-def _should_ingest_async(request, payload, *, header_name=None, threshold=None) -> bool:
+def _should_ingest_sync(request, header_name=None) -> bool:
+    if not settings.DEBUG:
+        return False
+
     if header_name is None:
-        header_name = getattr(settings, 'TELEMETRY_ASYNC_HEADER', 'Ingest-Async')
-    if threshold is None:
-        threshold = getattr(settings, 'TELEMETRY_ASYNC_BATCH_THRESHOLD', 50)
+        header_name = getattr(settings, 'TELEMETRY_SYNC_HEADER', 'Ingest-Sync')
 
     if request.headers.get(header_name) == '1':
         return True
-    return isinstance(payload, list) and len(payload) > threshold
+    return False
 
 
-def _enqueue_async_ingest(
-    payload: dict | list,
+def _produce_telemetry_records(
     *,
-    task: Optional[CeleryDelayTask] = None,
-) -> JsonResponse:
-    if task is None:
-        task = ingest_telemetry_payload
+    payload: dict | list,
+    producer: Optional[KafkaProducer] = None,
+):
+    if not isinstance(payload, (dict, list)):
+        return JsonResponse(
+            {'errors': {'json': 'Payload must be a JSON object or a JSON array.'}},
+            status=400,
+        )
 
-    task.delay(payload)
-    return JsonResponse({'status': 'accepted'}, status=202)
+    if isinstance(payload, dict):
+        payload = [payload]
+
+    if len(payload) == 0:
+        return JsonResponse(
+            {'status': 'rejected', 'errors': {'payload': 'Payload array is empty.'}},
+            status=422,
+        )
+
+    if producer is None:
+        producer = get_telemetry_raw_producer()
+
+    results = {
+        'accepted': 0,
+        'skipped': 0,
+        'errors': {},
+    }
+
+    for index, record in enumerate(payload):
+        if not isinstance(record, dict):
+            results['errors'][index] = 'Payload items must be JSON objects.'
+            results['skipped'] += 1
+            continue
+
+        key = record.get(TELEMETRY_KEY_FIELD, None)
+
+        result = producer.produce(payload=record, key=key)
+        if result == ProduceResult.ENQUEUED:
+            results['accepted'] += 1
+        else:
+            results['errors'][index] = result.value
+
+    body = {'status': 'accepted', **results}
+    status_code = 202
+
+    # no valid records provided (all skipped / empty list)
+    if results['accepted'] == 0 and results['skipped'] > 0:
+        body['status'] = 'rejected'
+        status_code = 422
+
+    # no records accepted (kafka issues)
+    elif results['accepted'] == 0 and results['errors']:
+        body['status'] = 'unavailable'
+        status_code = 503
+
+    return JsonResponse(body, status=status_code)
 
 
 def _ingest_telemetry_single(

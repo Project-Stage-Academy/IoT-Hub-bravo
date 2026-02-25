@@ -1,12 +1,20 @@
 import json
 import logging
 from typing import Any, Optional
+from enum import Enum
 
 from confluent_kafka import Producer, Message, KafkaException, KafkaError
 
 from producers.config import ProducerConfig
 
 logger = logging.getLogger(__name__)
+
+
+class ProduceResult(Enum):
+    ENQUEUED = 'enqueued'
+    SERIALIZATION_FAILED = 'serialization_failed'
+    BUFFER_FULL = 'buffer_full'
+    PRODUCER_ERROR = 'producer_error'
 
 
 class KafkaProducer:
@@ -22,7 +30,7 @@ class KafkaProducer:
         self._poll_timeout = poll_timeout
         self._dropped_messages = 0
 
-    def produce(self, payload: Any, key: Any = None) -> bool:
+    def produce(self, payload: Any, key: Any = None) -> ProduceResult:
         """
         Produce a message to the configured Kafka topic asynchronously.
 
@@ -31,16 +39,16 @@ class KafkaProducer:
         to the configured topic.
 
         Returns:
-            True - the message was accepted by the producer and queued for delivery;
-            False - the message was not accepted (serialization failed, the local
-                    producer queue is full, or a producer error occurred).
+            ENQUEUED - the message was accepted by the producer and queued for delivery;
+            SERIALIZATION_FAILED - value serialization failed;
+            BUFFER_FULL - producer queue is full;
+            PRODUCER_ERROR - producer error occurred.
         """
         value = self._encode_payload(payload)
         if value is None:
-            return False
+            return ProduceResult.SERIALIZATION_FAILED
 
         key_bytes = self._encode_key(key)
-        message_enqueued = True
 
         try:
             self._producer.produce(
@@ -49,21 +57,23 @@ class KafkaProducer:
                 key=key_bytes,
                 on_delivery=self._delivery_report,
             )
+            result = ProduceResult.ENQUEUED
         except BufferError:
             self._dropped_messages += 1
-            message_enqueued = False
             self._producer.poll(0)
             logger.warning('Kafka producer local buffer full. Dropped: %s', self._dropped_messages)
+            result = ProduceResult.BUFFER_FULL
         except KafkaException:
-            message_enqueued = False
             logger.exception('Kafka produce failed.')
+            result = ProduceResult.PRODUCER_ERROR
         finally:
             self._producer.poll(self._poll_timeout)
 
-        return message_enqueued
+        return result
 
     def flush(self, timeout: float = 2.0) -> None:
         """Graceful shutdown: flush pending messages."""
+        logger.info('Shutting down the producer...')
         self._producer.flush(timeout)
 
     @staticmethod
