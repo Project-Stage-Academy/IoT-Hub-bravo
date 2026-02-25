@@ -20,7 +20,7 @@ class TelemetryValidationResult:
 class TelemetryIngestResult:
     attempted_count: int = 0  # how many rows we tried to create
     created_count: int = 0  # how many were actually inserted
-    validation_errors: list[dict] = field(default_factory=list)
+    errors: list[dict] = field(default_factory=list)
     status: IngestStatus = "success"
 
 
