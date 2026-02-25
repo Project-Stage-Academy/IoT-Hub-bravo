@@ -14,7 +14,7 @@ from apps.devices.services.telemetry_services import (
     TelemetryIngestResult,
 )
 from apps.devices.producers import get_telemetry_raw_producer
-from producers.kafka_producer import KafkaProducer
+from producers.kafka_producer import KafkaProducer, ProduceResult
 
 _RESERVED_RESPONSE_KEYS = {'status', 'created', 'errors'}
 
@@ -66,46 +66,57 @@ def _should_ingest_sync(request, header_name=None) -> bool:
 
 def _produce_telemetry_records(
     *,
-    payload: Any,
+    payload: dict | list,
     producer: Optional[KafkaProducer] = None,
 ):
+    if not isinstance(payload, (dict, list)):
+        return JsonResponse(
+            {'errors': {'json': 'Payload must be a JSON object or a JSON array.'}},
+            status=400,
+        )
+
+    if isinstance(payload, dict):
+        payload = [payload]
+
+    if len(payload) == 0:
+        return JsonResponse(
+            {'status': 'rejected', 'errors': {'payload': 'Payload array is empty.'}},
+            status=422,
+        )
+
     if producer is None:
         producer = get_telemetry_raw_producer()
-
-    if not isinstance(payload, list):
-        payload = [payload]
 
     results = {
         'accepted': 0,
         'skipped': 0,
-        'rejected': 0,
+        'errors': {},
     }
 
-    for record in payload:
+    for index, record in enumerate(payload):
         if not isinstance(record, dict):
+            results['errors'][index] = 'Payload items must be JSON objects.'
             results['skipped'] += 1
             continue
 
         key = record.get(TELEMETRY_KEY_FIELD, None)
 
-        accepted = producer.produce(payload=record, key=key)
-        if accepted:
+        result = producer.produce(payload=record, key=key)
+        if result == ProduceResult.ENQUEUED:
             results['accepted'] += 1
         else:
-            results['rejected'] += 1
+            results['errors'][index] = result.value
 
     body = {'status': 'accepted', **results}
     status_code = 202
 
     # no valid records provided (all skipped / empty list)
-    if results['accepted'] == 0 and results['rejected'] == 0:
-        body['errors'] = {'payload': 'No valid telemetry objects to ingest.'}
+    if results['accepted'] == 0 and results['skipped'] > 0:
         body['status'] = 'rejected'
         status_code = 422
 
     # no records accepted (kafka issues)
-    elif results['accepted'] == 0 and results['rejected'] > 0:
-        body['errors'] = {'kafka': 'Broker unavailable or queue full.'}
+    elif results['accepted'] == 0 and results['errors']:
         body['status'] = 'unavailable'
         status_code = 503
 
