@@ -12,6 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 class Action:
+    """
+    Handles dispatching side-effects for a triggered rule.
+    """
 
     TASKS = (
         "notify_event",
@@ -28,17 +31,21 @@ class Action:
             from apps.rules import tasks
 
             getattr(tasks, task_name).delay(event_id)
+            logger.info(
+                "Task enqueued",
+                extra={"context": {"task": task_name, "event_id": event_id}},
+            )
         except Exception:
-            logger.exception(f"Failed to enqueue task: {task_name}")
+            logger.exception(
+                "Failed to enqueue task",
+                extra={"context": {"task": task_name, "event_id": event_id}},
+            )
 
     @staticmethod
     def dispatch_action(rule: Rule, telemetry: Telemetry) -> Event:
         """
         Create Event and dispatch async side-effects.
         """
-        logger.info("Create event on action")
-
-        # Get severity from rule action config, default to 'info'
         severity = 'info'
         if rule.action and isinstance(rule.action, dict):
             severity = rule.action.get('severity', 'info')
@@ -50,15 +57,19 @@ class Action:
             trigger_device_id=telemetry.device_metric.device_id,
         )
 
-        # Track event creation
         events_created_total.labels(severity=severity).inc()
 
         logger.info(
             "Event created",
             extra={
-                'event_id': event.id,
-                'rule_id': rule.id,
-                'severity': severity,
+                "context": {
+                    "event_id": event.id,
+                    "rule_id": rule.id,
+                    "rule_name": rule.name,
+                    "trigger_telemetry_id": telemetry.id,
+                    "trigger_device_id": telemetry.device_metric.device_id,
+                    "severity": severity,
+                }
             },
         )
 
