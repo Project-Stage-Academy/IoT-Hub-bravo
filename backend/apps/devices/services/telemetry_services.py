@@ -1,22 +1,27 @@
 import logging
 from dataclasses import dataclass, field
+from typing import Literal
 
 from apps.devices.models.telemetry import Telemetry
 from validator.telemetry_validator import TelemetryBatchValidator
 
 logger = logging.getLogger(__name__)
 
-
-@dataclass(slots=True)
-class TelemetryIngestResult:
-    created_count: int = 0
-    errors: list[dict] = field(default_factory=list)
+IngestStatus = Literal["success", "partial_success", "failed"]
 
 
 @dataclass(slots=True)
 class TelemetryValidationResult:
     validated_rows: list[dict] = field(default_factory=list)
     errors: list[dict] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class TelemetryIngestResult:
+    attempted_count: int = 0  # how many rows we tried to create
+    created_count: int = 0  # how many were actually inserted
+    validation_errors: list[dict] = field(default_factory=list)
+    status: IngestStatus = "success"
 
 
 def telemetry_create(
@@ -30,23 +35,43 @@ def telemetry_create(
 
     result = TelemetryIngestResult()
     result.errors = validation_errors or []
+    result.attempted_count = len(valid_data)
 
-    to_create: list[Telemetry] = [Telemetry(**row) for row in valid_data]
+    logger.info(
+        "Starting telemetry ingestion. Attempting to create %d rows.",
+        result.attempted_count,
+    )
 
-    logger.debug("Prepared %d Telemetry objects to create", len(to_create))
+    if not valid_data:
+        logger.info("No valid telemetry rows to create.")
 
-    if to_create:
-        created = Telemetry.objects.bulk_create(
-            to_create,
-            batch_size=1000,
-            ignore_conflicts=True,
-        )
-        result.created_count = len(created)
-        logger.info("Successfully created %d Telemetry records in DB", result.created_count)
+        result.status = "failed" if result.validation_errors else "success"
+        return result
+
+    to_create = [Telemetry(**row) for row in valid_data]
+
+    created_objects = Telemetry.objects.bulk_create(
+        to_create,
+        batch_size=1000,
+        ignore_conflicts=True,
+    )
+
+    result.created_count = len(created_objects)
+
+    logger.info(
+        "Telemetry ingestion finished. Attempted: %d, Created: %d",
+        result.attempted_count,
+        result.created_count,
+    )
+
+    if result.validation_errors and result.created_count == 0:
+        result.status = "failed"
+
+    elif result.validation_errors:
+        result.status = "partial_success"
+
     else:
-        logger.info("No Telemetry records to create after validation")
-
-    logger.info("Telemetry ingestion completed")
+        result.status = "success"
 
     return result
 
