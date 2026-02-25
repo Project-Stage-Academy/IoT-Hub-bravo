@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch, create_autospec
 
 from django.test import override_settings
 
-from producers.kafka_producer import KafkaProducer
+from producers.kafka_producer import KafkaProducer, ProduceResult
 
 
 def post_json(client, url, payload, sync: bool = True, headers=None):
@@ -28,6 +28,7 @@ def test_request_triggers_telemetry_producer(
 ):
     """Test view triggers 202 and activates KafkaProducer produce()."""
     producer = create_autospec(KafkaProducer, instance=True)
+    producer.produce.return_value = ProduceResult.ENQUEUED
     get_producer_mock.return_value = producer
 
     res = post_json(
