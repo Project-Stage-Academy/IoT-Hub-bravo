@@ -8,12 +8,12 @@ logger = logging.getLogger(__name__)
 
 
 class TelemetryBatchValidator(BaseValidator):
-    def __init__(self, payload):
+    def __init__(self, payload: list[dict[str, Any]]):
         super().__init__()
-        self._validated_rows = []
-        self._initial_data = payload
-        self._validated_devices = {}
-        self._initial_device_metrics = {}
+        self._validated_rows: list[dict[str, Any]] = []
+        self._initial_data: list[dict[str, Any]] = payload
+        self._validated_devices: set[str] = set()
+        self._initial_device_metrics: dict[str, dict[str, dict[str, Any]]] = {}
 
     @property
     def validated_devices(self):
@@ -27,7 +27,19 @@ class TelemetryBatchValidator(BaseValidator):
     def validated_rows(self):
         return self._validated_rows
 
-    def _collect_devices(self):
+    def is_valid(self) -> bool:
+        self._errors.clear()
+        self._validated_rows = []
+
+        logger.info("Starting telemetry payload validation for %d items", len(self._initial_data))
+        self._collect_devices_and_metrics()
+        self._validate()
+
+        logger.info("Validation completed successfully for %d items", len(self._validated_rows))
+
+        return not self._errors
+
+    def _collect_devices(self) -> None:
         """Fetch all devices from payload and populate _validated_devices"""
         device_serials = {
             item['device_serial_id'] for item in self._initial_data if item.get("device_serial_id")
@@ -53,7 +65,7 @@ class TelemetryBatchValidator(BaseValidator):
         self._validated_devices = active_serials
         logger.info("Validated devices set updated with %d devices", len(self._validated_devices))
 
-    def _collect_device_metrics(self):
+    def _collect_device_metrics(self) -> None:
         """Fetch all DeviceMetrics and Metrics in one query and build map"""
         if not self._validated_devices:
             logger.info("No validated devices found, skipping device metrics collection")
@@ -78,30 +90,14 @@ class TelemetryBatchValidator(BaseValidator):
         self._initial_device_metrics = device_metric_map
         logger.info("Device metrics map built for %d devices", len(device_metric_map))
 
-    def _collect_devices_and_metrics(self):
+    def _collect_devices_and_metrics(self) -> None:
         """Wrapper: fetch devices + their metrics"""
         logger.info("Starting collection of devices and their metrics")
         self._collect_devices()
         self._collect_device_metrics()
         logger.info("Completed collection of devices and metrics")
 
-    def is_valid(self):
-        self._errors.clear()
-        self._validated_rows = []
-
-        logger.info("Starting telemetry payload validation for %d items", len(self._initial_data))
-        self._collect_devices_and_metrics()
-
-        if self._errors:
-            logger.warning("Validation aborted due to device errors: %s", self._errors)
-            return False
-        self._validate()
-
-        logger.info("Validation completed successfully for %d items", len(self._validated_rows))
-
-        return not self._errors
-
-    def _validate(self):
+    def _validate(self) -> None:
         for index, item in enumerate(self._initial_data):
             serial = item.get("device_serial_id")
             metrics = item.get("metrics", {})

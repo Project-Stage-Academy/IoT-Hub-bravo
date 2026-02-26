@@ -50,6 +50,7 @@ def test_request_triggers_telemetry_producer(
 # ------------ tests for dev-only sync mode ------------
 
 
+@pytest.mark.django_db
 @override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_single_valid_returns_201(
