@@ -190,7 +190,7 @@ def test_rule_add_page_loads(logged_in_client):
 def test_events_list_page_loads(logged_in_client, event):
     resp = logged_in_client.get("/admin/rules/event/")
     assert resp.status_code == 200
-    assert "Select event to change" in resp.content.decode("utf-8")
+    assert "Select Event to change" in resp.content.decode("utf-8")
 
 
 @pytest.mark.django_db
