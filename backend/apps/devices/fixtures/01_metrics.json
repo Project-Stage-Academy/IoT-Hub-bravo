@@ -4,55 +4,98 @@
     "pk": 1,
     "fields": {
       "metric_type": "temperature",
-      "data_type": "numeric"
+      "data_type": "numeric",
+      "unit": "celsius"
     }
   },
   {
     "model": "devices.metric",
     "pk": 2,
     "fields": {
-      "metric_type": "humidity",
-      "data_type": "numeric"
+      "metric_type": "temperature",
+      "data_type": "numeric",
+      "unit": "fahrenheit"
     }
   },
   {
     "model": "devices.metric",
     "pk": 3,
     "fields": {
-      "metric_type": "pressure",
-      "data_type": "numeric"
+      "metric_type": "temperature",
+      "data_type": "numeric",
+      "unit": "kelvin"
     }
   },
   {
     "model": "devices.metric",
     "pk": 4,
     "fields": {
-      "metric_type": "status",
-      "data_type": "str"
+      "metric_type": "humidity",
+      "data_type": "numeric",
+      "unit": "percent"
     }
   },
   {
     "model": "devices.metric",
     "pk": 5,
     "fields": {
-      "metric_type": "firmware_version",
-      "data_type": "str"
+      "metric_type": "pressure",
+      "data_type": "numeric",
+      "unit": "pascal"
     }
   },
   {
     "model": "devices.metric",
     "pk": 6,
     "fields": {
-      "metric_type": "motion_detected",
-      "data_type": "bool"
+      "metric_type": "pressure",
+      "data_type": "numeric",
+      "unit": "bar"
     }
   },
   {
     "model": "devices.metric",
     "pk": 7,
     "fields": {
+      "metric_type": "pressure",
+      "data_type": "numeric",
+      "unit": "PSI"
+    }
+  },
+  {
+    "model": "devices.metric",
+    "pk": 8,
+    "fields": {
+      "metric_type": "status",
+      "data_type": "str",
+      "unit": "On/Off"
+    }
+  },
+  {
+    "model": "devices.metric",
+    "pk": 9,
+    "fields": {
+      "metric_type": "firmware_version",
+      "data_type": "str",
+      "unit": "version"
+    }
+  },
+  {
+    "model": "devices.metric",
+    "pk": 10,
+    "fields": {
+      "metric_type": "motion_detected",
+      "data_type": "bool",
+      "unit": "True/False"
+    }
+  },
+  {
+    "model": "devices.metric",
+    "pk": 11,
+    "fields": {
       "metric_type": "online",
-      "data_type": "bool"
+      "data_type": "bool",
+      "unit": "On/Offline"
     }
   }
 ]

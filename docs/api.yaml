@@ -557,13 +557,17 @@ paths:
                     items:
                       - id: 1
                         device_id: 1
-                        metric: "temperature"
-                        value: 23.5
+                        metric:
+                          temperature:
+                            value: 23.5
+                            unit: "celsius"
                         ts: "2026-02-09T12:00:00Z"
                       - id: 2
                         device_id: 1
-                        metric: "temperature"
-                        value: 24.0
+                        metric: 
+                          temperature:
+                            value: 24.0
+                            unit: "celsius"
                         ts: "2026-02-09T12:05:00Z"
 
         '404':
@@ -608,23 +612,33 @@ paths:
                   schema_version: 1
                   device: "DEV-001"
                   ts: "2026-02-04T12:00:00Z"
-                  metrics:
-                    temperature: 21.5
-                    door_open: false
-                    status: "ok"
+                  metric:
+                    temperature: 
+                      value: 21.6
+                      unit: "celsius"
+                    door_open: 
+                      value: false
+                      unit: "closed"
+                    status: 
+                      value: "ok"
+                      unit: "Online"
               batch:
                 summary: Batch telemetry payload
                 value:
                   - schema_version: 1
                     device: "DEV-001"
                     ts: "2026-02-04T12:00:00Z"
-                    metrics:
-                      temperature: 21.5
+                    metric:
+                      temperature: 
+                        value: 21.5
+                        unit: "celsius"
                   - schema_version: 1
                     device: "DEV-001"
                     ts: "2026-02-04T12:00:01Z"
-                    metrics:
-                      temperature: 21.6
+                    metric:
+                      temperature:
+                        value: 21.6
+                        unit: "celsius"
       responses:
         '201':
           description: Telemetry ingested
@@ -1777,15 +1791,26 @@ components:
           is_active: true
 
     TelemetryMetricValue:
-      oneOf:
-        - type: boolean
-          example: false
-        - type: number
-          example: 21.5
-        - type: string
-          example: "ok"
-      example: 21.5
-
+      type: object
+      properties:
+        value:
+          oneOf:
+            - type: boolean
+              example: false
+            - type: number
+              example: 21.5
+            - type: string
+              example: "ok"
+        unit:
+          type: string
+          example: "celsius"
+      required:
+        - value
+        - unit
+      example:
+        value: 21.5
+        unit: "celsius"
+    
     Telemetry:
       type: object
       properties:
@@ -1796,10 +1821,12 @@ components:
           type: integer
           example: 1
         metric:
-          type: string
-          example: "temperature"
-        value:
-          $ref: "#/components/schemas/TelemetryMetricValue"
+          type: object
+          example: 
+            temperature:
+              value: 
+                $ref: "#/components/schemas/TelemetryMetricValue"
+              unit: "celsius"
         ts:
           type: string
           format: date-time
@@ -1808,15 +1835,15 @@ components:
         - id
         - device_id
         - metric
-        - value
         - ts
       example:
         id: 1
         device_id: 1
-        metric: "temperature"
-        value: 18.3
+        metric: 
+          temperature:
+              value: 21.5
+              unit: "celsius"
         ts: "2024-04-13T18:45:37Z"
-
 
     TelemetryIngest:
       type: object
@@ -1831,27 +1858,39 @@ components:
           type: string
           format: date-time
           example: "2026-02-04T12:00:00Z"
-        metrics:
+        metric:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/TelemetryMetricValue"
           example:
-            temperature: 21.5
-            door_open: false
-            status: "ok"
+            temperature:
+              value: 21.5
+              unit: "celsius"
+            door_open:
+              value: false
+              unit: "closed"
+            status:
+              value: "ok"
+              unit: "online"
       required:
         - schema_version
         - device
-        - metrics
+        - metric
         - ts
       example:
         schema_version: 1
         device: "DEV-001"
         ts: "2026-02-04T12:00:00Z"
-        metrics:
-          temperature: 21.5
-          door_open: false
-          status: "ok"
+        metric:
+          temperature: 
+              value: 21.5
+              unit: "celsius"
+          door_open: 
+              value: false
+              unit: "closed"
+          status: 
+              value: "ok"
+              unit: "Online"
 
     TelemetryIngestBatch:
       type: array
@@ -1861,15 +1900,23 @@ components:
         - schema_version: 1
           device: "DEV-001"
           ts: "2026-02-04T12:00:00Z"
-          metrics:
-            temperature: 21.5
-            door_open: false
+          metric:
+            temperature: 
+              value: 21.5
+              unit: "celsius"
+            door_open: 
+              value: false
+              unit: "closed"
         - schema_version: 1
           device: "DEV-001"
           ts: "2026-02-04T12:00:01Z"
-          metrics:
-            temperature: 21.6
-            status: "ok"
+          metric:
+            temperature:
+              value: 21.5
+              unit: "celsius"
+            status: 
+              value: "ok"
+              unit: "Online"
 
     TelemetryIngestSingleResponse:
       type: object
@@ -2153,13 +2200,17 @@ components:
           example:
             - id: 1
               device_id: 1
-              metric: "temperature"
-              value: 18.3
+              metric: 
+                "temperature":
+                  value: 18.3
+                  unit: "celsius"
               ts: "2024-04-13T18:45:37Z"
             - id: 2
               device_id: 1
-              metric: "humidity"
-              value: 6.73
+              metric: 
+                "humidity":
+                  value: 6.73
+                  unit: "percent"
               ts: "2024-04-13T18:50:00Z"
       required:
         - total
@@ -2173,13 +2224,17 @@ components:
         items:
           - id: 1
             device_id: 1
-            metric: "temperature"
-            value: 18.3
+            metric: 
+                "temperature":
+                  value: 18.3
+                  unit: "celsius"
             ts: "2024-04-13T18:45:37Z"
           - id: 2
             device_id: 1
-            metric: "humidity"
-            value: 6.73
+            metric: 
+                "humidity":
+                  value: 6.73
+                  unit: "percent"
             ts: "2024-04-13T18:50:00Z"
 
     Rule:

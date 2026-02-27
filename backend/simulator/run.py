@@ -216,7 +216,15 @@ def main():
 
     # Send telemetry messages
     for i in range(args.count):
-        metrics_payload = {name: provider.get() for name, provider in providers.items()}
+        metrics_payload = {}
+
+        for name, provider in providers.items():
+            value = provider.get()
+            metric_obj = (
+                provider.metric if hasattr(provider, "metric") else provider.device_metric.metric
+            )
+
+            metrics_payload[name] = {"value": value, "unit": getattr(metric_obj, "unit", None)}
 
         payload = {
             "schema_version": args.schema_version,

@@ -14,9 +14,18 @@ def valid_telemetry_payload():
         'schema_version': 1,
         'device': 'DEV-001',
         'metrics': {
-            'temperature': 21.5,
-            'door_open': False,
-            'status': 'ok',
+            'temperature': {
+                'value': 21.5,
+                'unit': "celsius",
+            },
+            'door_open': {
+                'value': False,
+                'unit': "open",
+            },
+            'status': {
+                'value': "ok",
+                'unit': "Online",
+            },
         },
         'ts': '2026-02-04T12:00:00Z',
     }
@@ -44,17 +53,17 @@ def inactive_device(db, user):
 
 @pytest.fixture
 def metric_temperature_numeric(db):
-    return Metric.objects.create(metric_type='temperature', data_type='numeric')
+    return Metric.objects.create(metric_type='temperature', data_type='numeric', unit='celsius')
 
 
 @pytest.fixture
 def metric_door_open_bool(db):
-    return Metric.objects.create(metric_type='door_open', data_type='bool')
+    return Metric.objects.create(metric_type='door_open', data_type='bool', unit='open')
 
 
 @pytest.fixture
 def metric_status_str(db):
-    return Metric.objects.create(metric_type='status', data_type='str')
+    return Metric.objects.create(metric_type='status', data_type='str', unit='Online')
 
 
 @pytest.fixture
