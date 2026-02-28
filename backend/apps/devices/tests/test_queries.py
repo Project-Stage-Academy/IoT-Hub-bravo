@@ -4,13 +4,13 @@ from django.db import connection
 
 @pytest.mark.django_db
 def test_index_scan_on_device_metric_id():
-    query = '''
+    query = """
     SELECT * 
     FROM telemetries 
     WHERE device_metric_id = 12
     ORDER BY ts DESC
     LIMIT 10;
-    '''
+    """
     with connection.cursor() as cur:
         cur.execute(f"EXPLAIN {query}")
         plan = "\n".join(row[0] for row in cur.fetchall())
@@ -20,13 +20,13 @@ def test_index_scan_on_device_metric_id():
 
 @pytest.mark.django_db
 def test_index_scan_on_ts():
-    query = '''
+    query = """
     SELECT *
     FROM telemetries
     WHERE ts BETWEEN '2026-01-01' AND '2026-01-31'
     ORDER BY ts DESC
     LIMIT 10;
-    '''
+    """
     with connection.cursor() as cur:
         cur.execute(f"EXPLAIN {query}")
         plan = "\n".join(row[0] for row in cur.fetchall())
@@ -36,14 +36,14 @@ def test_index_scan_on_ts():
 
 @pytest.mark.django_db
 def test_index_scan_on_device_metric_id_and_ts():
-    query = '''
+    query = """
     SELECT *
     FROM telemetries
     WHERE device_metric_id = 12
     AND ts BETWEEN '2026-01-01' AND '2026-01-31'
     ORDER BY ts DESC
     LIMIT 10;
-    '''
+    """
     with connection.cursor() as cur:
         cur.execute(f"EXPLAIN {query}")
         plan = "\n".join(row[0] for row in cur.fetchall())
@@ -53,12 +53,12 @@ def test_index_scan_on_device_metric_id_and_ts():
 
 @pytest.mark.django_db
 def test_hypertable_scan_without_filters():
-    query = '''
+    query = """
     SELECT *
     FROM telemetries
     ORDER BY ts DESC
     LIMIT 10;
-    '''
+    """
     with connection.cursor() as cur:
         cur.execute(f"EXPLAIN {query}")
         plan = "\n".join(row[0] for row in cur.fetchall())

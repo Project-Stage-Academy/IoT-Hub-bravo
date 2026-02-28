@@ -29,7 +29,10 @@ class BaseDeviceSerializer:
 
         if not self.partial:
             for field in self.required_fields:
-                if field not in self.initial_data or self.initial_data[field] in ("", None):
+                if field not in self.initial_data or self.initial_data[field] in (
+                    "",
+                    None,
+                ):
                     self._errors[field] = "This field is required."
 
         if self._errors:

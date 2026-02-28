@@ -13,11 +13,13 @@ def fetch_chunks(cur):
     """
 
     try:
-        cur.execute(sql_query, ('telemetries',))
+        cur.execute(sql_query, ("telemetries",))
         chunks = cur.fetchall()
         result = []
         for chunk_name, is_compressed in chunks:
-            print(f"{chunk_name} -> {'COMPRESSED' if is_compressed else 'NOT COMPRESSED'}")
+            print(
+                f"{chunk_name} -> {'COMPRESSED' if is_compressed else 'NOT COMPRESSED'}"
+            )
             result.append((chunk_name, is_compressed))
         return result
     except DatabaseError as e:
@@ -33,7 +35,7 @@ def get_job_id(cur):
     """
 
     try:
-        cur.execute(sql_query, ('telemetries',))
+        cur.execute(sql_query, ("telemetries",))
         compress_id = cur.fetchone()
 
         if compress_id:
@@ -41,7 +43,9 @@ def get_job_id(cur):
             print(f"Found job_id: {job_id}, proc_name: {proc_name}, config: {config}")
             return job_id
         else:
-            print("No job found for hypertable 'telemetries' with proc_name 'policy_compression'")
+            print(
+                "No job found for hypertable 'telemetries' with proc_name 'policy_compression'"
+            )
     except DatabaseError as e:
         print(f"Database error: {e}")
 
@@ -65,7 +69,9 @@ def compress_chunks():
     password = os.environ.get("DB_PASSWORD")
     host = os.environ.get("DB_HOST", "db")
 
-    conn = psycopg.connect(dbname=dbname, user=user, password=password, host=host, autocommit=True)
+    conn = psycopg.connect(
+        dbname=dbname, user=user, password=password, host=host, autocommit=True
+    )
     cur = conn.cursor()
 
     before = fetch_chunks(cur)

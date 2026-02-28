@@ -14,7 +14,7 @@ class BaseSerializer:
     @property
     def validated_data(self):
         if self._validated_data is None:
-            raise ValueError('Call is_valid() before accessing validated_data.')
+            raise ValueError("Call is_valid() before accessing validated_data.")
         return self._validated_data
 
     @property
@@ -33,10 +33,10 @@ class BaseSerializer:
 class TelemetryCreateSerializer(BaseSerializer):
     SCHEMA_VERSION = 1
     FIELDS_TYPE_MAP = {
-        'schema_version': int,
-        'device': str,
-        'metrics': dict,
-        'ts': str,
+        "schema_version": int,
+        "device": str,
+        "metrics": dict,
+        "ts": str,
     }
     REQUIRED_FIELDS = tuple(FIELDS_TYPE_MAP.keys())
     METRICS_TYPES = (bool, int, float, str)
@@ -47,42 +47,42 @@ class TelemetryCreateSerializer(BaseSerializer):
 
     def _validate(self, data: Any) -> Optional[dict[str, Any]]:
         if not isinstance(data, dict):
-            self._errors['non_field_errors'] = 'Payload must be a JSON object.'
+            self._errors["non_field_errors"] = "Payload must be a JSON object."
             return None
 
         # check types of required fields
         for field in self.REQUIRED_FIELDS:
             if field not in data:
-                self._errors[field] = f'{field} field is required.'
+                self._errors[field] = f"{field} field is required."
             elif not isinstance(data[field], self.FIELDS_TYPE_MAP[field]):
                 self._errors[field] = (
-                    f'{field} must be of type {self.FIELDS_TYPE_MAP[field].__name__}.'
+                    f"{field} must be of type {self.FIELDS_TYPE_MAP[field].__name__}."
                 )
 
         if self._errors:
             return None
 
-        if not self._schema_version_valid(data['schema_version']):
+        if not self._schema_version_valid(data["schema_version"]):
             return None
 
-        device = self._validate_device(data['device'])
-        metrics = self._validate_metrics(data['metrics'])
-        ts = self._validate_ts(data['ts'])
+        device = self._validate_device(data["device"])
+        metrics = self._validate_metrics(data["metrics"])
+        ts = self._validate_ts(data["ts"])
 
         if self._errors:
             return None
 
         return {
-            'device_serial_id': device,
-            'metrics': metrics,
-            'ts': ts,
+            "device_serial_id": device,
+            "metrics": metrics,
+            "ts": ts,
         }
 
     def _schema_version_valid(self, schema_version: int) -> bool:
         if schema_version != self.SCHEMA_VERSION:
-            self._errors['schema_version'] = (
-                f'Unsupported schema_version: {schema_version}. '
-                f'Supported: {self.SCHEMA_VERSION}.'
+            self._errors["schema_version"] = (
+                f"Unsupported schema_version: {schema_version}. "
+                f"Supported: {self.SCHEMA_VERSION}."
             )
             return False
         return True
@@ -90,7 +90,7 @@ class TelemetryCreateSerializer(BaseSerializer):
     def _validate_device(self, device_raw: str) -> Optional[str]:
         device = device_raw.strip()
         if not device:
-            self._errors['device'] = 'device must be a non-empty string.'
+            self._errors["device"] = "device must be a non-empty string."
             return None
         return device
 
@@ -100,30 +100,32 @@ class TelemetryCreateSerializer(BaseSerializer):
 
         for name, value in metrics_raw.items():
             if not isinstance(name, str) or not name.strip():
-                metrics_errors[str(name)] = 'metric name must be a non-empty string.'
+                metrics_errors[str(name)] = "metric name must be a non-empty string."
                 continue
 
             name = name.strip()
             if not isinstance(value, self.METRICS_TYPES):
-                metrics_errors[name] = 'metric value must be of type bool/int/float/str.'
+                metrics_errors[name] = (
+                    "metric value must be of type bool/int/float/str."
+                )
                 continue
 
             metrics[name] = value
 
         if metrics_errors:
-            self._errors['metrics'] = metrics_errors
+            self._errors["metrics"] = metrics_errors
             return None
         return metrics
 
     def _validate_ts(self, ts_raw: str) -> Optional[datetime.datetime]:
         ts = ts_raw.strip()
         if not ts:
-            self._errors['ts'] = 'ts must be a non-empty ISO-8601 datetime string.'
+            self._errors["ts"] = "ts must be a non-empty ISO-8601 datetime string."
             return None
 
         ts = parse_datetime(ts)
         if ts is None:
-            self._errors['ts'] = 'ts must be a valid ISO-8601 datetime.'
+            self._errors["ts"] = "ts must be a valid ISO-8601 datetime."
             return None
 
         if timezone.is_naive(ts):
@@ -149,11 +151,11 @@ class TelemetryBatchCreateSerializer(BaseSerializer):
 
     def _validate(self, data: Any) -> Optional[list[dict[str, Any]]]:
         if not isinstance(data, list):
-            self._errors['non_field_errors'] = 'Payload must be a JSON array.'
+            self._errors["non_field_errors"] = "Payload must be a JSON array."
             return None
 
         if not data:
-            self._errors['items'] = {'non_field_errors': 'Empty batch.'}
+            self._errors["items"] = {"non_field_errors": "Empty batch."}
             return None
 
         self._item_errors: dict[int, Any] = {}
@@ -167,7 +169,7 @@ class TelemetryBatchCreateSerializer(BaseSerializer):
                 self._item_errors[index] = serializer.errors
 
         if self.item_errors:
-            self._errors['items'] = self._item_errors
+            self._errors["items"] = self._item_errors
             return None
 
         return self._valid_items

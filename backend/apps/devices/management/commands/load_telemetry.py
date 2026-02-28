@@ -6,20 +6,20 @@ from apps.devices.models import Telemetry, DeviceMetric
 
 
 class Command(BaseCommand):
-    help = 'Generates random telemetry data for testing purposes'
+    help = "Generates random telemetry data for testing purposes"
 
     def add_arguments(self, parser):
-        parser.add_argument('total', type=int, help='The number of rows to insert')
+        parser.add_argument("total", type=int, help="The number of rows to insert")
 
     def handle(self, *args, **options):
-        total = options['total']
+        total = options["total"]
         batch_size = 5000
 
-        metrics = list(DeviceMetric.objects.select_related('metric').all())
+        metrics = list(DeviceMetric.objects.select_related("metric").all())
 
         if not metrics:
             self.stdout.write(
-                self.style.ERROR('No metrics found! Please load metric fixtures first.')
+                self.style.ERROR("No metrics found! Please load metric fixtures first.")
             )
             return
 
@@ -34,9 +34,9 @@ class Command(BaseCommand):
                 dm = random.choice(metrics)
                 d_type = dm.metric.data_type
 
-                if d_type == 'numeric':
+                if d_type == "numeric":
                     val = {"t": "numeric", "v": str(round(random.uniform(10, 40), 2))}
-                elif d_type == 'bool':
+                elif d_type == "bool":
                     val = {"t": "bool", "v": random.choice([True, False])}
                 else:
                     val = {"t": "str", "v": random.choice(["OK", "WARN", "ERR"])}
@@ -52,4 +52,4 @@ class Command(BaseCommand):
             created_count += current_batch_size
             self.stdout.write(f"Progress: {created_count}/{total} records inserted...")
 
-        self.stdout.write(self.style.SUCCESS(f'Successfully added {total} records'))
+        self.stdout.write(self.style.SUCCESS(f"Successfully added {total} records"))

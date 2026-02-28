@@ -10,12 +10,12 @@ from mqtt_adapter.mqtt_client import MqttCallbacks
 @pytest.fixture
 def config():
     return MqttConfig(
-        host='localhost',
+        host="localhost",
         port=1883,
         keepalive=60,
-        topic='telemetry',
+        topic="telemetry",
         qos=1,
-        client_id='test-client',
+        client_id="test-client",
     )
 
 
@@ -24,7 +24,7 @@ def handler():
     return create_autospec(MessageHandler, instance=True)
 
 
-def mqtt_message(payload: bytes, topic='telemetry', qos=1, retain=0):
+def mqtt_message(payload: bytes, topic="telemetry", qos=1, retain=0):
     """Minimal MQTTMessage mock object."""
     m = Mock()
     m.payload = payload
@@ -35,10 +35,10 @@ def mqtt_message(payload: bytes, topic='telemetry', qos=1, retain=0):
 
 
 @pytest.mark.parametrize(
-    'payload,expected_type',
+    "payload,expected_type",
     [
         (b'{"a": 1}', dict),
-        (b'[1, 2, 3]', list),
+        (b"[1, 2, 3]", list),
         (b'{"nested": {"x": 1}}', dict),
     ],
 )
@@ -49,14 +49,14 @@ def test_payload_to_json_accepts_dict_and_list(payload, expected_type):
 
 
 @pytest.mark.parametrize(
-    'payload',
+    "payload",
     [
         b'"string"',
-        b'123',
-        b'true',
-        b'null',
+        b"123",
+        b"true",
+        b"null",
         b'{"a": 1',
-        b'\xff\xfe\xfd',
+        b"\xff\xfe\xfd",
     ],
 )
 def test_payload_to_json_rejects_non_object_and_invalid(payload):
@@ -98,7 +98,7 @@ def test_on_message_calls_handler_on_valid_json(config, handler):
     handler.handle.assert_called_once()
     args = handler.handle.call_args.args
     assert isinstance(args[0], MQTTJsonMessage)
-    assert args[0].payload['device'] == 'DEV-001'
+    assert args[0].payload["device"] == "DEV-001"
 
 
 def test_on_message_does_not_call_handler_on_invalid_json(config, handler):
@@ -117,7 +117,7 @@ def test_on_message_does_not_call_handler_on_invalid_json(config, handler):
 
 def test_on_message_does_not_crash_if_handler_raises(config, handler):
     """Test on_message catches handler exceptions."""
-    handler.handle.side_effect = ValueError('invalid-value')
+    handler.handle.side_effect = ValueError("invalid-value")
     callbacks = MqttCallbacks(config=config, handler=handler)
 
     client = Mock()

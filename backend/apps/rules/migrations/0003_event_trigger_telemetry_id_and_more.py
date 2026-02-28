@@ -6,22 +6,24 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rules', '0002_event_acknowledged'),
+        ("rules", "0002_event_acknowledged"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='event',
-            name='trigger_telemetry_id',
+            model_name="event",
+            name="trigger_telemetry_id",
             field=models.BigIntegerField(
                 blank=True,
                 db_index=True,
-                help_text='ID of the telemetry that triggered this event',
+                help_text="ID of the telemetry that triggered this event",
                 null=True,
             ),
         ),
         migrations.AddIndex(
-            model_name='event',
-            index=models.Index(fields=['trigger_telemetry_id'], name='idx_events_telemetry_id'),
+            model_name="event",
+            index=models.Index(
+                fields=["trigger_telemetry_id"], name="idx_events_telemetry_id"
+            ),
         ),
     ]

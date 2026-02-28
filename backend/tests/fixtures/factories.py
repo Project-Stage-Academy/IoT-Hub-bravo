@@ -187,7 +187,9 @@ class RuleFactory(DjangoModelFactory):
 
     name = factory.Sequence(lambda n: f"Rule {n}")
     description = factory.Faker("sentence", nb_words=8)
-    condition = factory.LazyFunction(lambda: {"type": "threshold", "operator": ">", "value": 30})
+    condition = factory.LazyFunction(
+        lambda: {"type": "threshold", "operator": ">", "value": 30}
+    )
     action = factory.LazyFunction(lambda: {"type": "notify", "channel": "email"})
     device_metric = factory.SubFactory(DeviceMetricFactory)
     is_active = True

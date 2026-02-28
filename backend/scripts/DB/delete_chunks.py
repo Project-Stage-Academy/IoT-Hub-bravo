@@ -13,7 +13,7 @@ def fetch_chunks(cur):
     """
 
     try:
-        cur.execute(sql_query, ('telemetries',))
+        cur.execute(sql_query, ("telemetries",))
         chunks = cur.fetchall()
 
         result = []
@@ -34,7 +34,7 @@ def get_job_id(cur):
     """
 
     try:
-        cur.execute(sql_query, ('telemetries',))
+        cur.execute(sql_query, ("telemetries",))
         retention_id = cur.fetchone()
 
         if retention_id:
@@ -42,7 +42,9 @@ def get_job_id(cur):
             print(f"Found job_id: {job_id}, proc_name: {proc_name}, config: {config}")
             return job_id
         else:
-            print("No job found for hypertable 'telemetries' with proc_name 'policy_retention'")
+            print(
+                "No job found for hypertable 'telemetries' with proc_name 'policy_retention'"
+            )
     except psycopg.DatabaseError as e:
         print(f"Database error: {e}")
 
@@ -65,7 +67,9 @@ def delete_chunks():
     password = os.environ.get("DB_PASSWORD")
     host = os.environ.get("DB_HOST", "db")
 
-    conn = psycopg.connect(dbname=dbname, user=user, password=password, host=host, autocommit=True)
+    conn = psycopg.connect(
+        dbname=dbname, user=user, password=password, host=host, autocommit=True
+    )
     cur = conn.cursor()
 
     before = fetch_chunks(cur)

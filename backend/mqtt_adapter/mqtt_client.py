@@ -23,10 +23,12 @@ class MqttCallbacks:
     config: MqttConfig
     handler: MessageHandler
 
-    def on_connect(self, c: mqtt.Client, userdata: Any, flags: dict[str, Any], rc: int) -> None:
+    def on_connect(
+        self, c: mqtt.Client, userdata: Any, flags: dict[str, Any], rc: int
+    ) -> None:
         if rc != 0:
             logger.error(
-                'MQTT connect failed: rc=%s host=%s port=%s',
+                "MQTT connect failed: rc=%s host=%s port=%s",
                 rc,
                 self.config.host,
                 self.config.port,
@@ -34,7 +36,7 @@ class MqttCallbacks:
             return
 
         logger.info(
-            'Connected to MQTT broker %s:%s. Subscribing to topic=%s qos=%s',
+            "Connected to MQTT broker %s:%s. Subscribing to topic=%s qos=%s",
             self.config.host,
             self.config.port,
             self.config.topic,
@@ -44,18 +46,18 @@ class MqttCallbacks:
 
     def on_disconnect(self, c: mqtt.Client, userdata: Any, rc: int) -> None:
         if rc != 0:
-            logger.warning('Unexpected MQTT disconnect: rc=%s', rc)
+            logger.warning("Unexpected MQTT disconnect: rc=%s", rc)
         else:
-            logger.info('MQTT disconnected.')
+            logger.info("MQTT disconnected.")
 
     def on_message(self, c: mqtt.Client, userdata: Any, m: mqtt.MQTTMessage) -> None:
         obj = self._payload_to_json(m.payload)
 
         if obj is None:
-            logger.warning('Invalid JSON object rejected.', extra=self._extra(m))
+            logger.warning("Invalid JSON object rejected.", extra=self._extra(m))
             return
 
-        logger.info('MQTT message received.', extra=self._extra(m))
+        logger.info("MQTT message received.", extra=self._extra(m))
 
         message = MQTTJsonMessage(
             topic=m.topic,
@@ -67,12 +69,12 @@ class MqttCallbacks:
         try:
             self.handler.handle(message)
         except Exception:
-            logger.exception('Failed to handle MQTT message: ', extra=self._extra(m))
+            logger.exception("Failed to handle MQTT message: ", extra=self._extra(m))
 
     @staticmethod
     def _payload_to_json(payload: bytes) -> dict | list | None:
         try:
-            text = payload.decode('utf-8')
+            text = payload.decode("utf-8")
             obj = json.loads(text)
             return obj if isinstance(obj, (dict, list)) else None
         except (UnicodeDecodeError, json.JSONDecodeError):
@@ -82,10 +84,10 @@ class MqttCallbacks:
     def _extra(m: mqtt.MQTTMessage) -> dict[str, Any]:
         """Helper method for logging."""
         return {
-            'topic': m.topic,
-            'qos': m.qos,
-            'retain': bool(m.retain),
-            'payload_len': len(m.payload),
+            "topic": m.topic,
+            "qos": m.qos,
+            "retain": bool(m.retain),
+            "payload_len": len(m.payload),
         }
 
 
@@ -99,9 +101,9 @@ def apply_mqtt_auth(client: mqtt.Client, config: MqttConfig) -> None:
     password = _normalize_credential(config.password)
 
     if username is None:
-        raise ValueError('Invalid MQTT_USERNAME value.')
+        raise ValueError("Invalid MQTT_USERNAME value.")
     if password is None:
-        raise ValueError('Invalid MQTT_PASSWORD value.')
+        raise ValueError("Invalid MQTT_PASSWORD value.")
 
     client.username_pw_set(username, password)
 
@@ -125,6 +127,6 @@ def run_mqtt_client(*, config: MqttConfig, handler: MessageHandler) -> None:
     callbacks = MqttCallbacks(config=config, handler=handler)
     client = build_client(config, callbacks)
 
-    logger.info('Connecting to MQTT broker %s:%s...', config.host, config.port)
+    logger.info("Connecting to MQTT broker %s:%s...", config.host, config.port)
     client.connect_async(config.host, config.port, keepalive=config.keepalive)
     client.loop_forever(retry_first_connection=True)

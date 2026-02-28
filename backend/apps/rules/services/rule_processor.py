@@ -15,7 +15,9 @@ class RuleProcessor:
 
     @staticmethod
     def run(telemetry: Telemetry):
-        rules = Rule.objects.filter(is_active=True, device_metric=telemetry.device_metric)
+        rules = Rule.objects.filter(
+            is_active=True, device_metric=telemetry.device_metric
+        )
 
         for rule in rules:
             condition = rule.condition

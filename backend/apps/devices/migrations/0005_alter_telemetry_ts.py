@@ -7,13 +7,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('devices', '0004_alter_device_description'),
+        ("devices", "0004_alter_device_description"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='telemetry',
-            name='ts',
-            field=models.DateTimeField(db_index=True, default=django.utils.timezone.now),
+            model_name="telemetry",
+            name="ts",
+            field=models.DateTimeField(
+                db_index=True, default=django.utils.timezone.now
+            ),
         ),
     ]

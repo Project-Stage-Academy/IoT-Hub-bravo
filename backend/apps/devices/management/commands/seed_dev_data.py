@@ -159,7 +159,9 @@ class Command(BaseCommand):
             for i, obj in enumerate(data):
                 obj["fields"]["user"] = clients[0].id if i < half else clients[1].id
 
-            with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=True) as tmp:
+            with tempfile.NamedTemporaryFile(
+                mode="w+", suffix=".json", delete=True
+            ) as tmp:
                 json.dump(data, tmp, indent=2, ensure_ascii=False)
                 tmp.flush()
 
@@ -167,7 +169,9 @@ class Command(BaseCommand):
         except json.JSONDecodeError as exc:
             raise CommandError(f"Invalid JSON in {source.name}: {exc}")
         except OSError as exc:
-            raise CommandError(f"FileSystem error while processing {source.name}: {exc}")
+            raise CommandError(
+                f"FileSystem error while processing {source.name}: {exc}"
+            )
 
         self._loaddata("03_device_metrics.json")
         self._loaddata("04_telemetries.json")
@@ -204,7 +208,9 @@ class Command(BaseCommand):
 
         if has_users and self.force:
             prefix = "[DRY-RUN] Would clean" if self.dry_run else "Cleaning"
-            self.stdout.write(self.style.WARNING(f"{prefix} existing data due to --force..."))
+            self.stdout.write(
+                self.style.WARNING(f"{prefix} existing data due to --force...")
+            )
 
             self._cleanup_db()
             return True

@@ -22,6 +22,8 @@ def run_rule_processor(telemetry_id: int):
     try:
         telemetry = Telemetry.objects.get(id=telemetry_id)
     except Telemetry.DoesNotExist:
-        logger_celery.warning("Telemetry not found", extra={"telemetry_id": telemetry_id})
+        logger_celery.warning(
+            "Telemetry not found", extra={"telemetry_id": telemetry_id}
+        )
 
     RuleProcessor.run(telemetry)

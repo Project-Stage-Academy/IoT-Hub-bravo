@@ -31,7 +31,9 @@ def positive_int(value):
         raise argparse.ArgumentTypeError(f"{value} is not a valid integer")
 
     if ivalue <= 0:
-        raise argparse.ArgumentTypeError(f"{value} must be a positive integer greater than 0")
+        raise argparse.ArgumentTypeError(
+            f"{value} must be a positive integer greater than 0"
+        )
     return ivalue
 
 
@@ -78,7 +80,9 @@ class ManualProvider:
 
     def get(self):
         metric = self.device_metric.metric
-        value = prompt(f"Enter value for {metric.metric_type}, data type {metric.data_type}: ")
+        value = prompt(
+            f"Enter value for {metric.metric_type}, data type {metric.data_type}: "
+        )
         return parse_value(value, metric.data_type)
 
 
@@ -155,8 +159,12 @@ def main():
         help="Data sending mode http/mqtt",
     )
     parser.add_argument("--device", required=True, help="Device serial ID")
-    parser.add_argument("--rate", type=positive_float, default=1, help="Messages per second")
-    parser.add_argument("--count", type=positive_int, default=1, help="Number of messages to send")
+    parser.add_argument(
+        "--rate", type=positive_float, default=1, help="Messages per second"
+    )
+    parser.add_argument(
+        "--count", type=positive_int, default=1, help="Number of messages to send"
+    )
     parser.add_argument(
         "--schema-version", type=positive_int, default=1, help="Message schema version"
     )
@@ -171,8 +179,12 @@ def main():
         default=os.getenv("TELEMETRY_URL", "http://web:8000/api/telemetry/"),
         help="HTTP endpoint URL (defaults to TELEMETRY_URL env or http://web:8000/...)",
     )
-    parser.add_argument("--mqtt-broker", default="mosquitto", help="MQTT broker hostname")
-    parser.add_argument("--mqtt-topic", default="telemetry", help="MQTT topic to publish to")
+    parser.add_argument(
+        "--mqtt-broker", default="mosquitto", help="MQTT broker hostname"
+    )
+    parser.add_argument(
+        "--mqtt-topic", default="telemetry", help="MQTT topic to publish to"
+    )
     parser.add_argument(
         "--non-interactive",
         action="store_true",

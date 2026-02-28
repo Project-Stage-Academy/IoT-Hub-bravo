@@ -54,10 +54,10 @@ class KafkaConsumer:
             while self._running:
                 self._consume()
         except KafkaException:
-            logger.exception('Kafka consumer crashed.')
+            logger.exception("Kafka consumer crashed.")
         finally:
             self._consumer.close()
-            logger.info('Kafka consumer stopped.')
+            logger.info("Kafka consumer stopped.")
 
     def stop(self, *_) -> None:
         """
@@ -79,7 +79,7 @@ class KafkaConsumer:
             consumer.start()
         """
         self._running = False
-        logger.info('Shutting down the consumer...')
+        logger.info("Shutting down the consumer...")
 
     def _consume_one(self) -> None:
         """
@@ -92,7 +92,9 @@ class KafkaConsumer:
 
         payload = self._get_message_payload(message)
         if payload is None:
-            logger.error('Skipping commit due to decode failure at %s', message.offset())
+            logger.error(
+                "Skipping commit due to decode failure at %s", message.offset()
+            )
             return
 
         self._handle_and_commit(payload, message)
@@ -139,7 +141,7 @@ class KafkaConsumer:
             self._handler.handle(payload)
             return True
         except Exception:
-            logger.exception('Failed to handle Kafka message payload.')
+            logger.exception("Failed to handle Kafka message payload.")
             return False
 
     def _handle_and_commit(self, payload: Any, message: Message) -> None:
@@ -161,7 +163,7 @@ class KafkaConsumer:
         if message is None:
             return False
         if message.error():
-            logger.warning('Kafka message error: %s', message.error())
+            logger.warning("Kafka message error: %s", message.error())
             return False
         return True
 
@@ -171,9 +173,9 @@ class KafkaConsumer:
         if raw is None:
             return None
         try:
-            return json.loads(raw.decode('utf-8'))
+            return json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
-            logger.exception('Failed to decode JSON message.')
+            logger.exception("Failed to decode JSON message.")
             return None
 
     def _get_message_payload(self, message: Message) -> Optional[Any]:

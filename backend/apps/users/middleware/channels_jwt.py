@@ -19,7 +19,12 @@ def get_user_from_token(token: str):
 
         user = User.objects.get(id=user_id, is_active=True)
         return user, payload.get("role")
-    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, User.DoesNotExist, Exception):
+    except (
+        jwt.ExpiredSignatureError,
+        jwt.InvalidTokenError,
+        User.DoesNotExist,
+        Exception,
+    ):
         return AnonymousUser(), None
 
 

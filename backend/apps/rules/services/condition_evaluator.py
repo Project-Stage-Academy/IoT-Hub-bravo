@@ -37,7 +37,7 @@ def _get_comparison_operator(condition: dict) -> str:
     return op
 
 
-def _get_value(condition: dict, key: str = 'value') -> Any:
+def _get_value(condition: dict, key: str = "value") -> Any:
     """Extract value from condition dictionary"""
     value = condition.get(key)
     if value is None:
@@ -67,14 +67,18 @@ def _get_telemetries_in_window(telemetry: Telemetry, minutes: int):
     """Return all Telemetry objects for the same device_metric within the past `minutes` minutes"""
     start, end = _get_window(telemetry, minutes)
     return Telemetry.objects.filter(
-        device_metric=telemetry.device_metric, created_at__gte=start, created_at__lte=end
+        device_metric=telemetry.device_metric,
+        created_at__gte=start,
+        created_at__lte=end,
     )
 
 
 def _get_duration_minutes(condition: dict) -> int:
     """Get minutes duration for time window from rule.condition"""
     return (
-        condition.get("duration_minutes") or condition.get("minutes") or DEFAULT_DURATION_MINUTES
+        condition.get("duration_minutes")
+        or condition.get("minutes")
+        or DEFAULT_DURATION_MINUTES
     )
 
 
@@ -110,7 +114,9 @@ def _validate_duration_minutes(value: Any) -> int:
     """Ensure duration_minutes is int >= 0, fallback to default if invalid"""
     if isinstance(value, int) and value > 0:
         return value
-    logger.warning(f"Invalid duration_minutes: {value}, using default {DEFAULT_DURATION_MINUTES}")
+    logger.warning(
+        f"Invalid duration_minutes: {value}, using default {DEFAULT_DURATION_MINUTES}"
+    )
     return DEFAULT_DURATION_MINUTES
 
 
@@ -135,17 +141,21 @@ class ThresholdEvaluator:
             logger.info("No telemetries in window")
             return False
 
-        filter_q = _build_filter_condition(telemetry, comparison_operator, condition_value)
+        filter_q = _build_filter_condition(
+            telemetry, comparison_operator, condition_value
+        )
 
         matching_count = telemetries_in_window.aggregate(
             matches=Count(Case(When(filter_q, then=1)))
-        )['matches']
+        )["matches"]
 
         logger.info(
             f"Threshold check: {matching_count} out of {total_count} events meet {comparison_operator} {condition_value}"
         )
 
-        threshold_percentage = condition.get("threshold_percentage", DEFAULT_THRESHOLD_PERCENTAGE)
+        threshold_percentage = condition.get(
+            "threshold_percentage", DEFAULT_THRESHOLD_PERCENTAGE
+        )
         match_ratio = matching_count / total_count
 
         return match_ratio >= threshold_percentage
@@ -177,7 +187,9 @@ class RateEvaluator:
 
 class CompositeEvaluator:
     @staticmethod
-    def evaluate(condition: dict, device_metric: DeviceMetric, telemetry: Telemetry) -> bool:
+    def evaluate(
+        condition: dict, device_metric: DeviceMetric, telemetry: Telemetry
+    ) -> bool:
         """
         Evaluate composite rules combining multiple subconditions with AND/OR.
         """
@@ -220,7 +232,9 @@ class ConditionEvaluator:
         ConditionEvaluator._evaluators[rule_type] = evaluator_callable
 
     @staticmethod
-    def evaluate(condition: dict, device_metric: DeviceMetric, telemetry: Telemetry) -> bool:
+    def evaluate(
+        condition: dict, device_metric: DeviceMetric, telemetry: Telemetry
+    ) -> bool:
         """Evaluate rule"""
         _validate_metric(device_metric, telemetry)
 
@@ -233,4 +247,6 @@ class ConditionEvaluator:
             logger.warning(f"Unknown condition type: {rule_type}")
             return False
 
-        return evaluator(condition=condition, device_metric=device_metric, telemetry=telemetry)
+        return evaluator(
+            condition=condition, device_metric=device_metric, telemetry=telemetry
+        )

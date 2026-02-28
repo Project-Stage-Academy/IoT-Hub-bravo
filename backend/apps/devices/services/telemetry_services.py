@@ -4,7 +4,7 @@ from typing import Any
 
 from apps.devices.models import Device, Metric, DeviceMetric
 from apps.devices.models.telemetry import Telemetry
-from apps.devices.services.telemetry_stream_publisher import publish_telemetry_event
+from apps.devices.services.telemetry_kafka_service import produce_telemetry_clean
 
 
 @dataclass(slots=True)
@@ -97,9 +97,18 @@ def telemetry_create(
     created = Telemetry.objects.bulk_create(to_create, ignore_conflicts=True)
     result.created_count = len(created)
 
-    # publish telemetry updates to websocket groups
     for evt in to_publish:
-        publish_telemetry_event(**evt)
+        payload = {
+            "device_serial_id": evt["device_serial_id"],
+            "device_id": evt["device_id"],
+            "metric": evt["metric"],
+            "metric_type": evt["metric_type"],
+            "value": evt["value"],
+            "ts": evt["ts"].isoformat(),
+        }
+        if not produce_telemetry_clean(payload):
+            result.errors[evt["metric"]] = "Failed to produce telemetry to Kafka"
+            continue
 
     return result
 
@@ -119,7 +128,9 @@ def _get_metrics_by_names(metrics_names: list[str]) -> dict[str, Metric]:
     Utility function to retrieve Metric
     objects by provided metrics names.
     """
-    return {m.metric_type: m for m in Metric.objects.filter(metric_type__in=metrics_names)}
+    return {
+        m.metric_type: m for m in Metric.objects.filter(metric_type__in=metrics_names)
+    }
 
 
 def _get_device_metrics_by_names(

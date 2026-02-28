@@ -38,7 +38,9 @@ class TestCriticalFlowsSmoke:
             {
                 "sub": user.id,
                 "role": "admin",
-                "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
+                "exp": int(
+                    (datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()
+                ),
             },
             settings.SECRET_KEY,
             algorithm="HS256",

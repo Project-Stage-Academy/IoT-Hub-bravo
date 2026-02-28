@@ -6,7 +6,6 @@ import pytest
 
 from tests.fixtures.factories import UserFactory
 
-
 pytestmark = pytest.mark.django_db
 
 
@@ -50,7 +49,9 @@ class TestLoginAPI:
         """Test login with non-existent user returns 401."""
         response = client.post(
             "/api/auth/login/",
-            data=json.dumps({"username": "nonexistent@test.com", "password": "testpass"}),
+            data=json.dumps(
+                {"username": "nonexistent@test.com", "password": "testpass"}
+            ),
             content_type="application/json",
         )
 

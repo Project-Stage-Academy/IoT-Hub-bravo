@@ -53,10 +53,12 @@ class KafkaProducer:
             self._dropped_messages += 1
             message_enqueued = False
             self._producer.poll(0)
-            logger.warning('Kafka producer local buffer full. Dropped: %s', self._dropped_messages)
+            logger.warning(
+                "Kafka producer local buffer full. Dropped: %s", self._dropped_messages
+            )
         except KafkaException:
             message_enqueued = False
-            logger.exception('Kafka produce failed.')
+            logger.exception("Kafka produce failed.")
         finally:
             self._producer.poll(self._poll_timeout)
 
@@ -69,9 +71,11 @@ class KafkaProducer:
     @staticmethod
     def _encode_payload(payload: Any) -> Optional[bytes]:
         try:
-            return json.dumps(payload, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+            return json.dumps(
+                payload, separators=(",", ":"), ensure_ascii=False
+            ).encode("utf-8")
         except (TypeError, ValueError):
-            logger.exception('Failed to JSON-encode payload.')
+            logger.exception("Failed to JSON-encode payload.")
             return None
 
     @staticmethod
@@ -80,15 +84,15 @@ class KafkaProducer:
             return key
         if isinstance(key, str):
             s = key.strip()
-            return s.encode('utf-8') if s else None
-        return str(key).encode('utf-8')
+            return s.encode("utf-8") if s else None
+        return str(key).encode("utf-8")
 
     @staticmethod
     def _delivery_report(error: KafkaError, message: Message) -> None:
         extra = {
-            'topic': message.topic(),
-            'partition': message.partition(),
-            'error': error,
+            "topic": message.topic(),
+            "partition": message.partition(),
+            "error": error,
         }
         if error is not None:
-            logger.warning('Kafka delivery failed.', extra=extra)
+            logger.warning("Kafka delivery failed.", extra=extra)

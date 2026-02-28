@@ -9,7 +9,7 @@ from django.test import Client
 
 def pytest_configure():
     """Configure Django settings before tests run."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf.settings')
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "conf.settings")
     if not settings.configured:
         django.setup()
 

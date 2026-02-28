@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path, include
 
@@ -24,13 +25,15 @@ from apps.users.views import login
 from apps.devices.views import ingest_telemetry
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/telemetry/', ingest_telemetry, name="ingest-telemetry"),
+    path("admin/", admin.site.urls),
+    path("api/telemetry/", ingest_telemetry, name="ingest-telemetry"),
     path("api/auth/login/", login, name="user-auth"),
     path("api/devices/", include("apps.devices.urls.device_urls")),
     path("api/telemetry/", include("apps.devices.urls.telemetry_urls")),
-    path('prometheus/', include('django_prometheus.urls')),  # access metrics at "prometheus/metrics/"
-    path('rules/', include('apps.rules.urls')),
+    path(
+        "prometheus/", include("django_prometheus.urls")
+    ),  # access metrics at "prometheus/metrics/"
+    path("rules/", include("apps.rules.urls")),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

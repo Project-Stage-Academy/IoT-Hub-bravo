@@ -28,7 +28,10 @@ pytestmark = pytest.mark.django_db
 def client_user(db):
     """Create a client user for tests."""
     return User.objects.create_user(
-        username="client", email="client@example.com", password="password123", role="client"
+        username="client",
+        email="client@example.com",
+        password="password123",
+        role="client",
     )
 
 
@@ -36,7 +39,10 @@ def client_user(db):
 def admin_user(db):
     """Create an admin user for tests."""
     return User.objects.create_user(
-        username="admin", email="admin@example.com", password="password123", role="admin"
+        username="admin",
+        email="admin@example.com",
+        password="password123",
+        role="admin",
     )
 
 
@@ -349,7 +355,9 @@ def test_patch_device_as_admin(auth_admin_client, admin_user):
 
 def test_delete_device_as_admin(auth_admin_client, admin_user):
     """Test DELETE /api/devices/{id}/ as admin user."""
-    device = Device.objects.create(serial_id="SER-300", name="ToDelete", user=admin_user)
+    device = Device.objects.create(
+        serial_id="SER-300", name="ToDelete", user=admin_user
+    )
 
     response = auth_admin_client.delete(f"/api/devices/{device.id}/")
 
