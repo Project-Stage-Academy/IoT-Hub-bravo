@@ -314,3 +314,12 @@ LOGGING = {
 }
 
 TELEMETRY_SYNC_HEADER = 'Ingest-Sync'
+
+# Redis client config
+REDIS_CONFIG = {
+    "host": "redis",
+    "port": 6379,
+    "db": 0,
+    "password": None,
+    "decode_responses": True,
+}

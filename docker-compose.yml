@@ -247,6 +247,17 @@ services:
       kafka:
         condition: service_healthy
 
+  rule-engine:
+    <<: *django_base
+    image: iot-hub-rule-engine
+    container_name: rule-engine
+    command: [ "python", "-m", "consumers.rule_engine" ]
+    environment:
+      KAFKA_GROUP_ID: rule-engine
+    depends_on:
+      kafka:
+        condition: service_healthy
+
 volumes:
   media_data:
   db_data:
