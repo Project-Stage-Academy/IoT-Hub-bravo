@@ -70,7 +70,6 @@ class MqttCallbacks:
         if obj is None:
             # Track parse errors
             ingestion_errors_total.labels(source='mqtt', error_type='parse_error').inc()
-            ingestion_messages_total.labels(source='mqtt', status='error').inc()
             logger.warning('Invalid JSON object rejected.', extra=self._extra(m))
             return
 
@@ -90,7 +89,6 @@ class MqttCallbacks:
         except Exception:
             # Track handler errors
             ingestion_errors_total.labels(source='mqtt', error_type='handler_error').inc()
-            ingestion_messages_total.labels(source='mqtt', status='error').inc()
             logger.exception('Failed to handle MQTT message: ', extra=self._extra(m))
         finally:
             # Always track latency

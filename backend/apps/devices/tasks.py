@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
     retry_jitter=True,
     retry_kwargs={'max_retries': 10},
 )
-def ingest_telemetry_payload(self, payload: dict | list, **kwargs) -> None:
+def ingest_telemetry_payload(self, payload: dict | list, source: str = 'unknown', **kwargs) -> None:
     start_time = time.perf_counter()
 
     if isinstance(payload, dict):
@@ -33,14 +33,14 @@ def ingest_telemetry_payload(self, payload: dict | list, **kwargs) -> None:
     elif isinstance(payload, list):
         pass
     else:
-        ingestion_errors_total.labels(source='mqtt', error_type='invalid_payload').inc()
+        ingestion_errors_total.labels(source=source, error_type='invalid_payload').inc()
         raise TypeError(f'payload must be of type dict or list, got {type(payload).__name__}')
 
     serializer = TelemetryBatchCreateSerializer(payload)
 
     if not serializer.is_valid() and not serializer.valid_items:
-        ingestion_errors_total.labels(source='mqtt', error_type='validation_error').inc()
-        ingestion_messages_total.labels(source='mqtt', status='error').inc()
+        ingestion_errors_total.labels(source=source, error_type='validation_error').inc()
+        ingestion_messages_total.labels(source=source, status='error').inc()
         logger.warning('Telemetry ingestion task rejected: errors=%s', len(serializer.errors))
         return
 
@@ -56,10 +56,12 @@ def ingest_telemetry_payload(self, payload: dict | list, **kwargs) -> None:
     invalid_count = len(invalid_items) if invalid_items else 0
 
     if total_created > 0:
-        ingestion_messages_total.labels(source='mqtt', status='success').inc(total_created)
+        ingestion_messages_total.labels(source=source, status='success').inc(total_created)
     if total_errors > 0:
-        ingestion_errors_total.labels(source='mqtt', error_type='db_error').inc(total_errors)
-        ingestion_messages_total.labels(source='mqtt', status='error').inc(total_errors)
+        ingestion_errors_total.labels(source=source, error_type='db_error').inc(total_errors)
+
+    latency = time.perf_counter() - start_time
+    ingestion_latency_seconds.labels(source=source).observe(latency)
 
     latency = time.perf_counter() - start_time
     ingestion_latency_seconds.labels(source='mqtt').observe(latency)
