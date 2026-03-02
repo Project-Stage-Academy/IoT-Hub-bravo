@@ -48,7 +48,14 @@ def telemetry_create(
         result.status = "failed" if result.errors else "success"
         return result
 
-    to_create = [Telemetry(**row) for row in valid_data]
+    to_create = [
+        Telemetry(
+            device_metric_id=row["device_metric_id"],
+            ts=row["ts"],
+            value_jsonb=row["value_jsonb"],
+        )
+        for row in valid_data
+    ]
 
     created_objects = Telemetry.objects.bulk_create(
         to_create,

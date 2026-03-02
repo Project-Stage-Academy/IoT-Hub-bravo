@@ -188,6 +188,7 @@ class TelemetryBatchValidator(BaseValidator):
 
                 self._validated_rows.append(
                     {
+                        "device_serial_id": serial,
                         "device_metric_id": device_metric_id,
                         "ts": ts,
                         "value_jsonb": {
