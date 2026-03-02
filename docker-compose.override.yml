@@ -14,5 +14,9 @@ services:
     volumes:
       - ./backend:/app
 
+  kafka-telemetry-writer:
+    volumes:
+      - ./backend:/app
+
 volumes:
   static_data:

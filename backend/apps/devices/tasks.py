@@ -47,10 +47,9 @@ def ingest_telemetry_payload(self, payload: dict | list, source: str = 'unknown'
     total_created = 0
     total_errors = 0
 
-    for item in serializer.valid_items:
-        r = telemetry_create(**item)
-        total_created += r.created_count
-        total_errors += len(r.errors)
+    r = telemetry_create(payload=serializer.valid_items)
+    total_created += r.created_count
+    total_errors += len(r.errors)
 
     invalid_items = serializer.item_errors
     invalid_count = len(invalid_items) if invalid_items else 0
@@ -62,9 +61,6 @@ def ingest_telemetry_payload(self, payload: dict | list, source: str = 'unknown'
 
     latency = time.perf_counter() - start_time
     ingestion_latency_seconds.labels(source=source).observe(latency)
-
-    latency = time.perf_counter() - start_time
-    ingestion_latency_seconds.labels(source='mqtt').observe(latency)
 
     logger.info(
         'Telemetry task ingested batch: '

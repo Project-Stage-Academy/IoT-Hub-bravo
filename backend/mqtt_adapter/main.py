@@ -1,22 +1,52 @@
-import os
+import logging
+import signal
 
-import django
+from decouple import config
 
-from .config import MqttConfig
-from .mqtt_client import run_mqtt_client
-from .message_handlers import CeleryMessageHandler
+from producers.kafka_producer import KafkaProducer
+from producers.config import ProducerConfig
+from mqtt_adapter.config import MqttConfig
+from mqtt_adapter.mqtt_client import get_mqtt_client
+from mqtt_adapter.message_handlers import KafkaProducerMessageHandler
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf.settings')
-django.setup()
+TOPIC = config('KAFKA_TOPIC_TELEMETRY_RAW', default='telemetry.raw')
+KEY_FIELD = config('MQTT_PRODUCER_KEY_FIELD', default='device')
 
-from apps.devices.tasks import ingest_telemetry_payload  # noqa
+
+def setup_logging() -> None:
+    logging.basicConfig(
+        format='[%(asctime)s] %(levelname)s %(name)s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+    )
+    logging.getLogger().setLevel(logging.INFO)
 
 
 def main() -> None:
-    run_mqtt_client(
-        config=MqttConfig(),
-        handler=CeleryMessageHandler(ingest_telemetry_payload),
+    setup_logging()
+
+    kafka_producer = KafkaProducer(
+        config=ProducerConfig(),
+        topic=TOPIC,
     )
+
+    message_handler = KafkaProducerMessageHandler(
+        producer=kafka_producer,
+        key_field=KEY_FIELD,
+    )
+
+    client = get_mqtt_client(
+        config=MqttConfig(),
+        handler=message_handler,
+    )
+
+    def _stop(*_):
+        client.disconnect()
+        kafka_producer.flush()
+
+    signal.signal(signal.SIGTERM, _stop)
+    signal.signal(signal.SIGINT, _stop)
+
+    client.loop_forever(retry_first_connection=True)
 
 
 if __name__ == '__main__':
