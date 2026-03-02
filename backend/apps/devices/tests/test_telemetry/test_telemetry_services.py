@@ -18,9 +18,13 @@ def test_telemetry_create_device_not_found(ts):
     )
 
     assert result.created_count == 0
-    device_errors = [e for e in result.errors if e["field"] == "device"]
+    device_errors = [
+        e for e in result.errors
+        if e.get("metric") is None and e["error"] == "device_not_found"
+    ]
     assert device_errors
-    assert any("Missing serials" in e["error"] for e in device_errors)
+    assert any("unknown-device" in (e.get("device_serial_id") or "") for e in device_errors)
+
     assert Telemetry.objects.count() == 0
 
 
@@ -39,9 +43,13 @@ def test_telemetry_create_device_not_active(inactive_device, ts):
     )
 
     assert result.created_count == 0
-    device_errors = [e for e in result.errors if e["field"] == "device"]
+    device_errors = [
+        e for e in result.errors
+        if e.get("metric") is None and e["error"] == "device_not_found"
+    ]
     assert device_errors
-    assert any("Missing serials" in e["error"] for e in device_errors)
+    assert any(inactive_device.serial_id in (e.get("device_serial_id") or "") for e in device_errors)
+
     assert Telemetry.objects.count() == 0
 
 
@@ -66,10 +74,11 @@ def test_telemetry_create_metric_does_not_exist(active_device, ts):
     )
 
     assert result.created_count == 0
-    metric_errors = [e for e in result.errors if e["index"] == 0]
-    fields = [e["field"] for e in metric_errors]
-    assert "temperature" in fields
-    assert "status" in fields
+    metric_errors = [e for e in result.errors if e.get("index") == 0]
+
+    metric_fields = [e.get("metric") for e in metric_errors]
+    assert "temperature" in metric_fields
+
     assert Telemetry.objects.count() == 0
 
 
@@ -92,9 +101,11 @@ def test_telemetry_create_metric_not_configured_for_device(
     )
 
     assert result.created_count == 0
-    metric_errors = [e for e in result.errors if e["index"] == 0]
-    fields = [e["field"] for e in metric_errors]
-    assert "temperature" in fields
+    metric_errors = [e for e in result.errors if e.get("index") == 0]
+
+    metric_fields = [e.get("metric") for e in metric_errors]
+    assert "temperature" in metric_fields
+
     assert Telemetry.objects.count() == 0
 
 
@@ -114,9 +125,12 @@ def test_telemetry_create_type_mismatch_numeric(active_device, device_metric_num
     )
 
     assert result.created_count == 0
-    metric_errors = [e for e in result.errors if e["index"] == 0 and e["field"] == "temperature"]
+
+    metric_errors = [e for e in result.errors if e.get("index") == 0 and e.get("metric") == "temperature"]
+
     assert metric_errors
-    assert metric_errors[0]["error"] in ("Type mismatch", "Unit mismatch")
+    assert metric_errors[0]["error"] in ("type_mismatch", "unit_mismatch")
+
     assert Telemetry.objects.count() == 0
 
 
@@ -136,9 +150,10 @@ def test_telemetry_create_type_mismatch_bool(active_device, device_metric_bool, 
     )
 
     assert result.created_count == 0
-    metric_errors = [e for e in result.errors if e["index"] == 0 and e["field"] == "door_open"]
+    metric_errors = [e for e in result.errors if e.get("index") == 0 and e.get("metric") == "door_open"]
     assert metric_errors
-    assert metric_errors[0]["error"] in ("Type mismatch", "Unit mismatch")
+    assert metric_errors[0]["error"] in ("type_mismatch", "unit_mismatch")
+
     assert Telemetry.objects.count() == 0
 
 
@@ -158,9 +173,10 @@ def test_telemetry_create_type_mismatch_str(active_device, device_metric_str, ts
     )
 
     assert result.created_count == 0
-    metric_errors = [e for e in result.errors if e["index"] == 0 and e["field"] == "status"]
+    metric_errors = [e for e in result.errors if e.get("index") == 0 and e.get("metric") == "status"]
     assert metric_errors
-    assert metric_errors[0]["error"] in ("Type mismatch", "Unit mismatch")
+    assert metric_errors[0]["error"] in ("type_mismatch", "unit_mismatch")
+
     assert Telemetry.objects.count() == 0
 
 
@@ -194,6 +210,6 @@ def test_telemetry_create_creates_rows_for_valid_metrics_only(
     assert Telemetry.objects.count() == 3
 
     unknown_errors = [
-        e for e in result.errors if e["index"] == 0 and e["field"] == "unknown_metric"
+        e for e in result.errors if e.get("index") == 0 and e.get("metric") == "unknown_metric"
     ]
     assert unknown_errors

@@ -64,7 +64,7 @@ def telemetry_create(
         result.created_count,
     )
 
-    if result.errors and result.created_count == 0:
+    if result.created_count == 0 and result.attempted_count > 0:
         result.status = "failed"
 
     elif result.errors:
@@ -83,7 +83,7 @@ def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
         payload_list = payload
 
     validator = TelemetryBatchValidator(payload=payload_list)
-    validator.is_valid()
+    validator.validate()
 
     if validator.errors:
         logger.warning(
@@ -98,5 +98,5 @@ def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
     )
 
     return TelemetryValidationResult(
-        validated_rows=validator.validated_rows, errors=validator.errors
+        validated_rows=validator.validated_rows, errors=validator.invalid_rows
     )

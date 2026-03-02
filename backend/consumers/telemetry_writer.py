@@ -15,7 +15,7 @@ django.setup()
 from apps.devices.tasks import ingest_telemetry_payload  # noqa
 
 # TODO: switch topic to KAFKA_TOPIC_TELEMETRY_CLEAN (telemetry.clean)
-TOPIC = config('KAFKA_TOPIC_TELEMETRY_RAW', default='telemetry.raw')
+TOPIC = config('KAFKA_TOPIC_TELEMETRY_CLEAN', default='telemetry.clean')
 CONSUME_TIMEOUT = config('KAFKA_CONSUMER_CONSUME_TIMEOUT', default=1.0, cast=float)
 DECODE_JSON = config('KAFKA_CONSUMER_DECODE_JSON', default=True, cast=bool)
 CONSUME_BATCH = config('KAFKA_CONSUMER_CONSUME_BATCH', default=True, cast=bool)

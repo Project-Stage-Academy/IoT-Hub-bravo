@@ -30,6 +30,10 @@ class KafkaProducer:
         self._poll_timeout = poll_timeout
         self._dropped_messages = 0
 
+    @property
+    def topic(self):
+        return self._topic
+
     def produce(self, payload: Any, key: Any = None) -> ProduceResult:
         """
         Produce a message to the configured Kafka topic asynchronously.
@@ -44,7 +48,7 @@ class KafkaProducer:
             BUFFER_FULL - producer queue is full;
             PRODUCER_ERROR - producer error occurred.
         """
-        value = self._encode_payload(payload)
+        value = self._encode_payload(payload, self._topic)
         if value is None:
             return ProduceResult.SERIALIZATION_FAILED
 
@@ -77,7 +81,8 @@ class KafkaProducer:
         self._producer.flush(timeout)
 
     @staticmethod
-    def _encode_payload(payload: Any) -> Optional[bytes]:
+    def _encode_payload(payload: Any, topic) -> Optional[bytes]:
+        print("TOPIC:", topic)
         try:
             return json.dumps(payload, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
         except (TypeError, ValueError):

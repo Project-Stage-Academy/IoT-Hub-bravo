@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from .base_validator import BaseValidator
 from typing import Any
 import logging
@@ -14,56 +16,68 @@ class TelemetryBatchValidator(BaseValidator):
         self._initial_data: list[dict[str, Any]] = payload
         self._validated_devices: set[str] = set()
         self._initial_device_metrics: dict[str, dict[str, dict[str, Any]]] = {}
-
-    @property
-    def validated_devices(self):
-        return self._validated_devices
-
-    @property
-    def initial_device_metrics(self):
-        return self._initial_device_metrics
+        self._invalid_rows: list[dict[str, Any]] = []
 
     @property
     def validated_rows(self):
         return self._validated_rows
+    
+    @property
+    def invalid_rows(self):
+        return self._invalid_rows
 
-    def is_valid(self) -> bool:
-        self._errors.clear()
-        self._validated_rows = []
+    @property
+    def has_errors(self) -> bool:
+        return bool(self._invalid_rows)
 
-        logger.info("Starting telemetry payload validation for %d items", len(self._initial_data))
+    @property
+    def has_valid_data(self) -> bool:
+        return bool(self._validated_rows)
+
+    def validate(self) -> None:
+        """
+        Validates payload and populates:
+        - self._validated_rows
+        - self._invalid_rows
+        """
+        self._validated_rows.clear()
+        self._invalid_rows.clear()
+
+        logger.info(
+            "Starting telemetry payload validation for %d items",
+            len(self._initial_data),
+        )
+
         self._collect_devices_and_metrics()
-        self._validate()
 
-        logger.info("Validation completed successfully for %d items", len(self._validated_rows))
+        self._validate_payload()
 
-        return not self._errors
+        logger.info(
+            "Validation completed. Valid: %d, Invalid: %d",
+            len(self._validated_rows),
+            len(self._invalid_rows),
+        )
+
 
     def _collect_devices(self) -> None:
         """Fetch all devices from payload and populate _validated_devices"""
         device_serials = {
-            item['device_serial_id'] for item in self._initial_data if item.get("device_serial_id")
+            item.get('device_serial_id') for item in self._initial_data if item.get("device_serial_id")
         }
-
         logger.debug("Collected %d device serials from payload", len(device_serials))
 
-        active_serials = set(
-            Device.objects.filter(serial_id__in=device_serials, is_active=True).values_list(
-                "serial_id", flat=True
-            )
+        self._validated_devices = set(
+            Device.objects.filter(
+                serial_id__in=device_serials,
+                is_active=True,
+            ).values_list("serial_id", flat=True)
         )
-
-        logger.debug("Found %d active devices in DB", len(active_serials))
-
-        missing = device_serials - active_serials
-        if missing:
-            self._errors.append(
-                {"index": None, "field": "device", "error": f"Missing serials: {missing}"}
+        
+        
+        logger.debug(
+            "Collected %d active devices from DB",
+            len(self._validated_devices),
             )
-            logger.warning("Missing devices in DB: %s", missing)
-
-        self._validated_devices = active_serials
-        logger.info("Validated devices set updated with %d devices", len(self._validated_devices))
 
     def _collect_device_metrics(self) -> None:
         """Fetch all DeviceMetrics and Metrics in one query and build map"""
@@ -71,16 +85,18 @@ class TelemetryBatchValidator(BaseValidator):
             logger.info("No validated devices found, skipping device metrics collection")
             return
 
-        device_metrics_qs = DeviceMetric.objects.select_related('metric', 'device').filter(
-            device__serial_id__in=list(self._validated_devices)
+        qs = (
+            DeviceMetric.objects
+            .select_related("metric", "device")
+            .filter(device__serial_id__in=self._validated_devices)
         )
-        logger.debug("Fetched %d DeviceMetric records from DB", device_metrics_qs.count())
 
-        device_metric_map = {}
-        for dm in device_metrics_qs:
+        qs = list(qs)
+        logger.debug("Fetched %d DeviceMetric records from DB", len(qs))
+
+        device_metric_map: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
+        for dm in qs:
             serial = dm.device.serial_id
-            if serial not in device_metric_map:
-                device_metric_map[serial] = {}
             device_metric_map[serial][dm.metric.metric_type] = {
                 "device_metric_id": dm.id,
                 "data_type": dm.metric.data_type,
@@ -88,7 +104,11 @@ class TelemetryBatchValidator(BaseValidator):
             }
 
         self._initial_device_metrics = device_metric_map
-        logger.info("Device metrics map built for %d devices", len(device_metric_map))
+
+        logger.debug(
+            "Collected metrics for %d devices",
+            len(self._initial_device_metrics),
+        )
 
     def _collect_devices_and_metrics(self) -> None:
         """Wrapper: fetch devices + their metrics"""
@@ -97,20 +117,26 @@ class TelemetryBatchValidator(BaseValidator):
         self._collect_device_metrics()
         logger.info("Completed collection of devices and metrics")
 
-    def _validate(self) -> None:
+    def _validate_payload(self) -> None:
         for index, item in enumerate(self._initial_data):
             serial = item.get("device_serial_id")
-            metrics = item.get("metrics", {})
+            metrics = item.get("metrics") or {}
             ts = item.get("ts")
 
             if serial not in self._validated_devices:
-                self._errors.append(
-                    {"index": index, "field": "device", "error": "Device not found"}
+                self._add_invalid_record(
+                    index=index,
+                    serial=serial,
+                    ts=ts,
+                    metric=None,
+                    value=None,
+                    unit=None,
+                    error="device_not_found",
                 )
-                logger.warning("[%d] Device not found: %s", index, serial)
                 continue
 
             device_metrics_map = self._initial_device_metrics.get(serial, {})
+
             for metric_name, payload in metrics.items():
                 value = payload.get("value")
                 unit = payload.get("unit")
@@ -118,11 +144,14 @@ class TelemetryBatchValidator(BaseValidator):
                 device_metric_data = device_metrics_map.get(metric_name)
 
                 if not device_metric_data:
-                    self._errors.append(
-                        {"index": index, "field": metric_name, "error": "Metric not configured"}
-                    )
-                    logger.warning(
-                        "[%d] Metric not configured for device %s: %s", index, serial, metric_name
+                    self._add_invalid_record(
+                        index=index,
+                        serial=serial,
+                        ts=ts,
+                        metric=metric_name,
+                        value=value,
+                        unit=unit,
+                        error="metric_not_configured",
                     )
                     continue
 
@@ -130,33 +159,28 @@ class TelemetryBatchValidator(BaseValidator):
                 normalized_db_unit = self._normalize_unit(device_metric_data["unit"])
 
                 if normalized_payload_unit != normalized_db_unit:
-                    self._errors.append(
-                        {"index": index, "field": metric_name, "error": "Unit mismatch"}
-                    )
-
-                    logger.warning(
-                        "[%d] Unit mismatch for device %s metric %s: payload=%s, db=%s",
-                        index,
-                        serial,
-                        metric_name,
-                        normalized_payload_unit,
-                        normalized_db_unit,
+                    self._add_invalid_record(
+                        index=index,
+                        serial=serial,
+                        ts=ts,
+                        metric=metric_name,
+                        value=value,
+                        unit=unit,
+                        error="unit_mismatch",
                     )
                     continue
 
                 if not self._value_matches_data_type(value, device_metric_data["data_type"]):
-                    self._errors.append(
-                        {"index": index, "field": metric_name, "error": "Type mismatch"}
+                    self._add_invalid_record(
+                        index=index,
+                        serial=serial,
+                        ts=ts,
+                        metric=metric_name,
+                        value=value,
+                        unit=unit,
+                        error="type_mismatch",
                     )
 
-                    logger.warning(
-                        "[%d] Type mismatch for device %s metric %s: value=%s, expected=%s",
-                        index,
-                        serial,
-                        metric_name,
-                        value,
-                        device_metric_data["data_type"],
-                    )
                     continue
 
                 data_type = device_metric_data["data_type"]
@@ -194,4 +218,25 @@ class TelemetryBatchValidator(BaseValidator):
             return None
         return REVERSE_UNIT_ALIASES.get(
             unit.strip().lower().replace("°", ""), unit.strip().lower()
+        )
+
+    def _add_invalid_record(self, *, index: int | None, serial: str | None, ts: Any, metric: str | None, value: Any, unit: Any, error: str,):
+        self._invalid_rows.append(
+            {
+                "index": index,
+                "device_serial_id": serial,
+                "ts": ts,
+                "metric": metric,
+                "value": value,
+                "unit": unit,
+                "error": error,
+            }
+        )
+
+        logger.warning(
+            "[%d] Validation error device=%s metric=%s error=%s",
+            index,
+            serial,
+            metric,
+            error,
         )

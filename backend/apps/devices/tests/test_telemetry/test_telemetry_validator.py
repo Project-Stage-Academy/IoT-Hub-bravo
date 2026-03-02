@@ -88,9 +88,9 @@ def test_batch_validator_success(
     ]
 
     validator = TelemetryBatchValidator(payload)
-    assert validator.is_valid() is True
+    validator.validate()
     assert len(validator.validated_rows) == 2
-    assert validator.errors == []
+    assert validator._invalid_rows == []
 
 
 @pytest.mark.django_db
@@ -103,10 +103,14 @@ def test_batch_validator_missing_device(active_device, device_metric):
         }
     ]
     validator = TelemetryBatchValidator(payload)
-    assert validator.is_valid() is False
-    device_errors = [e for e in validator.errors if e["field"] == "device"]
+    validator.validate()
+    device_errors = [
+        e for e in validator.invalid_rows
+        if e["error"] == "device_not_found"
+    ]
+
     assert device_errors
-    assert "NON_EXISTENT" in device_errors[0]["error"]
+    assert device_errors[0]["device_serial_id"] == "NON_EXISTENT"
 
 
 @pytest.mark.django_db
@@ -119,10 +123,13 @@ def test_batch_validator_unit_mismatch(active_device, device_metric):
         }
     ]
     validator = TelemetryBatchValidator(payload)
-    assert validator.is_valid() is False
-    metric_errors = [e for e in validator.errors if e["index"] == 0 and e["field"] == "humidity"]
+    validator.validate()
+    metric_errors = [
+        e for e in validator.invalid_rows
+        if e["index"] == 0 and e["metric"] == "humidity"
+    ]
     assert metric_errors
-    assert metric_errors[0]["error"] == "Unit mismatch"
+    assert metric_errors[0]["error"] == "unit_mismatch"
 
 
 @pytest.mark.django_db
@@ -135,10 +142,13 @@ def test_batch_validator_type_mismatch(active_device, device_metric):
         }
     ]
     validator = TelemetryBatchValidator(payload)
-    assert validator.is_valid() is False
-    metric_errors = [e for e in validator.errors if e["index"] == 0 and e["field"] == "humidity"]
+    validator.validate()
+    metric_errors = [
+        e for e in validator.invalid_rows
+        if e["index"] == 0 and e["metric"] == "humidity"
+    ]
     assert metric_errors
-    assert metric_errors[0]["error"] == "Type mismatch"
+    assert metric_errors[0]["error"] == "type_mismatch"
 
 
 @pytest.mark.django_db
@@ -154,11 +164,14 @@ def test_batch_validator_multiple_metrics(active_device, device_metric, temperat
         }
     ]
     validator = TelemetryBatchValidator(payload)
-    assert validator.is_valid() is False
+    validator.validate()
+
     metric_errors = [
-        e for e in validator.errors if e["index"] == 0 and e["field"] == "temperature"
+        e for e in validator.invalid_rows
+        if e["index"] == 0 and e["metric"] == "temperature"
     ]
     assert metric_errors
-    assert metric_errors[0]["error"] == "Metric not configured"
+    assert metric_errors[0]["error"] == "metric_not_configured"
+
     validated_metrics = [r["device_metric_id"] for r in validator.validated_rows]
     assert len(validated_metrics) == 1
