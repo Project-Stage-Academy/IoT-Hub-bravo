@@ -25,7 +25,9 @@ logger = logging.getLogger(__name__)
     retry_jitter=True,
     retry_kwargs={'max_retries': 10},
 )
-def ingest_telemetry_payload(self, payload: dict | list, source: str = 'unknown', **kwargs) -> None:
+def ingest_telemetry_payload(
+    self, payload: dict | list, source: str = 'unknown', **kwargs
+) -> None:
     start_time = time.perf_counter()
 
     if isinstance(payload, dict):
