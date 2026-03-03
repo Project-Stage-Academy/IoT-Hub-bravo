@@ -5,9 +5,8 @@ from celery import shared_task
 from django.db import OperationalError, InterfaceError
 
 from .serializers.telemetry_serializers import TelemetryBatchCreateSerializer
-from .services.telemetry_services import telemetry_create
+from .services.telemetry_services import telemetry_validate, telemetry_create
 
-# Import Prometheus metrics
 from apps.common.metrics import (
     ingestion_messages_total,
     ingestion_latency_seconds,
@@ -49,7 +48,8 @@ def ingest_telemetry_payload(
     total_created = 0
     total_errors = 0
 
-    r = telemetry_create(payload=serializer.valid_items)
+    validation = telemetry_validate(payload=serializer.valid_items)
+    r = telemetry_create(valid_data=validation.validated_rows, validation_errors=validation.errors)
     total_created += r.created_count
     total_errors += len(r.errors)
 
