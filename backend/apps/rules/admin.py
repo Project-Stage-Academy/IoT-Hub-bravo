@@ -40,8 +40,8 @@ class EventAdmin(admin.ModelAdmin):
         "acknowledged",
         "timestamp",
         "created_at",
-        "telemetry_link",
         "device_link",
+        "trigger_context_summary",
     )
 
     list_filter = ("timestamp", "created_at", "rule", "acknowledged")
@@ -49,18 +49,18 @@ class EventAdmin(admin.ModelAdmin):
         "id",
         "rule__name",
         "rule__device_metric__device__name",
-        "trigger_telemetry_id",
+        "trigger_device_serial_id",
     )
-    readonly_fields = ("id", "timestamp", "created_at")
+    readonly_fields = ("id", "timestamp", "created_at", "trigger_context")
     date_hierarchy = "timestamp"
     ordering = ("-timestamp",)
     actions = ["mark_acknowledged", "mark_unacknowledged"]
 
-    @admin.display(description="Device ID", ordering="trigger_device_id")
+    @admin.display(description="Device Serial ID", ordering="trigger_device_serial_id")
     def device_link(self, obj):
-        if obj.trigger_device_id:
-            url = reverse("admin:devices_device_change", args=[obj.trigger_device_id])
-            return format_html('<a href="{}">#{}</a>', url, obj.trigger_device_id)
+        if obj.trigger_device_serial_id:
+            url = f"{reverse('admin:devices_device_changelist')}?q={obj.trigger_device_serial_id}"
+            return format_html('<a href="{}">{}</a>', url, obj.trigger_device_serial_id)
         return "-"
 
     @admin.display(description="Rule", ordering="rule__name")
@@ -69,13 +69,6 @@ class EventAdmin(admin.ModelAdmin):
             url = reverse("admin:rules_rule_change", args=[obj.rule.id])
             return format_html('<a href="{}">{}</a>', url, obj.rule.name)
         return "-"
-
-    @admin.display(description="Telemetry ID", ordering="trigger_telemetry_id")
-    def telemetry_link(self, obj):
-        if obj.trigger_telemetry_id:
-            url = reverse("admin:devices_telemetry_change", args=[obj.trigger_telemetry_id])
-            return format_html('<a href="{}">#{}</a>', url, obj.trigger_telemetry_id)
-        return obj.trigger_telemetry_id
 
     @admin.action(description="Mark selected events as acknowledged")
     def mark_acknowledged(self, request, queryset):
@@ -104,3 +97,12 @@ class EventAdmin(admin.ModelAdmin):
             return
 
         self.message_user(request, f"{updated} event(s) marked as unacknowledged.")
+
+    @admin.display(description="Trigger Context Summary")
+    def trigger_context_summary(self, obj):
+        if obj.trigger_context:
+            return format_html(
+                '<pre style="white-space: pre-wrap; max-width: 400px;">{}</pre>',
+                str(obj.trigger_context),
+            )
+        return "-"

@@ -51,7 +51,7 @@ class TestRuleProcessorCeleryIntegration:
         # Assert Event was created
         events = Event.objects.filter(rule=rule)
         assert events.count() == 1
-        assert events.first().trigger_telemetry_id == telemetry.id
+        assert events.first().trigger_device_serial_id == device.serial_id
 
     def test_e2e_telemetry_below_threshold_no_event(self):
         """E2E: Telemetry below threshold → No Event created."""

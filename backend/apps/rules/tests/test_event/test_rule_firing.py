@@ -101,24 +101,26 @@ def test_dispatch_action_event_links_correct_rule(rule, telemetry):
     assert event.rule_id == rule.id
 
 
-def test_dispatch_action_event_stores_trigger_telemetry_id(rule, telemetry):
+def test_dispatch_action_event_stores_trigger_device_serial_id(rule, telemetry):
     with (
         patch("apps.rules.tasks.notify_event.delay"),
         patch("apps.rules.tasks.deliver_webhook.delay"),
     ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
-    assert event.trigger_telemetry_id == telemetry.id
+    assert event.trigger_device_serial_id == telemetry.device_metric.device.serial_id
 
 
-def test_dispatch_action_event_stores_trigger_device_id(rule, telemetry):
+def test_dispatch_action_event_stores_trigger_context(rule, telemetry):
     with (
         patch("apps.rules.tasks.notify_event.delay"),
         patch("apps.rules.tasks.deliver_webhook.delay"),
     ):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
 
-    assert event.trigger_device_id == telemetry.device_metric.device_id
+    assert event.trigger_context is not None
+    assert event.trigger_context["telemetry_id"] == telemetry.id
+    assert event.trigger_context["device_id"] == telemetry.device_metric.device_id
 
 
 def test_dispatch_action_event_timestamp_is_recent(rule, telemetry):
@@ -152,7 +154,7 @@ def test_dispatch_action_persists_event_to_db(rule, telemetry):
 
     db_event = Event.objects.get(id=event.id)
     assert db_event.rule_id == rule.id
-    assert db_event.trigger_telemetry_id == telemetry.id
+    assert db_event.trigger_device_serial_id == telemetry.device_metric.device.serial_id
 
 
 # ============================================================================

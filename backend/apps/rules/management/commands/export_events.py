@@ -50,8 +50,8 @@ class Command(BaseCommand):
                         'timestamp',
                         'rule',
                         'acknowledged',
-                        'trigger_telemetry_id',
-                        'trigger_device_id',
+                        'trigger_device_serial_id',
+                        'trigger_context',
                     ]
                 )
 
@@ -62,8 +62,8 @@ class Command(BaseCommand):
                             event.timestamp,
                             event.rule.name,
                             event.acknowledged,
-                            event.trigger_telemetry_id,
-                            event.trigger_device_id,
+                            event.trigger_device_serial_id,
+                            event.trigger_context,
                         ]
                     )
 

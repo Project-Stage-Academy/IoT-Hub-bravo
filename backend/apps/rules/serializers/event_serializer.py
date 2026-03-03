@@ -49,7 +49,7 @@ class BaseSerializer:
 @dataclass(slots=True)
 class EventListQuery:
     rule_id: Optional[int] = None
-    device_id: Optional[int] = None
+    device_serial_id: Optional[str] = None
     severity: Optional[str] = None  # reserved for future
     acknowledged: Optional[bool] = None
     limit: int = 50
@@ -62,7 +62,7 @@ class EventListQuerySerializer(BaseSerializer):
 
     Query params (all optional):
     - rule_id: int
-    - device_id: int  (will be applied via trigger telemetry later)
+    - device_serial_id: str  (filter by trigger device serial ID)
     - severity: str   (not supported by model yet, reserved)
     - acknowledged: bool
     - limit: int
@@ -82,9 +82,9 @@ class EventListQuerySerializer(BaseSerializer):
             return None
 
         rule_id = self._parse_optional_positive_int(data.get("rule_id"), field="rule_id")
-        device_id = self._parse_optional_positive_int(
-            data.get("device_id"),
-            field="device_id",
+        device_serial_id = self._parse_optional_string(
+            data.get("device_serial_id"),
+            field="device_serial_id",
         )
 
         acknowledged = self._parse_optional_bool(
@@ -110,7 +110,7 @@ class EventListQuerySerializer(BaseSerializer):
 
         return EventListQuery(
             rule_id=rule_id,
-            device_id=device_id,
+            device_serial_id=device_serial_id,
             severity=severity,
             acknowledged=acknowledged,
             limit=limit,
@@ -196,7 +196,7 @@ class EventListItemSerializer:
     @staticmethod
     def to_dict(event) -> dict[str, Any]:
         return {
-            "id": event.id,
+            "id": str(event.id),
             "timestamp": event.timestamp.isoformat(),
             "created_at": event.created_at.isoformat(),
             "acknowledged": event.acknowledged,
@@ -204,8 +204,8 @@ class EventListItemSerializer:
                 "id": event.rule_id,
                 "name": event.rule.name if event.rule else None,
             },
-            "trigger_telemetry_id": event.trigger_telemetry_id,
-            "trigger_device_id": event.trigger_device_id,
+            "trigger_device_serial_id": event.trigger_device_serial_id,
+            "trigger_context": event.trigger_context,
         }
 
 
@@ -217,7 +217,7 @@ class EventDetailSerializer:
     @staticmethod
     def to_dict(event) -> dict[str, Any]:
         return {
-            "id": event.id,
+            "id": str(event.id),
             "timestamp": event.timestamp.isoformat(),
             "created_at": event.created_at.isoformat(),
             "acknowledged": event.acknowledged,
@@ -225,6 +225,6 @@ class EventDetailSerializer:
                 "id": event.rule_id,
                 "name": event.rule.name if event.rule else None,
             },
-            "trigger_telemetry_id": event.trigger_telemetry_id,
-            "trigger_device_id": event.trigger_device_id,
+            "trigger_device_serial_id": event.trigger_device_serial_id,
+            "trigger_context": event.trigger_context,
         }

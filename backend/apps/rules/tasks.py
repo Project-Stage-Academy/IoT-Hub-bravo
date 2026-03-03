@@ -46,11 +46,11 @@ def notify_event(event_id: int):
         return
 
     payload = {
-        "event_id": event.id,
+        "event_id": str(event.id),
         "rule_id": event.rule.id,
         "rule_name": event.rule.name,
-        "trigger_telemetry_id": event.trigger_telemetry_id,
-        "trigger_device_id": event.trigger_device_id,
+        "trigger_device_serial_id": event.trigger_device_serial_id,
+        "trigger_context": event.trigger_context,
         "timestamp": event.timestamp.isoformat(),
     }
 
@@ -96,11 +96,11 @@ def deliver_webhook(self, event_id: int):
         return
 
     body = {
-        "event_id": event.id,
+        "event_id": str(event.id),
         "rule_id": event.rule.id,
         "rule_name": event.rule.name,
-        "trigger_telemetry_id": event.trigger_telemetry_id,
-        "trigger_device_id": event.trigger_device_id,
+        "trigger_device_serial_id": event.trigger_device_serial_id,
+        "trigger_context": event.trigger_context,
         "timestamp": event.timestamp.isoformat(),
     }
 

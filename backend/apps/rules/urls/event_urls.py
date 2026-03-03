@@ -8,6 +8,6 @@ from apps.rules.views.event_views import (
 
 urlpatterns = [
     path("", list_events, name="events-list"),
-    path("<int:event_id>/", event_detail, name="events-detail"),
-    path("<int:event_id>/ack/", ack_event, name="events-ack"),
+    path("<uuid:event_id>/", event_detail, name="events-detail"),
+    path("<uuid:event_id>/ack/", ack_event, name="events-ack"),
 ]

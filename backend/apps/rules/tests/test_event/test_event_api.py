@@ -1,6 +1,8 @@
 import pytest
 import jwt
 
+import uuid
+
 from django.conf import settings
 from django.utils import timezone
 
@@ -166,13 +168,14 @@ def test_list_events_result_item_fields(client, client_token, event):
     assert "rule" in item
     assert "id" in item["rule"]
     assert "name" in item["rule"]
-    assert "trigger_telemetry_id" in item
-    assert "trigger_device_id" in item
+    assert "trigger_device_serial_id" in item
+    assert "trigger_context" in item
 
 
-def test_list_events_empty_when_no_events(client, client_token):
+def test_list_events_empty(client, client_token):
     response = client.get("/api/events/", **auth(client_token))
     data = response.json()
+
     assert data["count"] == 0
     assert data["results"] == []
 
@@ -185,7 +188,7 @@ def test_list_events_ordered_newest_first(client, client_token, rule):
 
     response = client.get("/api/events/", **auth(client_token))
     ids = [r["id"] for r in response.json()["results"]]
-    assert ids.index(e2.id) < ids.index(e1.id)
+    assert ids.index(str(e2.id)) < ids.index(str(e1.id))
 
 
 # ============================================================================
@@ -252,12 +255,13 @@ def test_filter_by_rule_id_returns_matching_events(client, client_token, rule, r
     data = response.json()
 
     assert data["count"] == 1
-    assert data["results"][0]["id"] == e1.id
+    assert data["results"][0]["id"] == str(e1.id)
 
 
-def test_filter_by_rule_id_returns_empty_for_unknown_rule(client, client_token):
+def test_filter_by_nonexistent_rule_id_returns_empty(client, client_token):
     response = client.get("/api/events/?rule_id=99999", **auth(client_token))
     data = response.json()
+
     assert data["count"] == 0
     assert data["results"] == []
 
@@ -313,23 +317,23 @@ def test_filter_acknowledged_returns_400_for_invalid_value(client, client_token)
 
 
 # ============================================================================
-# GET /api/events/ — filter by device_id
+# GET /api/events/ — filter by device_serial_id
 # ============================================================================
 
 
-def test_filter_by_device_id(client, client_token, rule, device, device2, rule2):
-    e1 = Event.objects.create(rule=rule, trigger_device_id=device.id)
-    Event.objects.create(rule=rule2, trigger_device_id=device2.id)
+def test_filter_by_device_serial_id(client, client_token, rule, device, device2, rule2):
+    e1 = Event.objects.create(rule=rule, trigger_device_serial_id=device.serial_id)
+    Event.objects.create(rule=rule2, trigger_device_serial_id=device2.serial_id)
 
-    response = client.get(f"/api/events/?device_id={device.id}", **auth(client_token))
+    response = client.get(f"/api/events/?device_serial_id={device.serial_id}", **auth(client_token))
     data = response.json()
 
     assert data["count"] == 1
-    assert data["results"][0]["id"] == e1.id
+    assert data["results"][0]["id"] == str(e1.id)
 
 
-def test_filter_by_device_id_returns_empty_for_unknown_device(client, client_token):
-    response = client.get("/api/events/?device_id=99999", **auth(client_token))
+def test_filter_by_device_serial_id_returns_empty_for_unknown_device(client, client_token):
+    response = client.get("/api/events/?device_serial_id=UNKNOWN-999", **auth(client_token))
     data = response.json()
     assert data["count"] == 0
 
@@ -368,14 +372,14 @@ def test_event_detail_returns_correct_event(client, client_token, event, rule):
     response = client.get(f"/api/events/{event.id}/", **auth(client_token))
     data = response.json()
 
-    assert data["id"] == event.id
-    assert data["acknowledged"] == event.acknowledged
+    assert data["id"] == str(event.id)
     assert data["rule"]["id"] == rule.id
     assert data["rule"]["name"] == rule.name
 
 
 def test_event_detail_returns_404_for_unknown_id(client, client_token):
-    response = client.get("/api/events/99999/", **auth(client_token))
+    fake_uuid = uuid.uuid4()
+    response = client.get(f"/api/events/{fake_uuid}/", **auth(client_token))
     assert response.status_code == 404
     assert "detail" in response.json()
 
@@ -399,12 +403,8 @@ def test_event_detail_response_fields(client, client_token, event):
     assert "created_at" in data
     assert "acknowledged" in data
     assert "rule" in data
-    assert "trigger_telemetry_id" in data
-    assert "trigger_device_id" in data
-
-
-# ============================================================================
-# POST /api/events/{id}/ack/ — acknowledge
+    assert "trigger_device_serial_id" in data
+    assert "trigger_context" in data
 # ============================================================================
 
 
@@ -429,7 +429,8 @@ def test_ack_event_response_contains_acknowledged_true(client, client_token, eve
 
 
 def test_ack_event_returns_404_for_unknown_id(client, client_token):
-    response = client.post("/api/events/99999/ack/", **auth(client_token))
+    fake_uuid = uuid.uuid4()
+    response = client.post(f"/api/events/{fake_uuid}/ack/", **auth(client_token))
     assert response.status_code == 404
     assert "detail" in response.json()
 

@@ -16,7 +16,9 @@ class Status(models.TextChoices):
 
 
 class EventDelivery(models.Model):
-    rule_id = models.IntegerField()
+    event_uuid = models.UUIDField(null=False, help_text="Logical reference to the Event ID")
+    rule_id = models.IntegerField(null=False, help_text="Logical reference to the Rule ID")
+    trigger_device_serial_id = models.CharField(max_length=255, null=False, help_text="Device serial for quick filtering")
 
     delivery_type = models.CharField(
         max_length=20,
@@ -56,4 +58,7 @@ class EventDelivery(models.Model):
             models.Index(
                 fields=["status", "updated_at"], name="idx_event_deliveries_status_updated"
             ),
+            models.Index(fields=["event_uuid"], name="idx_event_deliv_event_uuid"),
+            models.Index(fields=["rule_id"], name="idx_event_deliv_rule_id"),
+            models.Index(fields=["trigger_device_serial_id"], name="idx_event_deliv_device_id"),
         ]
