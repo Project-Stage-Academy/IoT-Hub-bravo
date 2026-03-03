@@ -246,6 +246,20 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+  
+  kafka-event-db-writer:
+    <<: *django_base
+    image: iot-hub-kafka-event-db-writer
+    container_name: kafka-event-db-writer
+    command: [ "python", "-m", "apps.rules.consumers.run_event_db_consumer" ]
+    environment:
+      KAFKA_GROUP_EVENT_DB_WRITER: event-db-writer
+      KAFKA_TOPIC_RULE_EVENTS: rules.events.triggered
+    depends_on:
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_healthy
 
 volumes:
   media_data:
