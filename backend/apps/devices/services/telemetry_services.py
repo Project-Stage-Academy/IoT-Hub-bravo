@@ -50,9 +50,7 @@ def telemetry_create(
     dm_ids = [row["device_metric_id"] for row in valid_data]
     device_metrics_map = {
         dm.id: dm
-        for dm in DeviceMetric.objects.filter(id__in=dm_ids).select_related(
-            "device", "metric"
-        )
+        for dm in DeviceMetric.objects.filter(id__in=dm_ids).select_related("device", "metric")
     }
 
     to_create = [
