@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 from producers.config import ProducerConfig
 from producers.kafka_producer import KafkaProducer
