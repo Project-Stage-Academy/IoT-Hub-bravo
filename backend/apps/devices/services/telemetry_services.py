@@ -154,6 +154,7 @@ def _get_device_metrics_by_names(
     )
     return {dm.metric.metric_type: dm for dm in qs}
 
+
 def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
     if isinstance(payload, dict):
         payload_list = [payload]
@@ -174,6 +175,7 @@ def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
         "Telemetry validation completed. %d valid rows ready for creation.",
         len(validator.validated_rows),
     )
+
 
 def _value_matches_data_type(value: Any, data_type: str) -> bool:
     if data_type == "numeric":

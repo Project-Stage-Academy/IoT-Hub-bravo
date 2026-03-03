@@ -10,6 +10,7 @@ _telemetry_producer: KafkaProducer | None = None
 
 TELEMETRY_TOPIC = "telemetry.clean"
 
+
 def get_telemetry_producer() -> KafkaProducer:
     global _telemetry_producer
     if _telemetry_producer is None:

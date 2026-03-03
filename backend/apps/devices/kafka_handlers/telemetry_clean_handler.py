@@ -9,6 +9,7 @@ from apps.devices.services.telemetry_stream_publisher import publish_telemetry_e
 
 logger = logging.getLogger(__name__)
 
+
 class TelemetryCleanHandler(KafkaPayloadHandler):
 
     def handle(self, payload: Any) -> None:
@@ -19,7 +20,7 @@ class TelemetryCleanHandler(KafkaPayloadHandler):
         ts_raw = payload.get("ts")
         if ts_raw is None:
             logger.error("ts is required")
-            return 
+            return
 
         if isinstance(ts_raw, str):
             ts = parse_datetime(ts_raw)

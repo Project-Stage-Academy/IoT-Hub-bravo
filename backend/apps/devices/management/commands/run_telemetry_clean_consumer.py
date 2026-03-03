@@ -17,10 +17,18 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         config = ConsumerConfig()
-        config = config.__class__(
-            group_id=config.group_id + "-telemetry-clean",
-            **{name: getattr(config, name) for name in config.__dataclass_fields__ if name != "group_id"}
-        ) if hasattr(ConsumerConfig, "__dataclass_fields__") else config
+        config = (
+            config.__class__(
+                group_id=config.group_id + "-telemetry-clean",
+                **{
+                    name: getattr(config, name)
+                    for name in config.__dataclass_fields__
+                    if name != "group_id"
+                },
+            )
+            if hasattr(ConsumerConfig, "__dataclass_fields__")
+            else config
+        )
 
         consumer = KafkaConsumer(
             config=config,
