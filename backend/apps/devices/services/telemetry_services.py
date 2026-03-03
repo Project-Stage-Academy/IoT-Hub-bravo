@@ -133,8 +133,7 @@ def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
     )
 
     return TelemetryValidationResult(
-        validated_rows=validator.validated_rows,
-        errors=validator.errors
+        validated_rows=validator.validated_rows, errors=validator.errors
     )
 
 
