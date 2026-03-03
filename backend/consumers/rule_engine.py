@@ -1,36 +1,76 @@
-# rule eval for telemetry stream (????)
-
 import logging
 import os
 import signal
+from decouple import config
+from django.utils.dateparse import parse_datetime
+from django.utils import timezone
+import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf.settings')
-import django
-from decouple import config
-
 django.setup()
 
 from consumers.kafka_consumer import KafkaConsumer
 from consumers.config import ConsumerConfig
-from consumers.message_handlers import RuleEvalHandler
+from apps.rules.services.rule_processor import RuleProcessor
+from common.redis_client import get_redis_client
 
 
-# change to telemetry.clean
-topic = config('KAFKA_TOPIC_TELEMETRY_RAW', default='telemetry.clean')
+logger = logging.getLogger(__name__)
+
+# kafka conf
+TOPIC = config('KAFKA_TOPIC_TELEMETRY_RAW', default='telemetry.raw') # change to telemetry.clean
+CONSUME_TIMEOUT = config('KAFKA_CONSUMER_CONSUME_TIMEOUT', default=1.0, cast=float)
+DECODE_JSON = config('KAFKA_CONSUMER_DECODE_JSON', default=True, cast=bool)
+CONSUME_BATCH = config('KAFKA_CONSUMER_CONSUME_BATCH', default=True, cast=bool)
+BATCH_MAX_SIZE = config('KAFKA_CONSUMER_BATCH_MAX_SIZE', default=100, cast=int)
+
+redis_client = get_redis_client()
+
+
+class RuleEvalHandler:
+    def __init__(self, rule_runner):
+        self.rule_runner = rule_runner
+
+    def handle(self, payload):
+        if isinstance(payload, list):
+            for item in payload:
+                self._handle_single(item)
+        else:
+            self._handle_single(payload)
+
+    def _handle_single(self, item):
+        ts_raw = item.get("ts")
+        ts = parse_datetime(ts_raw)
+        if timezone.is_naive(ts):
+            ts = timezone.make_aware(ts)
+        
+        device_serial_id = item.get("device")
+
+        for metric_type, value in item.get("metrics", {}).items():
+            key = f"telemetry:{device_serial_id}:{metric_type}"
+            member = f"{ts.timestamp()}:{value}"
+            redis_client.zadd(key, {member: ts.timestamp()})
+            
+            telemetry = { 
+                "device_serial_id": device_serial_id,
+                "metric_type": metric_type,
+                "value": value,
+                "ts": ts.isoformat()
+            }
+            
+            self.rule_runner(telemetry)
 
 
 def main():
-    """
-    Consumer for SHITS and TELEMTRY
-    """
+    """Starts the Kafka rule evaluation consumer"""
     consumer = KafkaConsumer(
         config=ConsumerConfig(),
-        topics=[topic],
-        handler=RuleEvalHandler(),
-        consume_timeout=1.0,
-        decode_json=True,
-        consume_batch=True,
-        batch_max_size=100,
+        topics=[TOPIC],
+        handler=RuleEvalHandler(RuleProcessor.run),
+        consume_timeout=CONSUME_TIMEOUT,
+        decode_json=DECODE_JSON,
+        consume_batch=CONSUME_BATCH,
+        batch_max_size=BATCH_MAX_SIZE,
     )
 
     signal.signal(signal.SIGTERM, consumer.stop)

@@ -5,14 +5,12 @@ from apps.devices.models.telemetry import Telemetry
 from apps.devices.models.device_metric import DeviceMetric
 from apps.rules.services.action import Action
 from apps.rules.services.condition_evaluator import ConditionEvaluator
-from apps.rules.utils.rule_engine_utils import map_telemetry_json_to_event, map_telemetry_model_to_event, choose_repository
-import redis
-from django.conf import settings
+from apps.rules.utils.rule_engine_utils import map_telemetry_json_to_event, map_telemetry_model_to_event, choose_repository, DEFAULT_DURATION_MINUTES
+from common.redis_client import get_redis_client
 
-redis_client = redis.Redis(**settings.REDIS_CONFIG)
 
 logger = logging.getLogger(__name__)
-DEFAULT_DURATION_MINUTES = 5  # default value for time window
+
 
 class RuleProcessor:
     """
@@ -40,9 +38,9 @@ class RuleProcessor:
             is_active=True,
             device_metric__in=device_metrics
         )
-        logger.info("EMMMMMU OTORI")
-        logger.warning(f'{telemetry.get("device_serial_id")}')
-        logger.warning(f"{mapped_telemetry}")
+
+        redis_client = get_redis_client() # idk about this (is this even a good practice)
+
         for rule in rules:
             condition = rule.condition
             device_metric = rule.device_metric

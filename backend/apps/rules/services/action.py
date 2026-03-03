@@ -46,8 +46,6 @@ class Action:
         event = Event.objects.create(
             rule=rule,
             timestamp=timezone.now(),
-            # trigger_telemetry_id=telemetry.id, ### CHANGE 
-            # trigger_device_id=telemetry.device_metric.device_id, ## CHANGE
             trigger_telemetry = {
                 "device_serial_id": f"{telemetry.device_serial_id}",
                 "metric_type": f"{telemetry.metric_type}",
@@ -63,8 +61,6 @@ class Action:
                     "event_id": event.id,
                     "rule_id": rule.id,
                     "rule_name": rule.name,
-                    # "trigger_telemetry_id": telemetry.id, ## TEMPORARY CHANGE
-                    # "trigger_device_id": telemetry.device_metric.device_id, ## TEMPORARY CHANGE
                     "trigger_telemetry": {
                         "device_serial_id": f"{telemetry.device_serial_id}",
                         "metric_type": f"{telemetry.metric_type}",

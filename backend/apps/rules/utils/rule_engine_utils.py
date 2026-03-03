@@ -9,7 +9,9 @@ from apps.devices.models.device_metric import DeviceMetric
 
 logger = logging.getLogger(__name__)
 
-MAX_REDIS_MINUTES = 24 * 60 # maybe this should be in conf
+MAX_REDIS_MINUTES = 60 # maybe this should be in conf?
+DEFAULT_DURATION_MINUTES = 5  # default value for time window
+
 
 @dataclass
 class TelemetryEvent:
@@ -19,7 +21,7 @@ class TelemetryEvent:
     metric_type: str
 
 
-def _get_value_field(telemetry: Telemetry):
+def _get_value_field(telemetry: Telemetry) -> str:
     """Get name (type) of the value telemtry field"""
     if telemetry.value_numeric is not None:
         return "value_numeric"
@@ -30,6 +32,10 @@ def _get_value_field(telemetry: Telemetry):
 
     raise ValueError("Telemetry has no value set")
 
+
+###===========
+### Mapping
+###===========
 
 def map_telemetry_model_to_event(telemetry: Telemetry) -> TelemetryEvent:
     """
@@ -52,10 +58,14 @@ def map_telemetry_json_to_event(telemetry: dict) -> TelemetryEvent:
         device_serial_id=telemetry.get("device_serial_id"),
         value=telemetry.get("value"),
         timestamp=datetime.fromisoformat(telemetry.get("ts")),
-        metric_type=telemetry.get("metric_type") ## idk about that or "metric"
+        metric_type=telemetry.get("metric_type")
 
     )
 
+
+###=========================
+### TELEMETRY REPOSITORIES
+###=========================
 
 class TelemetryRepository(ABC):
     """
@@ -107,9 +117,8 @@ class PostgresTelemetryRepository(TelemetryRepository):
 
 
 class RedisTelemetryRepository(TelemetryRepository):
-    ### SKELETON
     """
-    Redis-based implementation of TelemetryRepository.
+    Redis-based implementation of TelemetryRepository
 
     Assumes telemetry data is stored in Redis Sorted Sets,
     where:
@@ -119,14 +128,13 @@ class RedisTelemetryRepository(TelemetryRepository):
     """
     def __init__(self, redis_client):
         """
-        :param redis_client: Initialized Redis client instance.
+        :param redis_client: Initialized Redis client instance
         """
         self.redis = redis_client
 
     def get_in_window(self, telemetry: TelemetryEvent, minutes: int):
-        ### SKELETON
         """
-        Retrieve metric values from Redis within the specified time window.
+        Retrieve metric values from Redis within the specified time window
 
         :param telemetry: Incoming telemetry event.
         :param minutes: Window size in minutes.
@@ -138,14 +146,12 @@ class RedisTelemetryRepository(TelemetryRepository):
         start_ts = end_ts - minutes * 60
 
         items = self.redis.zrangebyscore(key, start_ts, end_ts, withscores=True)
-        ### CHANGE
-        # print(items)
-        # logger.warning(f"{items}, Emu")
+
         return [
             TelemetryEvent(
                 device_serial_id=telemetry.device_serial_id,
-                value=float(value),  # if value is from Redis bytes, you can additionally decode: float(value.decode()) ### CHANGE
-                timestamp=datetime.fromtimestamp(float(score)),  # convert score into float ### CHANGE
+                value=float(value.split(":", 1)[1]), # take second because member = {timestam:value}
+                timestamp=datetime.fromtimestamp(float(score)), 
                 metric_type=telemetry.metric_type
             )
             for value, score in items
