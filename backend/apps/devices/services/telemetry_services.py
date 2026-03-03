@@ -132,6 +132,11 @@ def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
         len(validator.validated_rows),
     )
 
+    return TelemetryValidationResult(
+        validated_rows=validator.validated_rows,
+        errors=validator.errors
+    )
+
 
 def _value_matches_data_type(value: Any, data_type: str) -> bool:
     if data_type == "numeric":
