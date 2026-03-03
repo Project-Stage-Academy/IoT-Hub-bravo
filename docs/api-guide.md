@@ -106,6 +106,13 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 | `/api/telemetry/{id}/` | PATCH  | `telemetry:write`  | admin          |
 | `/api/telemetry/{id}/` | DELETE | `telemetry:delete` | admin          |
 
+**Events API**
+| Endpoint                  | Method | Required Scope    | Required Role      |
+| ------------------------- | ------ | ----------------- | ------------------ |
+| `/api/events/`            | GET    | `events:read`     | client, admin      |
+| `/api/events/{id}/`       | GET    | `events:read`     | client, admin      |
+| `/api/events/{id}/ack/`   | POST   | `events:write`    | client, admin      |
+
 ## 2. API Style Guide
 ### 2.1 Naming Conventions
 **URLs**

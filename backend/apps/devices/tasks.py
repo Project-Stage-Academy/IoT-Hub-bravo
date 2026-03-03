@@ -4,7 +4,7 @@ from celery import shared_task
 from django.db import OperationalError, InterfaceError
 
 from .serializers.telemetry_serializers import TelemetryBatchCreateSerializer
-from .services.telemetry_services import telemetry_create
+from .services.telemetry_services import telemetry_validate, telemetry_create
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +34,11 @@ def ingest_telemetry_payload(self, payload: dict | list, **kwargs) -> None:
     total_created = 0
     total_errors = 0
 
-    for item in serializer.valid_items:
-        r = telemetry_create(**item)
-        total_created += r.created_count
-        total_errors += len(r.errors)
+    validation = telemetry_validate(payload=serializer.valid_items)
+    r = telemetry_create(valid_data=validation.validated_rows, validation_errors=validation.errors)
+
+    total_created += r.created_count
+    total_errors += len(r.errors)
 
     invalid_items = serializer.item_errors
     invalid_count = len(invalid_items) if invalid_items else 0

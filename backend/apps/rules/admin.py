@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Rule, Event
+from django.urls import reverse
 
 
 @admin.register(Rule)
@@ -31,24 +32,50 @@ class RuleAdmin(admin.ModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
+    list_select_related = ("rule__device_metric__device",)
+
     list_display = (
         "id",
-        "rule",
-        "rule_device",
+        "rule_link",
         "acknowledged",
         "timestamp",
         "created_at",
+        "telemetry_link",
+        "device_link",
+    )
+
+    list_filter = ("timestamp", "created_at", "rule", "acknowledged")
+    search_fields = (
+        "id",
+        "rule__name",
+        "rule__device_metric__device__name",
         "trigger_telemetry_id",
     )
-    list_filter = ("timestamp", "created_at", "rule", "acknowledged")
-    search_fields = ("rule__name",)
     readonly_fields = ("id", "timestamp", "created_at")
     date_hierarchy = "timestamp"
+    ordering = ("-timestamp",)
     actions = ["mark_acknowledged", "mark_unacknowledged"]
 
-    @admin.display(description="Device")
-    def rule_device(self, obj):
-        return obj.rule.device_metric.device.name
+    @admin.display(description="Device ID", ordering="trigger_device_id")
+    def device_link(self, obj):
+        if obj.trigger_device_id:
+            url = reverse("admin:devices_device_change", args=[obj.trigger_device_id])
+            return format_html('<a href="{}">#{}</a>', url, obj.trigger_device_id)
+        return "-"
+
+    @admin.display(description="Rule", ordering="rule__name")
+    def rule_link(self, obj):
+        if obj.rule:
+            url = reverse("admin:rules_rule_change", args=[obj.rule.id])
+            return format_html('<a href="{}">{}</a>', url, obj.rule.name)
+        return "-"
+
+    @admin.display(description="Telemetry ID", ordering="trigger_telemetry_id")
+    def telemetry_link(self, obj):
+        if obj.trigger_telemetry_id:
+            url = reverse("admin:devices_telemetry_change", args=[obj.trigger_telemetry_id])
+            return format_html('<a href="{}">#{}</a>', url, obj.trigger_telemetry_id)
+        return obj.trigger_telemetry_id
 
     @admin.action(description="Mark selected events as acknowledged")
     def mark_acknowledged(self, request, queryset):

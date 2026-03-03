@@ -1,32 +1,42 @@
-import datetime
+import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Literal
 
-from apps.devices.models import Device, Metric, DeviceMetric
 from apps.devices.models.telemetry import Telemetry
 from apps.devices.services.telemetry_stream_publisher import publish_telemetry_event
+from validator.telemetry_validator import TelemetryBatchValidator
+
+logger = logging.getLogger(__name__)
+
+IngestStatus = Literal["success", "partial_success", "failed"]
+
+
+@dataclass(slots=True)
+class TelemetryValidationResult:
+    validated_rows: list[dict] = field(default_factory=list)
+    errors: list[dict] = field(default_factory=list)
 
 
 @dataclass(slots=True)
 class TelemetryIngestResult:
-    created_count: int = 0
-    errors: dict[str, str] = field(default_factory=dict)
+    attempted_count: int = 0  # how many rows we tried to create
+    created_count: int = 0  # how many were actually inserted
+    errors: list[dict] = field(default_factory=list)
+    status: IngestStatus = "success"
 
 
 def telemetry_create(
-    *,
-    device_serial_id: str,
-    metrics: dict[str, Any],
-    ts: datetime.datetime,
+    *, valid_data: list[dict], validation_errors: list[dict] | None = None
 ) -> TelemetryIngestResult:
     """
     Service function to ingest telemetry. Creates multiple
     Telemetry objects for each metric-value pair provided.
-    Metrics that do not exist, are not configured for
-    given device, or contain values that do not match metric
-    data type are skipped.
     """
+    logger.info("Starting telemetry ingestion for %d items", len(valid_data))
+
     result = TelemetryIngestResult()
+    result.errors = validation_errors or []
+    result.attempted_count = len(valid_data)
 
     # validate device
     try:
@@ -93,9 +103,25 @@ def telemetry_create(
     if not to_create:
         return result
 
-    # create collected Telemetry objects
-    created = Telemetry.objects.bulk_create(to_create, ignore_conflicts=True)
-    result.created_count = len(created)
+    logger.info(
+        "Starting telemetry ingestion. Attempting to create %d rows.",
+        result.attempted_count,
+    )
+
+    if not valid_data:
+        logger.info("No valid telemetry rows to create.")
+
+        result.status = "failed" if result.errors else "success"
+        return result
+
+    to_create = [Telemetry(**row) for row in valid_data]
+
+    created_objects = Telemetry.objects.bulk_create(
+        to_create,
+        batch_size=1000,
+        ignore_conflicts=True,
+    )
+    result.created_count = len(created_objects)
 
     # publish telemetry updates to websocket groups
     for evt in to_publish:
@@ -103,23 +129,16 @@ def telemetry_create(
 
     return result
 
+    if result.errors and result.created_count == 0:
+        result.status = "failed"
 
-def _normalize_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
-    """Utility function to normalize metric-value dictionary keys."""
-    normalized = {}
-    for name, value in metrics.items():
-        name = name.strip()
-        if name:
-            normalized[name] = value
-    return normalized
+    elif result.errors:
+        result.status = "partial_success"
 
+    else:
+        result.status = "success"
 
-def _get_metrics_by_names(metrics_names: list[str]) -> dict[str, Metric]:
-    """
-    Utility function to retrieve Metric
-    objects by provided metrics names.
-    """
-    return {m.metric_type: m for m in Metric.objects.filter(metric_type__in=metrics_names)}
+    return result
 
 
 def _get_device_metrics_by_names(
@@ -135,6 +154,26 @@ def _get_device_metrics_by_names(
     )
     return {dm.metric.metric_type: dm for dm in qs}
 
+def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
+    if isinstance(payload, dict):
+        payload_list = [payload]
+    else:
+        payload_list = payload
+
+    validator = TelemetryBatchValidator(payload=payload_list)
+    validator.is_valid()
+
+    if validator.errors:
+        logger.warning(
+            "Telemetry validation completed with errors for %d items. Errors: %s",
+            len(payload),
+            validator.errors,
+        )
+
+    logger.info(
+        "Telemetry validation completed. %d valid rows ready for creation.",
+        len(validator.validated_rows),
+    )
 
 def _value_matches_data_type(value: Any, data_type: str) -> bool:
     if data_type == "numeric":

@@ -236,6 +236,17 @@ services:
       kafka:
         condition: service_healthy
 
+  kafka-telemetry-writer:
+    <<: *django_base
+    image: iot-hub-kafka-telemetry-writer
+    container_name: kafka-telemetry-writer
+    command: [ "python", "-m", "consumers.telemetry_writer" ]
+    environment:
+      KAFKA_GROUP_ID: telemetry-writer
+    depends_on:
+      kafka:
+        condition: service_healthy
+
 volumes:
   media_data:
   db_data:

@@ -1,69 +1,92 @@
-from unittest.mock import patch
+from typing import Optional
+from unittest.mock import patch, MagicMock
 
 import pytest
 
 from apps.devices.tasks import ingest_telemetry_payload
 
 
+def validation_result(validated_rows: Optional[list] = None, errors: Optional[list] = None):
+    return MagicMock(
+        validated_rows=validated_rows or [],
+        errors=errors or [],
+    )
+
+
+@patch('apps.devices.tasks.telemetry_validate')
 @patch('apps.devices.tasks.telemetry_create')
-def test_task_rejects_invalid_payload_type(telemetry_create_mock):
+def test_task_rejects_invalid_payload_type(telemetry_create_mock, telemetry_validate_mock):
     """Test task rejects non-dict/non-list payload and does not call service."""
     with pytest.raises(TypeError):
         ingest_telemetry_payload(payload='invalid-payload')
+
+    telemetry_validate_mock.assert_not_called()
     telemetry_create_mock.assert_not_called()
 
 
+@patch('apps.devices.tasks.telemetry_validate')
 @patch('apps.devices.tasks.telemetry_create')
-def test_dict_payload_calls_service_once(
+def test_dict_payload_processed_as_batch_of_one(
     telemetry_create_mock,
+    telemetry_validate_mock,
     valid_telemetry_payload,
+    validated_telemetry_row,
 ):
-    """Test dict payload is treated as a batch of one and calls service once."""
+    """Test dict payload is treated as a batch of one and calls create service."""
+    telemetry_validate_mock.return_value = validation_result([validated_telemetry_row])
+
     ingest_telemetry_payload(payload=valid_telemetry_payload)
+
+    telemetry_validate_mock.assert_called_once()
     telemetry_create_mock.assert_called_once()
 
     kwargs = telemetry_create_mock.call_args.kwargs
-    assert set(kwargs.keys()) == {'device_serial_id', 'metrics', 'ts'}
-    assert kwargs['device_serial_id'] == 'DEV-001'
+    assert 'valid_data' in kwargs
+    assert isinstance(kwargs['valid_data'], list)
+    assert len(kwargs['valid_data']) == 1
 
 
+@patch('apps.devices.tasks.telemetry_validate')
 @patch('apps.devices.tasks.telemetry_create')
-def test_batch_payload_calls_service_for_every_item(
+def test_batch_payload_calls_create_service_with_every_item(
     telemetry_create_mock,
+    telemetry_validate_mock,
     valid_telemetry_payload,
+    validated_telemetry_row,
 ):
-    """Test dict payload is treated as a batch of one and calls service once."""
+    """Test all validated items are passed to create service."""
+    telemetry_validate_mock.return_value = validation_result([validated_telemetry_row] * 3)
+
     ingest_telemetry_payload(payload=[valid_telemetry_payload] * 3)
-    assert telemetry_create_mock.call_count == 3
+
+    telemetry_validate_mock.assert_called_once()
+    telemetry_create_mock.assert_called_once()
+
+    valid_data = telemetry_create_mock.call_args.kwargs['valid_data']
+    assert len(valid_data) == 3
 
 
+@patch('apps.devices.tasks.telemetry_validate')
 @patch('apps.devices.tasks.telemetry_create')
-def test_invalid_batch_does_not_call_service(
+def test_create_service_called_for_valid_items_only(
     telemetry_create_mock,
+    telemetry_validate_mock,
     valid_telemetry_payload,
+    validated_telemetry_row,
 ):
-    """Test invalid batch payload does not call service."""
-    invalid_item1 = dict(valid_telemetry_payload)
-    invalid_item1['schema_version'] = 'invalid-schema'
+    """
+    Test validated items are passed to create service
+    without failing on validation errors.
+    """
+    telemetry_validate_mock.return_value = validation_result(
+        validated_rows=[validated_telemetry_row] * 2,
+        errors=[{'item3': 'error3'}],
+    )
 
-    invalid_item2 = dict(valid_telemetry_payload)
-    invalid_item2['metrics'] = 999
+    ingest_telemetry_payload(payload=[valid_telemetry_payload] * 3)
 
-    ingest_telemetry_payload(payload=[invalid_item1, invalid_item2])
-    telemetry_create_mock.assert_not_called()
+    telemetry_validate_mock.assert_called_once()
+    telemetry_create_mock.assert_called_once()
 
-
-@patch('apps.devices.tasks.telemetry_create')
-def test_service_called_for_valid_items_only(
-    telemetry_create_mock,
-    valid_telemetry_payload,
-):
-    """Test task calls service only for valid items in a batch."""
-    valid_item1 = dict(valid_telemetry_payload)
-    valid_item2 = dict(valid_telemetry_payload)
-
-    invalid_item = dict(valid_telemetry_payload)
-    invalid_item['device'] = 123
-
-    ingest_telemetry_payload(payload=[valid_item1, invalid_item, valid_item2])
-    assert telemetry_create_mock.call_count == 2
+    payload = telemetry_create_mock.call_args.kwargs['valid_data']
+    assert len(payload) == 2
