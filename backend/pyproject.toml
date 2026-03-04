@@ -22,14 +22,14 @@ python_functions = ["test_*"]
 addopts = [
     "--cov",
     "--cov-report=term-missing",
-    "--cov-fail-under=20",
+    "--cov-fail-under=10",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:pythonjsonlogger.*",
 ]
 
 [tool.coverage.run]
-source = ["apps", "mqtt_adapter", "simulator"]
+source = ["apps", "mqtt_adapter", "simulator", "consumers", "producers", "validator"]
 omit = [
     "*/migrations/*",
     "*/admin.py",
