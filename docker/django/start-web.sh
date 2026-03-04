@@ -37,4 +37,6 @@ else
   log "Skipping TimescaleDB setup (ENABLE_TIMESCALEDB=false)."
 fi
 
-exec gunicorn conf.wsgi:application --bind 0.0.0.0:8000 --workers=2 --threads=4
+#exec gunicorn conf.wsgi:application --bind 0.0.0.0:8000 --workers=2 --threads=4
+
+exec daphne -b 0.0.0.0 -p 8000 conf.asgi:application
