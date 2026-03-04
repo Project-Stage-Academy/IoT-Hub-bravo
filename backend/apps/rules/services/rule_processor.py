@@ -8,9 +8,14 @@ from apps.rules.services.condition_evaluator import ConditionEvaluator
 from apps.rules.utils.rule_engine_utils import map_telemetry_json_to_event, map_telemetry_model_to_event, choose_repository, DEFAULT_DURATION_MINUTES
 from common.redis_client import get_redis_client
 
+import time
+from django.db import connection, reset_queries
+from django.conf import settings
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
+redis_client = get_redis_client()
 
 class RuleProcessor:
     """
@@ -30,18 +35,20 @@ class RuleProcessor:
         elif isinstance(telemetry, dict):
             mapped_telemetry = map_telemetry_json_to_event(telemetry)
 
-        device_metrics = DeviceMetric.objects.filter(
-            device__serial_id=mapped_telemetry.device_serial_id,
-            metric__metric_type=mapped_telemetry.metric_type       
-        )
-        
-        rules = Rule.objects.filter(
-            is_active=True,
-            device_metric__in=device_metrics
-        ).select_related('device_metric__metric')
+        cache_key = f"rules:{mapped_telemetry.device_serial_id}:{mapped_telemetry.metric_type}"
 
-        redis_client = get_redis_client() # idk about this (is this even a good practice)
-        # repository = choose_repository(duration_minutes, redis_client)
+        rules = cache.get(cache_key)
+        if rules is None:
+            device_metrics = DeviceMetric.objects.filter(
+                device__serial_id=mapped_telemetry.device_serial_id,
+                metric__metric_type=mapped_telemetry.metric_type
+            )
+            rules = list(Rule.objects.filter(
+                is_active=True,
+                device_metric__in=device_metrics
+            ).select_related('device_metric__metric'))
+
+            cache.set(cache_key, rules, timeout=60) ## CHANGE MAGIC NUMBERS
 
         for rule in rules:
             condition = rule.condition
