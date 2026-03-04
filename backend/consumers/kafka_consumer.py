@@ -1,6 +1,13 @@
 import json
 from typing import Optional, Any
 import logging
+import time
+
+from apps.common.metrics import (
+    ingestion_messages_total,
+    ingestion_latency_seconds,
+    ingestion_errors_total,
+)
 
 from confluent_kafka import Consumer, Message, KafkaException
 
@@ -135,12 +142,19 @@ class KafkaConsumer:
         Calls self._handler.handle() method with the provided payload.
         Returns True is no exceptions were raised, and False otherwise.
         """
+        start_time = time.perf_counter()
         try:
             self._handler.handle(payload)
+            ingestion_messages_total.labels(source='kafka', status='success').inc()
             return True
         except Exception:
             logger.exception('Failed to handle Kafka message payload.')
+            ingestion_errors_total.labels(source='kafka', error_type='handler_error').inc()
             return False
+        finally:
+            ingestion_latency_seconds.labels(source='kafka').observe(
+                time.perf_counter() - start_time
+            )
 
     def _handle_and_commit(self, payload: Any, message: Message) -> None:
         """
@@ -178,5 +192,9 @@ class KafkaConsumer:
 
     def _get_message_payload(self, message: Message) -> Optional[Any]:
         if self._decode_json:
-            return self._decode_message(message)
-        return message.value()
+            payload = self._decode_message(message)
+        else:
+            payload = message.value()
+        if payload is None:
+            ingestion_errors_total.labels(source='kafka', error_type='parse_error').inc()
+        return payload

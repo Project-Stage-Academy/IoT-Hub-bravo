@@ -1,108 +1,100 @@
-import datetime
+import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
-from apps.devices.models import Device, Metric, DeviceMetric
+from apps.devices.models import Device, DeviceMetric
 from apps.devices.models.telemetry import Telemetry
+from apps.devices.services.telemetry_stream_publisher import publish_telemetry_event
+from validator.telemetry_validator import TelemetryBatchValidator
+
+logger = logging.getLogger(__name__)
+
+IngestStatus = Literal["success", "partial_success", "failed"]
+
+
+@dataclass(slots=True)
+class TelemetryValidationResult:
+    validated_rows: list[dict] = field(default_factory=list)
+    errors: list[dict] = field(default_factory=list)
 
 
 @dataclass(slots=True)
 class TelemetryIngestResult:
-    created_count: int = 0
-    errors: dict[str, str] = field(default_factory=dict)
+    attempted_count: int = 0  # how many rows we tried to create
+    created_count: int = 0  # how many were actually inserted
+    errors: list[dict] = field(default_factory=list)
+    status: IngestStatus = "success"
 
 
 def telemetry_create(
-    *,
-    device_serial_id: str,
-    metrics: dict[str, Any],
-    ts: datetime.datetime,
+    *, valid_data: list[dict], validation_errors: list[dict] | None = None
 ) -> TelemetryIngestResult:
     """
     Service function to ingest telemetry. Creates multiple
     Telemetry objects for each metric-value pair provided.
-    Metrics that do not exist, are not configured for
-    given device, or contain values that do not match metric
-    data type are skipped.
+    valid_data is expected to be validator's validated_rows:
+    list of dicts with device_metric_id, ts, value_jsonb.
     """
+    logger.info("Starting telemetry ingestion for %d items", len(valid_data))
+
     result = TelemetryIngestResult()
+    result.errors = validation_errors or []
+    result.attempted_count = len(valid_data)
 
-    # validate device
-    try:
-        device = Device.objects.get(serial_id=device_serial_id)
-    except Device.DoesNotExist:
-        result.errors['device'] = 'Device not found.'
+    if not valid_data:
+        logger.info("No valid telemetry rows to create.")
+        result.status = "failed" if result.errors else "success"
         return result
 
-    if not device.is_active:
-        result.errors['device'] = 'Device is not active.'
-        return result
+    # Load DeviceMetrics for publish payloads
+    dm_ids = [row["device_metric_id"] for row in valid_data]
+    device_metrics_map = {
+        dm.id: dm
+        for dm in DeviceMetric.objects.filter(id__in=dm_ids).select_related("device", "metric")
+    }
 
-    # collect Metric and DeviceMetric objects for passed metrics
-    normalized_metrics = _normalize_metrics(metrics)
-    if not normalized_metrics:
-        result.errors['metrics'] = 'No valid metric names.'
-        return result
-
-    metrics_names = list(normalized_metrics.keys())
-    metrics_by_name = _get_metrics_by_names(metrics_names)
-    device_metrics = _get_device_metrics_by_names(device, metrics_names)
-
-    # initialize Telemetry objects for every valid matric-value pair
-    to_create: list[Telemetry] = []
-
-    for name, value in normalized_metrics.items():
-        metric = metrics_by_name.get(name)
-        if metric is None:
-            result.errors[name] = 'metric does not exist.'
-            continue
-
-        dm = device_metrics.get(name)
-        if dm is None:
-            result.errors[name] = 'metric not configured for device.'
-            continue
-
-        if not _value_matches_data_type(value, metric.data_type):
-            result.errors[name] = f'Type mismatch (expected {metric.data_type})'
-            continue
-
-        to_create.append(
-            Telemetry(
-                device_metric=dm,
-                ts=ts,
-                value_jsonb={
-                    't': metric.data_type,
-                    'v': value,
-                },
-            )
+    to_create = [
+        Telemetry(
+            device_metric_id=row["device_metric_id"],
+            ts=row["ts"],
+            value_jsonb=row["value_jsonb"],
         )
+        for row in valid_data
+    ]
 
-    if not to_create:
-        return result
+    logger.info(
+        "Attempting to create %d telemetry rows.",
+        result.attempted_count,
+    )
 
-    # create collected Telemetry objects
-    created = Telemetry.objects.bulk_create(to_create, ignore_conflicts=True)
-    result.created_count = len(created)
+    created_objects = Telemetry.objects.bulk_create(
+        to_create,
+        batch_size=1000,
+        ignore_conflicts=True,
+    )
+    result.created_count = len(created_objects)
+
+    # Publish telemetry updates to websocket groups
+    for row in valid_data:
+        dm = device_metrics_map.get(row["device_metric_id"])
+        if dm is not None:
+            publish_telemetry_event(
+                device_serial_id=dm.device.serial_id,
+                device_id=dm.device.id,
+                metric=dm.metric.metric_type,
+                metric_type=dm.metric.data_type,
+                value=row["value_jsonb"].get("v"),
+                ts=row["ts"],
+            )
+
+    if result.errors and result.created_count == 0:
+        result.status = "failed"
+    elif result.errors:
+        result.status = "partial_success"
+    else:
+        result.status = "success"
 
     return result
-
-
-def _normalize_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
-    """Utility function to normalize metric-value dictionary keys."""
-    normalized = {}
-    for name, value in metrics.items():
-        name = name.strip()
-        if name:
-            normalized[name] = value
-    return normalized
-
-
-def _get_metrics_by_names(metrics_names: list[str]) -> dict[str, Metric]:
-    """
-    Utility function to retrieve Metric
-    objects by provided metrics names.
-    """
-    return {m.metric_type: m for m in Metric.objects.filter(metric_type__in=metrics_names)}
 
 
 def _get_device_metrics_by_names(
@@ -113,17 +105,43 @@ def _get_device_metrics_by_names(
     Utility function to retrieve DeviceMetric
     objects by provided metrics names.
     """
-    qs = DeviceMetric.objects.select_related('metric').filter(
+    qs = DeviceMetric.objects.select_related("metric").filter(
         device=device, metric__metric_type__in=metrics_names
     )
     return {dm.metric.metric_type: dm for dm in qs}
 
 
+def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
+    if isinstance(payload, dict):
+        payload_list = [payload]
+    else:
+        payload_list = payload
+
+    validator = TelemetryBatchValidator(payload=payload_list)
+    validator.is_valid()
+
+    if validator.errors:
+        logger.warning(
+            "Telemetry validation completed with errors for %d items. Errors: %s",
+            len(payload),
+            validator.errors,
+        )
+
+    logger.info(
+        "Telemetry validation completed. %d valid rows ready for creation.",
+        len(validator.validated_rows),
+    )
+
+    return TelemetryValidationResult(
+        validated_rows=validator.validated_rows, errors=validator.errors
+    )
+
+
 def _value_matches_data_type(value: Any, data_type: str) -> bool:
-    if data_type == 'numeric':
+    if data_type == "numeric":
         return isinstance(value, (int, float)) and not isinstance(value, bool)
-    if data_type == 'bool':
+    if data_type == "bool":
         return isinstance(value, bool)
-    if data_type == 'str':
+    if data_type == "str":
         return isinstance(value, str)
     return False

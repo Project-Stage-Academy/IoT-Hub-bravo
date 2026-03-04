@@ -1,4 +1,5 @@
 import json
+import pytest
 from unittest.mock import Mock, patch, create_autospec
 
 from django.test import override_settings
@@ -19,6 +20,7 @@ def post_json(client, url, payload, sync: bool = True, headers=None):
     )
 
 
+@pytest.mark.django_db
 @patch('apps.devices.views.telemetry_views.get_telemetry_raw_producer')
 def test_request_triggers_telemetry_producer(
     get_producer_mock,
@@ -48,6 +50,7 @@ def test_request_triggers_telemetry_producer(
 # ------------ tests for dev-only sync mode ------------
 
 
+@pytest.mark.django_db
 @override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_single_valid_returns_201(
@@ -67,6 +70,7 @@ def test_ingest_single_valid_returns_201(
     assert 'errors' in data
 
 
+@pytest.mark.django_db
 @override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_single_service_rejects_returns_400(
@@ -78,11 +82,7 @@ def test_ingest_single_service_rejects_returns_400(
     """Test service reject returns 422."""
     telemetry_create_mock.return_value = Mock(created_count=0, errors={'device': 'invalid'})
 
-    res = post_json(
-        client,
-        telemetry_ingest_url,
-        valid_telemetry_payload,
-    )
+    res = post_json(client, telemetry_ingest_url, valid_telemetry_payload)
 
     assert res.status_code == 422
     telemetry_create_mock.assert_called_once()
@@ -93,6 +93,7 @@ def test_ingest_single_service_rejects_returns_400(
     assert 'errors' in data
 
 
+@pytest.mark.django_db
 @override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_batch_valid_returns_201(
@@ -100,25 +101,25 @@ def test_ingest_batch_valid_returns_201(
     client,
     telemetry_ingest_url,
     valid_telemetry_payload,
+    active_device,
+    device_metric_numeric,
+    device_metric_bool,
+    device_metric_str,
 ):
-    """Test batch valid payload returns 201 and calls service for each valid item."""
-    telemetry_create_mock.return_value = Mock(created_count=1, errors={})
+    telemetry_create_mock.return_value = Mock(created_count=2, errors={})
 
-    res = post_json(
-        client, telemetry_ingest_url, [valid_telemetry_payload, valid_telemetry_payload]
-    )
+    batch = [valid_telemetry_payload, valid_telemetry_payload]
+    res = post_json(client, telemetry_ingest_url, batch)
 
     assert res.status_code == 201
-    assert telemetry_create_mock.call_count == 2
+    telemetry_create_mock.assert_called_once()
 
     data = res.json()
     assert data['status'] == 'ok'
     assert data['created'] == 2
-    assert 'items' in data
-    assert isinstance(data['items'], list)
-    assert len(data['items']) == 2
 
 
+@pytest.mark.django_db
 @override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_batch_mixed_valid_invalid(
@@ -126,26 +127,33 @@ def test_ingest_batch_mixed_valid_invalid(
     client,
     telemetry_ingest_url,
     valid_telemetry_payload,
+    active_device,
+    device_metric_numeric,
+    device_metric_bool,
+    device_metric_str,
 ):
     """Test mixed batch ingests valid items, reports errors for invalid ones."""
-    telemetry_create_mock.return_value = Mock(created_count=1, errors={})
+    telemetry_create_mock.return_value = Mock(
+        created_count=2, errors={'1': {'device': 'device must be of type str.'}}
+    )
 
     invalid_item = dict(valid_telemetry_payload)
     invalid_item['device'] = 123
 
     batch = [valid_telemetry_payload, invalid_item, valid_telemetry_payload]
-
     res = post_json(client, telemetry_ingest_url, batch)
 
     assert res.status_code == 201
-    assert telemetry_create_mock.call_count == 2
+    telemetry_create_mock.assert_called_once()
 
     data = res.json()
     assert data['created'] == 2
-    assert 'errors' in data
-    assert '1' in {str(k) for k in data['errors'].keys()} or 1 in data['errors']
+
+    assert '1' in data['errors']
+    assert 'device' in data['errors']['1']
 
 
+@pytest.mark.django_db
 @override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
 def test_ingest_batch_all_invalid_returns_400(
@@ -177,7 +185,6 @@ def test_ingest_malformed_json_returns_400(client, telemetry_ingest_url):
     )
 
     assert res.status_code == 400
-
     data = res.json()
     assert 'errors' in data
     assert 'json' in data['errors']
@@ -193,7 +200,6 @@ def test_ingest_wrong_payload_type_returns_400(client, telemetry_ingest_url):
     )
 
     assert res.status_code == 400
-
     data = res.json()
     assert 'errors' in data
     assert 'json' in data['errors']

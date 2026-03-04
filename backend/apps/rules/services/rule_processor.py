@@ -1,4 +1,5 @@
 import logging
+import time
 from django.core.cache import caches
 from django.conf import settings
 
@@ -9,7 +10,11 @@ from apps.rules.services.action import Action
 from apps.rules.services.condition_evaluator import ConditionEvaluator
 from apps.rules.utils.rule_engine_utils import map_telemetry_json_to_event, map_telemetry_model_to_event, choose_repository, DEFAULT_DURATION_MINUTES
 from common.redis_client import get_redis_client
-
+from apps.common.metrics import (
+    rules_evaluated_total,
+    rules_triggered_total,
+    rule_processing_seconds,
+)
 
 logger = logging.getLogger(__name__)
 redis_client = get_redis_client()
@@ -17,14 +22,17 @@ cache_rule = caches["rules"]
 
 class RuleProcessor:
     """
-    Processes active rules for a given telemetry and triggers actions if conditions match. 
+    Processes active rules for a given telemetry and triggers actions if conditions match.
+    Collects Prometheus metrics for monitoring rule evaluation performance.
     """
 
     @staticmethod
     def run(telemetry: Telemetry | dict) -> dict:
         """
-        Returns a dict with triggered rules for this telemetry
+        Returns a dict with triggered rules for this telemetry.
+        Tracks: rules evaluated, rules triggered, processing time.
         """
+        start_time = time.perf_counter()
         results = []
         window_cache = {}
 
@@ -51,6 +59,9 @@ class RuleProcessor:
         for rule in rules:
             condition = rule.condition
             device_metric = rule.device_metric
+            rule_type = condition.get('type', 'unknown')
+
+            rules_evaluated_total.labels(rule_type=rule_type).inc()
             duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
 
             if duration_minutes not in window_cache:
@@ -62,10 +73,13 @@ class RuleProcessor:
             cached_window = window_cache[duration_minutes]
                     
             if ConditionEvaluator.evaluate(condition, device_metric, mapped_telemetry, cached_window):
+                rules_triggered_total.labels(rule_type=rule_type).inc()
                 Action.dispatch_action(rule, mapped_telemetry)
                 results.append({"rule_id": rule.id, "triggered": True})
             else:
                 results.append({"rule_id": rule.id, "triggered": False})
+
+        rule_processing_seconds.observe(time.perf_counter() - start_time)
 
         return {"telemetry": 
                     {"device_serial_id": mapped_telemetry.device_serial_id,
