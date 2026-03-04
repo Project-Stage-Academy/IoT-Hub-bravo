@@ -88,12 +88,10 @@ def _validate_count(value: Any) -> int:
 
 class ThresholdEvaluator:
     @staticmethod
-    def evaluate(condition: dict, telemetry: TelemetryEvent, telemetries_in_window: list, **kwargs) -> bool:
+    def evaluate(condition: dict, telemetries_in_window: list, **kwargs) -> bool:
         """Evaluate rule for 'threshold' type"""
         condition_value = _get_value(condition)
         comparison_operator = _get_comparison_operator(condition)
-        # duration_minutes = _validate_duration_minutes(_get_duration_minutes(condition))
-        # telemetries_in_window = repository.get_in_window(telemetry, duration_minutes)
 
         total_count = len(telemetries_in_window)
         if total_count == 0:
@@ -123,7 +121,7 @@ class ThresholdEvaluator:
 
 class RateEvaluator:
     @staticmethod
-    def evaluate(condition: dict, telemetry: TelemetryEvent, telemetries_in_window: list, **kwargs) -> bool:
+    def evaluate(condition: dict, telemetries_in_window: list, **kwargs) -> bool:
         """
         Rate evaluator:
         Checks if the count of Telemetry events for the same device_metric
@@ -136,7 +134,6 @@ class RateEvaluator:
             logger.error("Rate rule missing 'count' or 'duration_minutes'")
             return False
 
-        # telemetries_in_window = repository.get_in_window(telemetry, duration_minutes)
         event_count = len(telemetries_in_window)
 
         logger.info(

@@ -105,6 +105,19 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Redis config
+REDIS_HOST = config('REDIS_HOST', default='redis')
+REDIS_PORT = config('REDIS_PORT', default=6379)
+REDIS_PASSWORD = config('REDIS_PASSWORD', default=None)
+REDIS_DECODE_RESPONSES = config('REDIS_DECODE_RESPONSES', default = True)
+
+REDIS_CONFIG = {
+    "host": REDIS_HOST,
+    "port": REDIS_PORT,
+    "password": REDIS_PASSWORD,
+    "decode_responses": REDIS_DECODE_RESPONSES,
+}
+
 AUTH_USER_MODEL = 'users.User'
 
 LANGUAGE_CODE = 'en-us'
@@ -177,10 +190,22 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+# Cache conf 
+RULES_CACHE_TTL = config("RULES_CACHE_TTL", default = 86400, cast=int) # default = 24h
+
 CACHES = {
-    "default": {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    },
+    "rules": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://redis:6379/1", ### CHANGE db /1 (maybe?)
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
+        "TIMEOUT": RULES_CACHE_TTL,
+        "KEY_PREFIX": "rules",
+        "OPTIONS": {
+            "password": REDIS_PASSWORD,
+    }
     }
 }
 
@@ -314,16 +339,3 @@ LOGGING = {
 }
 
 TELEMETRY_SYNC_HEADER = 'Ingest-Sync'
-
-# Redis client config
-REDIS_HOST = config('REDIS_HOST', default='redis')
-REDIS_PORT = config('REDIS_PORT', default=6379)
-REDIS_PASSWORD = config('REDIS_PASSWORD', default=None)
-REDIS_DECODE_RESPONSES = config('REDIS_DECODE_RESPONSES', default = True)
-
-REDIS_CONFIG = {
-    "host": REDIS_HOST,
-    "port": REDIS_PORT,
-    "password": REDIS_PASSWORD,
-    "decode_responses": REDIS_DECODE_RESPONSES,
-}
