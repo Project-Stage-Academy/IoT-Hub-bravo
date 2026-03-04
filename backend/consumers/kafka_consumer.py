@@ -129,7 +129,51 @@ class KafkaConsumer:
 
         if last_valid_message is not None:
             self._handle_and_commit(batch, last_valid_message)
+    # def _consume_batch(self) -> None:
+    #     """
+    #     Безпечна обробка batch: commit offsets для всіх успішно оброблених повідомлень.
+    #     """
+    #     messages = self._consumer.consume(
+    #         num_messages=self._batch_max_size,
+    #         timeout=self._consume_timeout,
+    #     )
+    #     if not messages:
+    #         return
 
+    #     # Збираємо payload для batch
+    #     batch: list[Any] = []
+
+    #     # Словник для commit по partition
+    #     last_offsets = {}
+
+    #     for message in messages:
+    #         if not self._is_valid_message(message):
+    #             continue
+
+    #         payload = self._get_message_payload(message)
+    #         if payload is None:
+    #             continue
+
+    #         # Додаємо payload у batch
+    #         if isinstance(payload, list):
+    #             batch.extend(payload)
+    #         else:
+    #             batch.append(payload)
+
+    #         # Зберігаємо offset для commit по partition
+    #         last_offsets[message.partition()] = message.offset()
+
+    #     # Обробка payload batch
+    #     if batch:
+    #         handled_successfully = self._handle_payload(batch)
+
+    #         if handled_successfully:
+    #             # commit offsets для всіх partition batch
+    #             for message in messages:
+    #                 if not self._is_valid_message(message):
+    #                     continue
+    #                 # commit наступного offset для кожного успішного повідомлення
+    #                 self._consumer.commit(message=message, asynchronous=False)
     def _handle_payload(self, payload: Any) -> bool:
         """
         Calls self._handler.handle() method with the provided payload.

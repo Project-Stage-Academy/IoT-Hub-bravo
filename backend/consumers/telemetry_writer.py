@@ -12,7 +12,7 @@ from consumers.message_handlers import CeleryPayloadHandler
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf.settings')
 django.setup()
 
-from apps.devices.tasks import ingest_telemetry_payload  # noqa
+from apps.devices.tasks import write_telemetry_payload  # noqa
 
 # TODO: switch topic to KAFKA_TOPIC_TELEMETRY_CLEAN (telemetry.clean)
 TOPIC = config('KAFKA_TOPIC_TELEMETRY_CLEAN', default='telemetry.clean')
@@ -58,7 +58,7 @@ def main():
     consumer = KafkaConsumer(
         config=ConsumerConfig(),
         topics=[TOPIC],
-        handler=CeleryPayloadHandler(ingest_telemetry_payload),
+        handler=CeleryPayloadHandler(write_telemetry_payload),
         consume_timeout=CONSUME_TIMEOUT,
         decode_json=DECODE_JSON,
         consume_batch=CONSUME_BATCH,

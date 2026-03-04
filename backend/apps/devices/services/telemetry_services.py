@@ -20,13 +20,10 @@ class TelemetryValidationResult:
 class TelemetryIngestResult:
     attempted_count: int = 0  # how many rows we tried to create
     created_count: int = 0  # how many were actually inserted
-    errors: list[dict] = field(default_factory=list)
     status: IngestStatus = "success"
 
 
-def telemetry_create(
-    *, valid_data: list[dict], validation_errors: list[dict] | None = None
-) -> TelemetryIngestResult:
+def telemetry_create(*, valid_data: list[dict]) -> TelemetryIngestResult:
     """
     Service function to ingest telemetry. Creates multiple
     Telemetry objects for each metric-value pair provided.
@@ -34,7 +31,6 @@ def telemetry_create(
     logger.info("Starting telemetry ingestion for %d items", len(valid_data))
 
     result = TelemetryIngestResult()
-    result.errors = validation_errors or []
     result.attempted_count = len(valid_data)
 
     logger.info(
@@ -44,8 +40,7 @@ def telemetry_create(
 
     if not valid_data:
         logger.info("No valid telemetry rows to create.")
-
-        result.status = "failed" if result.errors else "success"
+        result.status = "success"
         return result
 
     to_create = [
@@ -71,10 +66,13 @@ def telemetry_create(
         result.created_count,
     )
 
-    if result.created_count == 0 and result.attempted_count > 0:
+    if result.attempted_count == 0:
+        result.status = "success"
+
+    elif result.created_count == 0:
         result.status = "failed"
 
-    elif result.errors:
+    elif result.created_count < result.attempted_count:
         result.status = "partial_success"
 
     else:

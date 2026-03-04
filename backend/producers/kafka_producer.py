@@ -82,7 +82,6 @@ class KafkaProducer:
 
     @staticmethod
     def _encode_payload(payload: Any, topic) -> Optional[bytes]:
-        print("TOPIC:", topic)
         try:
             return json.dumps(payload, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
         except (TypeError, ValueError):

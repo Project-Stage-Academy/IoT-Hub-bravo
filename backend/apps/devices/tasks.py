@@ -28,20 +28,21 @@ def ingest_telemetry_payload(self, payload: dict | list, **kwargs) -> None:
     elif isinstance(payload, list):
         pass
     else:
-        raise TypeError(f'payload must be of type dict or list, got {type(payload).__name__}')
+        logger.error(f'payload must be of type dict or list, got {type(payload).__name__}')
+        return
 
     serializer = TelemetryBatchCreateSerializer(payload)
 
-    if not serializer.validate_producer_batch(payload) and not serializer.valid_items:
+    if not serializer.is_valid() and not serializer.valid_items:
         logger.warning('Telemetry ingestion task rejected: errors=%s', len(serializer.errors))
-        return f"Valid: {serializer.valid_items}, errors: {serializer.errors}"
+        return
 
     total_created = 0
     total_errors = 0
 
-    # for item in serializer.valid_items:
-    # return serializer.valid_items
-    r = telemetry_create(valid_data=serializer.valid_items)
+    validation = telemetry_validate(payload=serializer.valid_items)
+    r = telemetry_create(valid_data=validation.validated_rows, validation_errors=validation.errors)
+
     total_created += r.created_count
     total_errors += len(r.errors)
 
@@ -66,6 +67,43 @@ def ingest_telemetry_payload(self, payload: dict | list, **kwargs) -> None:
     retry_jitter=True,
     retry_kwargs={'max_retries': 10},
 )
+def write_telemetry_payload(self, payload):
+    if isinstance(payload, dict):
+        payload = [payload]
+    elif isinstance(payload, list):
+        pass
+    else:
+        logger.error(f'payload must be of type dict or list, got {type(payload).__name__}')
+        return
+    
+    serializer = TelemetryBatchCreateSerializer(payload)
+    if serializer.validate_producer_batch(payload) and not serializer.valid_items:
+        logger.warning('Telemetry ingestion task rejected: errors=%s', len(serializer.errors))
+        return
+    
+    writer = telemetry_create(valid_data=serializer.valid_items)
+
+    invalid_items = serializer.item_errors
+    invalid_count = len(invalid_items) if invalid_items else 0
+
+    logger.info(
+        'Telemetry task ingested batch: '
+        'received=%s, valid=%s, invalid=%s.',
+        len(payload),
+        len(serializer.valid_items),
+        invalid_count
+    )
+
+
+
+@shared_task(
+    bind=True,
+    autoretry_for=(OperationalError, InterfaceError),
+    retry_backoff=True,
+    retry_backoff_max=10,
+    retry_jitter=True,
+    retry_kwargs={'max_retries': 10},
+)
 def validate_telemetry_payload(self,payload):
     if isinstance(payload, dict):
         payload = [payload]
@@ -81,14 +119,14 @@ def validate_telemetry_payload(self,payload):
         return
 
     total_errors = 0
-    # for item in serializer.valid_items:
-    # return serializer.valid_items
-    r = telemetry_validate(payload=serializer.valid_items)
-    validated_items = r.validated_rows
-    total_errors += len(r.errors)
-    # return r.errors
-    invalid_items = serializer.item_errors
-    invalid_count = len(invalid_items) if invalid_items else 0
+    validator = telemetry_validate(payload=serializer.valid_items)
+    validated_items = validator.validated_rows
+
+    total_errors += len(validator.errors)
+    serializer_invalid_items = serializer.item_errors
+
+    invalid_count = len(serializer_invalid_items) if serializer_invalid_items else 0
+    total_errors += invalid_count
 
     logger.info(
         'Telemetry task ingested batch: '
@@ -99,7 +137,6 @@ def validate_telemetry_payload(self,payload):
         validated_items,
         total_errors,
     )
-    # return validated_items
     if not validated_items:
         logger.info("No validated items to produce.")
         return
@@ -111,7 +148,7 @@ def validate_telemetry_payload(self,payload):
         if isinstance(record.get('ts'), datetime.datetime):
             record['ts'] = record['ts'].isoformat()
 
-        key = record.get('device_metric_id')
+        key = record.get('device_serial_id')
         result = producer.produce(payload=record, key=key)
 
         if result == ProduceResult.ENQUEUED:

@@ -13,13 +13,11 @@ def test_telemetry_create_device_not_found(ts):
         }
     ]
     validation = telemetry_validate(payload=payload)
-    result = telemetry_create(
-        valid_data=validation.validated_rows, validation_errors=validation.errors
-    )
+    result = telemetry_create(valid_data=validation.validated_rows)
 
     assert result.created_count == 0
     device_errors = [
-        e for e in result.errors
+        e for e in validation.errors
         if e.get("metric") is None and e["error"] == "device_not_found"
     ]
     assert device_errors
@@ -38,13 +36,11 @@ def test_telemetry_create_device_not_active(inactive_device, ts):
         }
     ]
     validation = telemetry_validate(payload)
-    result = telemetry_create(
-        valid_data=validation.validated_rows, validation_errors=validation.errors
-    )
+    result = telemetry_create(valid_data=validation.validated_rows)
 
     assert result.created_count == 0
     device_errors = [
-        e for e in result.errors
+        e for e in validation.errors
         if e.get("metric") is None and e["error"] == "device_not_found"
     ]
     assert device_errors
@@ -69,12 +65,10 @@ def test_telemetry_create_metric_does_not_exist(active_device, ts):
         }
     ]
     validation = telemetry_validate(payload)
-    result = telemetry_create(
-        valid_data=validation.validated_rows, validation_errors=validation.errors
-    )
+    result = telemetry_create(valid_data=validation.validated_rows)
 
     assert result.created_count == 0
-    metric_errors = [e for e in result.errors if e.get("index") == 0]
+    metric_errors = [e for e in validation.errors if e.get("index") == 0]
 
     metric_fields = [e.get("metric") for e in metric_errors]
     assert "temperature" in metric_fields
@@ -96,12 +90,10 @@ def test_telemetry_create_metric_not_configured_for_device(
         }
     ]
     validation = telemetry_validate(payload)
-    result = telemetry_create(
-        valid_data=validation.validated_rows, validation_errors=validation.errors
-    )
+    result = telemetry_create(valid_data=validation.validated_rows)
 
     assert result.created_count == 0
-    metric_errors = [e for e in result.errors if e.get("index") == 0]
+    metric_errors = [e for e in validation.errors if e.get("index") == 0]
 
     metric_fields = [e.get("metric") for e in metric_errors]
     assert "temperature" in metric_fields
@@ -120,13 +112,11 @@ def test_telemetry_create_type_mismatch_numeric(active_device, device_metric_num
         }
     ]
     validation = telemetry_validate(payload)
-    result = telemetry_create(
-        valid_data=validation.validated_rows, validation_errors=validation.errors
-    )
+    result = telemetry_create(valid_data=validation.validated_rows)
 
     assert result.created_count == 0
 
-    metric_errors = [e for e in result.errors if e.get("index") == 0 and e.get("metric") == "temperature"]
+    metric_errors = [e for e in validation.errors if e.get("index") == 0 and e.get("metric") == "temperature"]
 
     assert metric_errors
     assert metric_errors[0]["error"] in ("type_mismatch", "unit_mismatch")
@@ -145,12 +135,10 @@ def test_telemetry_create_type_mismatch_bool(active_device, device_metric_bool, 
         }
     ]
     validation = telemetry_validate(payload)
-    result = telemetry_create(
-        valid_data=validation.validated_rows, validation_errors=validation.errors
-    )
+    result = telemetry_create(valid_data=validation.validated_rows)
 
     assert result.created_count == 0
-    metric_errors = [e for e in result.errors if e.get("index") == 0 and e.get("metric") == "door_open"]
+    metric_errors = [e for e in validation.errors if e.get("index") == 0 and e.get("metric") == "door_open"]
     assert metric_errors
     assert metric_errors[0]["error"] in ("type_mismatch", "unit_mismatch")
 
@@ -168,12 +156,10 @@ def test_telemetry_create_type_mismatch_str(active_device, device_metric_str, ts
         }
     ]
     validation = telemetry_validate(payload)
-    result = telemetry_create(
-        valid_data=validation.validated_rows, validation_errors=validation.errors
-    )
+    result = telemetry_create(valid_data=validation.validated_rows)
 
     assert result.created_count == 0
-    metric_errors = [e for e in result.errors if e.get("index") == 0 and e.get("metric") == "status"]
+    metric_errors = [e for e in validation.errors if e.get("index") == 0 and e.get("metric") == "status"]
     assert metric_errors
     assert metric_errors[0]["error"] in ("type_mismatch", "unit_mismatch")
 
@@ -202,14 +188,12 @@ def test_telemetry_create_creates_rows_for_valid_metrics_only(
     ]
 
     validation = telemetry_validate(payload)
-    result = telemetry_create(
-        valid_data=validation.validated_rows, validation_errors=validation.errors
-    )
+    result = telemetry_create(valid_data=validation.validated_rows)
 
     assert result.created_count == 3
     assert Telemetry.objects.count() == 3
 
     unknown_errors = [
-        e for e in result.errors if e.get("index") == 0 and e.get("metric") == "unknown_metric"
+        e for e in validation.errors if e.get("index") == 0 and e.get("metric") == "unknown_metric"
     ]
     assert unknown_errors

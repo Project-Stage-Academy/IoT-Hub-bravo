@@ -1,3 +1,5 @@
+import datetime
+
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -28,6 +30,18 @@ def valid_telemetry_payload():
             },
         },
         'ts': '2026-02-04T12:00:00Z',
+    }
+
+
+@pytest.fixture
+def validated_telemetry_row(device_metric_numeric):
+    return {
+        'device_metric_id': device_metric_numeric.id,
+        'ts': datetime.datetime.fromisoformat('2026-02-04T12:00:00+00:00'),
+        'value_jsonb': {
+            't': 'numeric',
+            'v': 100,
+        },
     }
 
 
