@@ -1,14 +1,10 @@
 import logging
 from typing import Any, Callable
 import operator
-from django.conf import settings
-import redis
 
-from apps.rules.utils.rule_engine_utils import TelemetryRepository
 from apps.devices.models.device_metric import DeviceMetric
 from apps.rules.utils.rule_engine_utils import TelemetryEvent
 
-redis_client = redis.Redis(**settings.REDIS_CONFIG)
 
 logger = logging.getLogger(__name__)
 
@@ -92,12 +88,12 @@ def _validate_count(value: Any) -> int:
 
 class ThresholdEvaluator:
     @staticmethod
-    def evaluate(condition: dict, telemetry: TelemetryEvent, repository: TelemetryRepository, **kwargs) -> bool:
+    def evaluate(condition: dict, telemetry: TelemetryEvent, telemetries_in_window: list, **kwargs) -> bool:
         """Evaluate rule for 'threshold' type"""
         condition_value = _get_value(condition)
         comparison_operator = _get_comparison_operator(condition)
-        duration_minutes = _validate_duration_minutes(_get_duration_minutes(condition))
-        telemetries_in_window = repository.get_in_window(telemetry, duration_minutes)
+        # duration_minutes = _validate_duration_minutes(_get_duration_minutes(condition))
+        # telemetries_in_window = repository.get_in_window(telemetry, duration_minutes)
 
         total_count = len(telemetries_in_window)
         if total_count == 0:
@@ -127,7 +123,7 @@ class ThresholdEvaluator:
 
 class RateEvaluator:
     @staticmethod
-    def evaluate(condition: dict, telemetry: TelemetryEvent, repository: TelemetryRepository, **kwargs) -> bool:
+    def evaluate(condition: dict, telemetry: TelemetryEvent, telemetries_in_window: list, **kwargs) -> bool:
         """
         Rate evaluator:
         Checks if the count of Telemetry events for the same device_metric
@@ -140,7 +136,7 @@ class RateEvaluator:
             logger.error("Rate rule missing 'count' or 'duration_minutes'")
             return False
 
-        telemetries_in_window = repository.get_in_window(telemetry, duration_minutes)
+        # telemetries_in_window = repository.get_in_window(telemetry, duration_minutes)
         event_count = len(telemetries_in_window)
 
         logger.info(
@@ -152,7 +148,7 @@ class RateEvaluator:
 
 class CompositeEvaluator:
     @staticmethod
-    def evaluate(condition: dict, device_metric: DeviceMetric, telemetry: TelemetryEvent, repository: TelemetryRepository) -> bool:
+    def evaluate(condition: dict, device_metric: DeviceMetric, telemetry: TelemetryEvent, telemetries_in_window: list) -> bool:
         """
         Evaluate composite rules combining multiple subconditions with AND/OR.
         """
@@ -165,7 +161,7 @@ class CompositeEvaluator:
 
         results = []
         for i, subcondition in enumerate(subconditions):
-            result = ConditionEvaluator.evaluate(subcondition, device_metric, telemetry, repository)
+            result = ConditionEvaluator.evaluate(subcondition, device_metric, telemetry, telemetries_in_window)
             logger.info(f"Subcondition {i} (type={subcondition.get('type')}): {result}")
             results.append(result)
 
@@ -195,7 +191,7 @@ class ConditionEvaluator:
         ConditionEvaluator._evaluators[rule_type] = evaluator_callable
 
     @staticmethod
-    def evaluate(condition: dict, device_metric: DeviceMetric, telemetry: TelemetryEvent, repository: TelemetryRepository) -> bool:
+    def evaluate(condition: dict, device_metric: DeviceMetric, telemetry: TelemetryEvent, telemetries_in_window: list) -> bool:
         """Evaluate rule"""
         try:
             _validate_metric(device_metric, telemetry)
@@ -219,4 +215,4 @@ class ConditionEvaluator:
             logger.warning(f"Unknown condition type: {rule_type}")
             return False
 
-        return evaluator(condition=condition, device_metric=device_metric, telemetry=telemetry, repository=repository)
+        return evaluator(condition=condition, device_metric=device_metric, telemetry=telemetry, telemetries_in_window=telemetries_in_window)

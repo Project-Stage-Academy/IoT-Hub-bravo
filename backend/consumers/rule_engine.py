@@ -13,7 +13,7 @@ from consumers.kafka_consumer import KafkaConsumer
 from consumers.config import ConsumerConfig
 from apps.rules.services.rule_processor import RuleProcessor
 from common.redis_client import get_redis_client
-
+from apps.rules.tasks import evaluate_rule
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ redis_client = get_redis_client()
 
 class RuleEvalHandler:
     def __init__(self, rule_runner):
-        self.rule_runner = rule_runner
+        self.rule_runner = rule_runner ### change on task
 
     def handle(self, payload):
         if isinstance(payload, list):
@@ -58,7 +58,7 @@ class RuleEvalHandler:
                 "ts": ts.isoformat()
             }
             
-            self.rule_runner(telemetry)
+            self.rule_runner.delay(telemetry)
 
 
 def main():
@@ -66,7 +66,7 @@ def main():
     consumer = KafkaConsumer(
         config=ConsumerConfig(),
         topics=[TOPIC],
-        handler=RuleEvalHandler(RuleProcessor.run),
+        handler=RuleEvalHandler(evaluate_rule),
         consume_timeout=CONSUME_TIMEOUT,
         decode_json=DECODE_JSON,
         consume_batch=CONSUME_BATCH,

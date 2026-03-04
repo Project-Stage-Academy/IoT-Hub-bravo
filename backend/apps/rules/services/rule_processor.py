@@ -23,7 +23,8 @@ class RuleProcessor:
         Returns a dict with triggered rules for this telemetry
         """
         results = []
-        
+        window_cache = {}
+
         if isinstance(telemetry, Telemetry):
             mapped_telemetry = map_telemetry_model_to_event(telemetry)
         elif isinstance(telemetry, dict):
@@ -37,18 +38,25 @@ class RuleProcessor:
         rules = Rule.objects.filter(
             is_active=True,
             device_metric__in=device_metrics
-        )
+        ).select_related('device_metric__metric')
 
         redis_client = get_redis_client() # idk about this (is this even a good practice)
+        # repository = choose_repository(duration_minutes, redis_client)
 
         for rule in rules:
             condition = rule.condition
             device_metric = rule.device_metric
-
             duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
-            repository = choose_repository(duration_minutes, redis_client)
 
-            if ConditionEvaluator.evaluate(condition, device_metric, mapped_telemetry, repository):
+            if duration_minutes not in window_cache:
+                repository = choose_repository(duration_minutes, redis_client)
+                window_cache[duration_minutes] = repository.get_in_window(
+                    mapped_telemetry, duration_minutes
+                )
+            
+            cached_window = window_cache[duration_minutes]
+                    
+            if ConditionEvaluator.evaluate(condition, device_metric, mapped_telemetry, cached_window):
                 Action.dispatch_action(rule, mapped_telemetry)
                 results.append({"rule_id": rule.id, "triggered": True})
             else:

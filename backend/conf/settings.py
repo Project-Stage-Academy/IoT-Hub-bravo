@@ -242,7 +242,7 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # LOGGING configuration for django and celery
 DJANGO_LOG_LEVEL = config('DJANGO_LOG_LEVEL', default='INFO')
-CELERY_LOG_LEVEL = config('CELERY_LOG_LEVEL', default='INFO')
+CELERY_LOG_LEVEL = config('CELERY_LOG_LEVEL', default='ERROR')
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -316,10 +316,14 @@ LOGGING = {
 TELEMETRY_SYNC_HEADER = 'Ingest-Sync'
 
 # Redis client config
+REDIS_HOST = config('REDIS_HOST', default='redis')
+REDIS_PORT = config('REDIS_PORT', default=6379)
+REDIS_PASSWORD = config('REDIS_PASSWORD', default=None)
+REDIS_DECODE_RESPONSES = config('REDIS_DECODE_RESPONSES', default = True)
+
 REDIS_CONFIG = {
-    "host": "redis",
-    "port": 6379,
-    "db": 0,
-    "password": None,
-    "decode_responses": True,
+    "host": REDIS_HOST,
+    "port": REDIS_PORT,
+    "password": REDIS_PASSWORD,
+    "decode_responses": REDIS_DECODE_RESPONSES,
 }
