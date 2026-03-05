@@ -16,6 +16,7 @@ line-length = 99
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "conf.settings"
+pythonpath = ["."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
