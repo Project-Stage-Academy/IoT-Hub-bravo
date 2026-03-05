@@ -1,9 +1,9 @@
 from unittest.mock import Mock, create_autospec, patch
- 
+
 import pytest
 
 import logging
- 
+
 from mqtt_adapter.config import MqttConfig
 from mqtt_adapter.message_handlers import MQTTJsonMessage, MessageHandler
 from mqtt_adapter.mqtt_client import (
