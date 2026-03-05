@@ -1,4 +1,4 @@
-from unittest.mock import Mock, create_autospec
+from unittest.mock import Mock, create_autospec, patch
 
 import pytest
 
@@ -127,3 +127,206 @@ def test_on_message_does_not_crash_if_handler_raises(config, handler):
     callbacks.on_message(client, userdata=None, m=message)
 
     handler.handle.assert_called_once()
+
+
+# ──────────────────────────────────────────────
+#  _normalize_credential
+# ──────────────────────────────────────────────
+
+
+class TestNormalizeCredential:
+    """Tests for _normalize_credential helper."""
+
+    def test_strips_whitespace(self):
+        from mqtt_adapter.mqtt_client import _normalize_credential
+
+        assert _normalize_credential('  admin  ') == 'admin'
+
+    def test_empty_string_returns_none(self):
+        from mqtt_adapter.mqtt_client import _normalize_credential
+
+        assert _normalize_credential('   ') is None
+
+    def test_valid_string_returns_stripped(self):
+        from mqtt_adapter.mqtt_client import _normalize_credential
+
+        assert _normalize_credential('my-user') == 'my-user'
+
+
+# ──────────────────────────────────────────────
+#  apply_mqtt_auth
+# ──────────────────────────────────────────────
+
+
+class TestApplyMqttAuth:
+    """Tests for apply_mqtt_auth function."""
+
+    def test_sets_credentials(self, config):
+        from mqtt_adapter.mqtt_client import apply_mqtt_auth
+
+        client = Mock()
+        cfg = MqttConfig(
+            host='localhost',
+            port=1883,
+            keepalive=60,
+            topic='test',
+            qos=1,
+            client_id='test',
+            username='admin',
+            password='secret',
+        )
+
+        apply_mqtt_auth(client, cfg)
+
+        client.username_pw_set.assert_called_once_with('admin', 'secret')
+
+    def test_raises_on_empty_username(self, config):
+        from mqtt_adapter.mqtt_client import apply_mqtt_auth
+
+        client = Mock()
+        cfg = MqttConfig(
+            host='localhost',
+            port=1883,
+            keepalive=60,
+            topic='test',
+            qos=1,
+            client_id='test',
+            username='   ',
+            password='secret',
+        )
+
+        with pytest.raises(ValueError, match='MQTT_USERNAME'):
+            apply_mqtt_auth(client, cfg)
+
+    def test_raises_on_empty_password(self, config):
+        from mqtt_adapter.mqtt_client import apply_mqtt_auth
+
+        client = Mock()
+        cfg = MqttConfig(
+            host='localhost',
+            port=1883,
+            keepalive=60,
+            topic='test',
+            qos=1,
+            client_id='test',
+            username='admin',
+            password='   ',
+        )
+
+        with pytest.raises(ValueError, match='MQTT_PASSWORD'):
+            apply_mqtt_auth(client, cfg)
+
+
+# ──────────────────────────────────────────────
+#  build_client
+# ──────────────────────────────────────────────
+
+
+class TestBuildClient:
+    """Tests for build_client function."""
+
+    @patch('mqtt_adapter.mqtt_client.mqtt.Client')
+    def test_sets_callbacks(self, mock_client_cls, config, handler):
+        from mqtt_adapter.mqtt_client import build_client, MqttCallbacks
+
+        mock_client = Mock()
+        mock_client_cls.return_value = mock_client
+
+        cfg = MqttConfig(
+            host='localhost',
+            port=1883,
+            keepalive=60,
+            topic='test',
+            qos=1,
+            client_id='test-client',
+            username='admin',
+            password='secret',
+        )
+        callbacks = MqttCallbacks(config=cfg, handler=handler)
+        client = build_client(cfg, callbacks)
+
+        assert client.on_connect == callbacks.on_connect
+        assert client.on_disconnect == callbacks.on_disconnect
+        assert client.on_message == callbacks.on_message
+
+    @patch('mqtt_adapter.mqtt_client.mqtt.Client')
+    def test_sets_reconnect_delay(self, mock_client_cls, config, handler):
+        from mqtt_adapter.mqtt_client import build_client, MqttCallbacks
+
+        mock_client = Mock()
+        mock_client_cls.return_value = mock_client
+
+        cfg = MqttConfig(
+            host='localhost',
+            port=1883,
+            keepalive=60,
+            topic='test',
+            qos=1,
+            client_id='test-client',
+            username='admin',
+            password='secret',
+            min_reconnect_delay=5,
+            max_reconnect_delay=300,
+        )
+        callbacks = MqttCallbacks(config=cfg, handler=handler)
+        build_client(cfg, callbacks)
+
+        mock_client.reconnect_delay_set.assert_called_once_with(
+            min_delay=5,
+            max_delay=300,
+        )
+
+
+# ──────────────────────────────────────────────
+#  on_disconnect
+# ──────────────────────────────────────────────
+
+
+class TestOnDisconnect:
+    """Tests for MqttCallbacks.on_disconnect."""
+
+    def test_unexpected_disconnect_logs_warning(self, config, handler, caplog):
+        from mqtt_adapter.mqtt_client import MqttCallbacks
+        import logging
+
+        callbacks = MqttCallbacks(config=config, handler=handler)
+
+        with caplog.at_level(logging.WARNING, logger='mqtt_adapter.mqtt_client'):
+            callbacks.on_disconnect(Mock(), userdata=None, rc=1)
+
+        assert 'Unexpected MQTT disconnect' in caplog.text
+
+
+# ──────────────────────────────────────────────
+#  get_mqtt_client
+# ──────────────────────────────────────────────
+
+
+class TestGetMqttClient:
+    """Tests for get_mqtt_client function."""
+
+    @patch('mqtt_adapter.mqtt_client.build_client')
+    def test_calls_connect_async(self, mock_build_client, handler):
+        from mqtt_adapter.mqtt_client import get_mqtt_client
+
+        mock_client = Mock()
+        mock_build_client.return_value = mock_client
+
+        cfg = MqttConfig(
+            host='broker.local',
+            port=1883,
+            keepalive=60,
+            topic='test',
+            qos=1,
+            client_id='test-client',
+            username='admin',
+            password='secret',
+        )
+        result = get_mqtt_client(config=cfg, handler=handler)
+
+        mock_client.connect_async.assert_called_once_with(
+            'broker.local',
+            1883,
+            keepalive=60,
+        )
+        assert result is mock_client
