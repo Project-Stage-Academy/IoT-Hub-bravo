@@ -75,7 +75,7 @@ class Action:
                         "metric_type": f"{telemetry.metric_type}",
                         "value": f"{telemetry.value}",
                         "timestamp": f"{telemetry.timestamp}"
-                    }
+                    },
                     "severity": severity,
                 }
             },

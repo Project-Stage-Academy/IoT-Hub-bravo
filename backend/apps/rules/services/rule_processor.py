@@ -18,7 +18,7 @@ from apps.common.metrics import (
 
 logger = logging.getLogger(__name__)
 redis_client = get_redis_client()
-cache_rule = caches["rules"]
+
 
 class RuleProcessor:
     """
@@ -35,6 +35,7 @@ class RuleProcessor:
         start_time = time.perf_counter()
         results = []
         window_cache = {}
+        cache_rule = caches["rules"]
 
         if isinstance(telemetry, Telemetry):
             mapped_telemetry = map_telemetry_model_to_event(telemetry)
