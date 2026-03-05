@@ -48,7 +48,7 @@ def map_telemetry_model_to_event(telemetry: Telemetry) -> TelemetryEvent:
     return TelemetryEvent(
         device_serial_id=telemetry.device_metric.device.serial_id,
         value=value,
-        timestamp=telemetry.created_at,
+        timestamp=telemetry.ts,
         metric_type=telemetry.device_metric.metric.metric_type
     )
 
@@ -108,8 +108,8 @@ class PostgresTelemetryRepository(TelemetryRepository):
         
         queryset = Telemetry.objects.filter(
             device_metric__in=device_metrics,
-            created_at__gte=start,
-            created_at__lte=end,
+            ts__gte=start,
+            ts__lte=end,
         )
         mapped_telemetries = [map_telemetry_model_to_event(telemetry) for telemetry in queryset] 
 

@@ -3,38 +3,9 @@ import logging
 from django.core.exceptions import ValidationError
 
 from apps.rules.utils.serializers_utils import validate_field
-
+from apps.common.serializers import BaseSerializer
 
 logger = logging.getLogger(__name__)
-
-
-class BaseSerializer:
-    def __init__(self, data: Any):
-        self.initial_data = data
-        self._validated_data: Optional[Any] = None
-        self._errors: dict[str, Any] = {}
-
-    @property
-    def validated_data(self):
-        if self._validated_data is None:
-            raise ValueError('Call is_valid() before accessing validated_data.')
-        return self._validated_data
-
-    @property
-    def errors(self) -> dict[str, Any]:
-        return self._errors
-
-    def is_valid(self) -> bool:
-        self._errors = {}
-        try:
-            self._validated_data = self._validate(self.initial_data)
-        except Exception as exc:
-            self._validated_data = None
-            self._errors["non_field_error"] = str(exc)
-        return not self._errors
-
-    def _validate(self, data: Any):
-        raise NotImplementedError
 
 
 class RuleCreateSerializer(BaseSerializer):
