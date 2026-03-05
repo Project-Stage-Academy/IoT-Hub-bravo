@@ -147,7 +147,7 @@ class TelemetryCreateSerializer(BaseSerializer):
         ts = ts.replace(microsecond=0)
 
         return ts
-    
+
     def validate_producer_message(self):
         self._errors = {}
         self._validated_data = None
@@ -188,7 +188,7 @@ class TelemetryCreateSerializer(BaseSerializer):
 
         return True
 
-
+# TODO: Clean Serializer
 class TelemetryBatchCreateSerializer(BaseSerializer):
     def __init__(self, data: Any):
         super().__init__(data)

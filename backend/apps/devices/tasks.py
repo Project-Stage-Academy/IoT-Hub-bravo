@@ -133,7 +133,8 @@ def produce_validation_results(validation_result) -> None:
     clean_producer = get_telemetry_clean_producer()
     dlq_producer = get_telemetry_dlq_producer()
     expired_producer = get_telemetry_expired_producer()
-
+    
+    # TODO: Async?
     produce_data(clean_producer, validation_result.validated_rows)
     produce_data(dlq_producer, validation_result.errors)
     produce_data(expired_producer, validation_result.expired_rows)
@@ -143,11 +144,14 @@ def produce_data(producer, data: list[dict[str, Any]]) -> None:
     """
     Produce batch of records to Kafka.
     """
-
     accepted = 0
     errors = {}
 
     for index, record in enumerate(data):
+        ts = record.get("ts")
+
+        if isinstance(ts, datetime.datetime):
+            record["ts"] = ts.isoformat()
 
         result = producer.produce(
             payload=record,
