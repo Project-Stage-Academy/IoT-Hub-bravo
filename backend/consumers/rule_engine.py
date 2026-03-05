@@ -54,13 +54,19 @@ class RuleEvalHandler:
 
             for metric_type, value in item.get("metrics", {}).items():
                 key = f"telemetry:{device_serial_id}:{metric_type}"
-                member = f"{ts.timestamp()}:{value}"
+
+                if isinstance(value, dict) and "value" in value:
+                    value_num = value.get("value")
+                else:
+                    value_num = value
+
+                member = f"{ts.timestamp()}:{value_num}"
                 redis_client.zadd(key, {member: ts.timestamp()})
 
                 telemetry = {
                     "device_serial_id": device_serial_id,
                     "metric_type": metric_type,
-                    "value": value,
+                    "value": value_num,
                     "ts": ts.isoformat(),
                 }
 
