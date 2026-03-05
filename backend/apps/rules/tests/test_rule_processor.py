@@ -108,10 +108,19 @@ def force_postgres_repository():
 def clear_rules_cache():
     """Override 'rules' cache with in-memory backend to avoid Redis connection."""
     from django.test.utils import override_settings
-    with override_settings(CACHES={
-        **{k: v for k, v in __import__('django.conf', fromlist=['settings']).settings.CACHES.items() if k != 'rules'},
-        "rules": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
-    }):
+
+    with override_settings(
+        CACHES={
+            **{
+                k: v
+                for k, v in __import__(
+                    'django.conf', fromlist=['settings']
+                ).settings.CACHES.items()
+                if k != 'rules'
+            },
+            "rules": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
+        }
+    ):
         caches["rules"].clear()
         yield
 
