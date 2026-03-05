@@ -1,10 +1,18 @@
 from unittest.mock import Mock, create_autospec, patch
-
+ 
 import pytest
 
+import logging
+ 
 from mqtt_adapter.config import MqttConfig
 from mqtt_adapter.message_handlers import MQTTJsonMessage, MessageHandler
-from mqtt_adapter.mqtt_client import MqttCallbacks
+from mqtt_adapter.mqtt_client import (
+    MqttCallbacks,
+    _normalize_credential,
+    apply_mqtt_auth,
+    build_client,
+    get_mqtt_client,
+)
 
 
 @pytest.fixture
@@ -138,17 +146,14 @@ class TestNormalizeCredential:
     """Tests for _normalize_credential helper."""
 
     def test_strips_whitespace(self):
-        from mqtt_adapter.mqtt_client import _normalize_credential
 
         assert _normalize_credential('  admin  ') == 'admin'
 
     def test_empty_string_returns_none(self):
-        from mqtt_adapter.mqtt_client import _normalize_credential
 
         assert _normalize_credential('   ') is None
 
     def test_valid_string_returns_stripped(self):
-        from mqtt_adapter.mqtt_client import _normalize_credential
 
         assert _normalize_credential('my-user') == 'my-user'
 
@@ -162,7 +167,6 @@ class TestApplyMqttAuth:
     """Tests for apply_mqtt_auth function."""
 
     def test_sets_credentials(self, config):
-        from mqtt_adapter.mqtt_client import apply_mqtt_auth
 
         client = Mock()
         cfg = MqttConfig(
@@ -181,7 +185,6 @@ class TestApplyMqttAuth:
         client.username_pw_set.assert_called_once_with('admin', 'secret')
 
     def test_raises_on_empty_username(self, config):
-        from mqtt_adapter.mqtt_client import apply_mqtt_auth
 
         client = Mock()
         cfg = MqttConfig(
@@ -199,7 +202,6 @@ class TestApplyMqttAuth:
             apply_mqtt_auth(client, cfg)
 
     def test_raises_on_empty_password(self, config):
-        from mqtt_adapter.mqtt_client import apply_mqtt_auth
 
         client = Mock()
         cfg = MqttConfig(
@@ -227,7 +229,6 @@ class TestBuildClient:
 
     @patch('mqtt_adapter.mqtt_client.mqtt.Client')
     def test_sets_callbacks(self, mock_client_cls, config, handler):
-        from mqtt_adapter.mqtt_client import build_client, MqttCallbacks
 
         mock_client = Mock()
         mock_client_cls.return_value = mock_client
@@ -251,7 +252,6 @@ class TestBuildClient:
 
     @patch('mqtt_adapter.mqtt_client.mqtt.Client')
     def test_sets_reconnect_delay(self, mock_client_cls, config, handler):
-        from mqtt_adapter.mqtt_client import build_client, MqttCallbacks
 
         mock_client = Mock()
         mock_client_cls.return_value = mock_client
@@ -286,8 +286,6 @@ class TestOnDisconnect:
     """Tests for MqttCallbacks.on_disconnect."""
 
     def test_unexpected_disconnect_logs_warning(self, config, handler, caplog):
-        from mqtt_adapter.mqtt_client import MqttCallbacks
-        import logging
 
         callbacks = MqttCallbacks(config=config, handler=handler)
 
@@ -307,7 +305,6 @@ class TestGetMqttClient:
 
     @patch('mqtt_adapter.mqtt_client.build_client')
     def test_calls_connect_async(self, mock_build_client, handler):
-        from mqtt_adapter.mqtt_client import get_mqtt_client
 
         mock_client = Mock()
         mock_build_client.return_value = mock_client
