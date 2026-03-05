@@ -13,7 +13,7 @@ from apps.rules.utils.rule_engine_utils import (
     map_telemetry_model_to_event,
     choose_repository,
     DEFAULT_DURATION_MINUTES,
-    TelemetryEvent
+    TelemetryEvent,
 )
 from apps.common.redis_client import get_redis_client
 from apps.common.metrics import (
