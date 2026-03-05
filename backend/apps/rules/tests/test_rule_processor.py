@@ -502,7 +502,7 @@ def test_threshold_equal_to_boundary_with_gt_operator(
 ):
     """Value exactly at threshold — '>' should NOT trigger."""
     telemetry = TelemetryFactory.create(device_metric_temperature, value=100)
-    rule = RuleFactory.threshold(device_metric_temperature, operator=">", value=100)
+    RuleFactory.threshold(device_metric_temperature, operator=">", value=100)
 
     rule_processor.run(telemetry)
 
@@ -540,13 +540,11 @@ def test_rate_telemetry_outside_duration_not_counted(
     rule_processor, device_metric_temperature, mock_action
 ):
     """Telemetry older than duration_minutes window should not be counted."""
-    telemetries = TelemetryFactory.create_batch(
+    TelemetryFactory.create_batch(
         device_metric_temperature, [100, 105], minutes_ago=10
     )
     latest = TelemetryFactory.create(device_metric_temperature, value=110)
-    rule = RuleFactory.rate(device_metric_temperature, count=2, duration_minutes=5)
-    print(telemetries)
-    print(rule)
+    RuleFactory.rate(device_metric_temperature, count=2, duration_minutes=5)
     rule_processor.run(latest)
 
     mock_action.assert_not_called()
@@ -563,8 +561,8 @@ def test_multiple_rules_same_device_metric_all_trigger(
 ):
     """Two active rules on the same device_metric — both should fire."""
     telemetry = TelemetryFactory.create(device_metric_temperature, value=150)
-    rule1 = RuleFactory.threshold(device_metric_temperature, operator=">", value=100)
-    rule2 = RuleFactory.threshold(device_metric_temperature, operator=">", value=120)
+    RuleFactory.threshold(device_metric_temperature, operator=">", value=100)
+    RuleFactory.threshold(device_metric_temperature, operator=">", value=120)
 
     rule_processor.run(telemetry)
 
@@ -578,7 +576,7 @@ def test_multiple_rules_only_matching_triggers(
     """Only the rule whose condition is met should fire."""
     telemetry = TelemetryFactory.create(device_metric_temperature, value=110)
     rule_match = RuleFactory.threshold(device_metric_temperature, operator=">", value=100)
-    rule_no_match = RuleFactory.threshold(device_metric_temperature, operator=">", value=120)
+    RuleFactory.threshold(device_metric_temperature, operator=">", value=120)
 
     rule_processor.run(telemetry)
 
