@@ -1,13 +1,16 @@
 from collections import defaultdict
-
+import datetime
+from django.conf import settings
 from .base_validator import BaseValidator
 from typing import Any
 import logging
 from apps.devices.models import Device, DeviceMetric
+from validator.checker.redis_checker import build_redis_checker
 from utils.unit_aliases import REVERSE_UNIT_ALIASES
+from django.utils import timezone
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
-
 
 class TelemetryBatchValidator(BaseValidator):
     def __init__(self, payload: list[dict[str, Any]]):
@@ -17,6 +20,7 @@ class TelemetryBatchValidator(BaseValidator):
         self._validated_devices: set[str] = set()
         self._initial_device_metrics: dict[str, dict[str, dict[str, Any]]] = {}
         self._invalid_rows: list[dict[str, Any]] = []
+        self._expired_rows: list[dict[str, Any]] = []
 
     @property
     def validated_rows(self):
@@ -33,6 +37,10 @@ class TelemetryBatchValidator(BaseValidator):
     @property
     def has_valid_data(self) -> bool:
         return bool(self._validated_rows)
+
+    @property
+    def expired_rows(self):
+        return self._expired_rows
 
     def validate(self) -> None:
         """
@@ -56,6 +64,27 @@ class TelemetryBatchValidator(BaseValidator):
             "Validation completed. Valid: %d, Invalid: %d",
             len(self._validated_rows),
             len(self._invalid_rows),
+        )
+
+
+        logger.info("Starting duplicate checking using Redis")
+
+        self._validate_duplicates()
+
+        logger.info(
+            "Duplicate checking completed. Valid after deduplication: %d, Invalid due to duplicates: %d",
+            len(self._validated_rows),
+            len(self._invalid_rows),
+        )
+
+        logger.info("Starting expired data check")
+
+        self._split_expired()
+
+        logger.info(
+            "Expired data checking completed. Valid after validation: %d, Expired: %d",
+            len(self._validated_rows),
+            len(self.expired_rows),
         )
 
 
@@ -206,6 +235,37 @@ class TelemetryBatchValidator(BaseValidator):
                     unit,
                 )
 
+    def _validate_duplicates(self) -> None:
+        """
+        Check for duplicate telemetry entries using Redis-based DuplicateChecker.
+        Moves duplicates to _invalid_rows and keeps only unique validated rows.
+        """
+        checker = build_redis_checker()
+        unique_valid_items = []
+
+        for index, item in enumerate(self._validated_rows):
+            dm_id = item.get("device_metric_id")
+            ts = item.get("ts")
+            serial = item.get("device_serial_id")
+            value = item.get("value_jsonb", {}).get("v")
+
+            result = checker.process(f"{dm_id},{ts}", f"Processing item: {item}")
+            if result != "ok":
+                self._add_invalid_record(
+                    index=index,
+                    serial=serial,
+                    ts=ts,
+                    metric=None,
+                    value=value,
+                    unit=None,
+                    error="duplicate",
+                )
+                continue
+
+            unique_valid_items.append(item)
+
+        self._validated_rows = unique_valid_items
+
     def _value_matches_data_type(self, value: Any, data_type: str) -> bool:
         type_checkers = {
             "numeric": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
@@ -219,6 +279,35 @@ class TelemetryBatchValidator(BaseValidator):
             return None
         return REVERSE_UNIT_ALIASES.get(
             unit.strip().lower().replace("°", ""), unit.strip().lower()
+        )
+
+    def _split_expired(self) -> None:
+        window_seconds = settings.TELEMETRY_MAX_AGE_SECONDS
+        now = timezone.now()
+        threshold = now - timedelta(seconds=window_seconds)
+
+        fresh = []
+        expired = []
+
+        for item in self._validated_rows:
+            ts = item.get("ts")
+
+            if ts is None:
+                fresh.append(item)
+                continue
+
+            if ts < threshold:
+                expired.append(item)
+            else:
+                fresh.append(item)
+
+        self._validated_rows = fresh
+        self._expired_rows = expired
+
+        logger.info(
+            "Expiration check completed: fresh=%d, expired=%d",
+            len(fresh),
+            len(expired),
         )
 
     def _add_invalid_record(self, *, index: int | None, serial: str | None, ts: Any, metric: str | None, value: Any, unit: Any, error: str,):

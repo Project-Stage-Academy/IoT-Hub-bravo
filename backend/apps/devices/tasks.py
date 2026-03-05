@@ -8,11 +8,13 @@ from producers.kafka_producer import ProduceResult
 
 from .serializers.telemetry_serializers import TelemetryBatchCreateSerializer
 from .services.telemetry_services import telemetry_create, telemetry_validate
-from apps.devices.producers import get_telemetry_clean_producer
-
+from apps.devices.producers import (
+    get_telemetry_clean_producer,
+    get_telemetry_dlq_producer,
+    get_telemetry_expired_producer
+)
 
 logger = logging.getLogger(__name__)
-
 
 @shared_task(
     bind=True,
@@ -23,13 +25,7 @@ logger = logging.getLogger(__name__)
     retry_kwargs={'max_retries': 10},
 )
 def ingest_telemetry_payload(self, payload: dict | list, **kwargs) -> None:
-    if isinstance(payload, dict):
-        payload = [payload]
-    elif isinstance(payload, list):
-        pass
-    else:
-        logger.error(f'payload must be of type dict or list, got {type(payload).__name__}')
-        return
+    payload = normalize_payload(payload)
 
     serializer = TelemetryBatchCreateSerializer(payload)
 
@@ -41,7 +37,7 @@ def ingest_telemetry_payload(self, payload: dict | list, **kwargs) -> None:
     total_errors = 0
 
     validation = telemetry_validate(payload=serializer.valid_items)
-    r = telemetry_create(valid_data=validation.validated_rows, validation_errors=validation.errors)
+    r = telemetry_create(valid_data=validation.validated_rows)
 
     total_created += r.created_count
     total_errors += len(r.errors)
@@ -65,35 +61,28 @@ def ingest_telemetry_payload(self, payload: dict | list, **kwargs) -> None:
     retry_backoff=True,
     retry_backoff_max=10,
     retry_jitter=True,
-    retry_kwargs={'max_retries': 10},
+    retry_kwargs={"max_retries": 10},
 )
-def write_telemetry_payload(self, payload):
-    if isinstance(payload, dict):
-        payload = [payload]
-    elif isinstance(payload, list):
-        pass
-    else:
-        logger.error(f'payload must be of type dict or list, got {type(payload).__name__}')
-        return
-    
-    serializer = TelemetryBatchCreateSerializer(payload)
-    if serializer.validate_producer_batch(payload) and not serializer.valid_items:
-        logger.warning('Telemetry ingestion task rejected: errors=%s', len(serializer.errors))
-        return
-    
-    writer = telemetry_create(valid_data=serializer.valid_items)
+def validate_telemetry_payload(self, payload: dict | list) -> None:
+    payload = normalize_payload(payload)
 
-    invalid_items = serializer.item_errors
-    invalid_count = len(invalid_items) if invalid_items else 0
+    serializer = TelemetryBatchCreateSerializer(payload)
+    serializer.is_valid()
+
+    if not serializer.valid_items:
+        logger.warning("Telemetry validation rejected: no valid items.")
+        return
+
+    validation_result = telemetry_validate(payload=serializer.valid_items)
 
     logger.info(
-        'Telemetry task ingested batch: '
-        'received=%s, valid=%s, invalid=%s.',
+        "Validation completed: received=%d, valid=%d, invalid=%d",
         len(payload),
-        len(serializer.valid_items),
-        invalid_count
+        len(validation_result.validated_rows),
+        len(validation_result.errors),
     )
-
+    produce_validation_results(validation_result)
+    return f"{validation_result.errors}, Expired: {validation_result.expired_rows}, Valid: {validation_result.validated_rows}"
 
 
 @shared_task(
@@ -102,58 +91,83 @@ def write_telemetry_payload(self, payload):
     retry_backoff=True,
     retry_backoff_max=10,
     retry_jitter=True,
-    retry_kwargs={'max_retries': 10},
+    retry_kwargs={"max_retries": 10},
 )
-def validate_telemetry_payload(self,payload):
-    if isinstance(payload, dict):
-        payload = [payload]
-    elif isinstance(payload, list):
-        pass
-    else:
-        raise TypeError(f'payload must be of type dict or list, got {type(payload).__name__}')
-
+def write_telemetry_payload(self, payload: dict | list) -> None:
+    payload = normalize_payload(payload)
     serializer = TelemetryBatchCreateSerializer(payload)
+    serializer.validate_producer_batch(payload)
 
-    if not serializer.is_valid() and not serializer.valid_items:
-        logger.warning('Telemetry ingestion task rejected: errors=%s', len(serializer.errors))
-        return
+    if not serializer.valid_items:
+        logger.warning("Write rejected: no valid items.")
+        return serializer.item_errors
 
-    total_errors = 0
-    validator = telemetry_validate(payload=serializer.valid_items)
-    validated_items = validator.validated_rows
-
-    total_errors += len(validator.errors)
-    serializer_invalid_items = serializer.item_errors
-
-    invalid_count = len(serializer_invalid_items) if serializer_invalid_items else 0
-    total_errors += invalid_count
+    result = telemetry_create(valid_data=serializer.valid_items)
 
     logger.info(
-        'Telemetry task ingested batch: '
-        'received=%s, valid=%s, invalid=%s, created=%s, item_errors=%s.',
+        "Write completed: received=%d, created=%d",
         len(payload),
-        len(serializer.valid_items),
-        invalid_count,
-        validated_items,
-        total_errors,
+        result.created_count,
     )
-    if not validated_items:
-        logger.info("No validated items to produce.")
-        return
 
-    # TODO: move producer to separate function
-    producer = get_telemetry_clean_producer()
-    results = {'accepted': 0, 'skipped': 0, 'errors': {}}
-    for index, record in enumerate(validated_items):
-        if isinstance(record.get('ts'), datetime.datetime):
-            record['ts'] = record['ts'].isoformat()
 
-        key = record.get('device_serial_id')
-        result = producer.produce(payload=record, key=key)
+def normalize_payload(payload: dict | list) -> list | None:
+    """
+    Normalize payload to list.
+    Returns None if invalid type.
+    """
+    if isinstance(payload, dict):
+        return [payload]
+
+    if isinstance(payload, list):
+        return payload
+
+    logger.error(f'payload must be of type dict or list, got {type(payload).__name__}')
+    return
+
+def produce_validation_results(validation_result) -> None:
+    """
+    Produce validation results into corresponding Kafka topics.
+    """
+
+    clean_producer = get_telemetry_clean_producer()
+    dlq_producer = get_telemetry_dlq_producer()
+    expired_producer = get_telemetry_expired_producer()
+
+    produce_data(clean_producer, validation_result.validated_rows)
+    produce_data(dlq_producer, validation_result.errors)
+    produce_data(expired_producer, validation_result.expired_rows)
+
+
+def produce_data(producer, data: list[dict[str, Any]]) -> None:
+    """
+    Produce batch of records to Kafka.
+    """
+
+    accepted = 0
+    errors = {}
+
+    for index, record in enumerate(data):
+
+        result = producer.produce(
+            payload=record,
+            key=record.get("device_serial_id"),
+        )
 
         if result == ProduceResult.ENQUEUED:
-            results['accepted'] += 1
+            accepted += 1
         else:
-            results['errors'][index] = result.value
+            errors[index] = result.value
+    
     producer.flush()
-    logger.info("Produced %d items to clean topic.", results['accepted'])
+
+    logger.info(
+        "Produced %d/%d messages to topic %s",
+        accepted,
+        len(data),
+        producer.topic,
+    )
+
+    if errors:
+        logger.warning("Producer errors: %s", errors)
+

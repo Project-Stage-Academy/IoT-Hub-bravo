@@ -14,6 +14,7 @@ IngestStatus = Literal["success", "partial_success", "failed"]
 class TelemetryValidationResult:
     validated_rows: list[dict] = field(default_factory=list)
     errors: list[dict] = field(default_factory=list)
+    expired_rows: list[dict] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -103,5 +104,7 @@ def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
     )
 
     return TelemetryValidationResult(
-        validated_rows=validator.validated_rows, errors=validator.invalid_rows
+        validated_rows=validator.validated_rows,
+        errors=validator.invalid_rows,
+        expired_rows=validator.expired_rows
     )
