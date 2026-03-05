@@ -587,7 +587,7 @@ def test_multiple_rules_mixed_active_inactive(
 ):
     """Active rule fires, inactive rule does not — even when condition is met."""
     active_rule = RuleFactory.threshold(device_metric_temperature, is_active=True)
-    inactive_rule = RuleFactory.threshold(device_metric_temperature, is_active=False)
+    RuleFactory.threshold(device_metric_temperature, is_active=False)
 
     rule_processor.run(high_temperature_telemetry)
 
