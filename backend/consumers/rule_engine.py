@@ -7,13 +7,15 @@ from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 import django
 
+from consumers.kafka_consumer import KafkaConsumer
+from consumers.config import ConsumerConfig
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf.settings')
 django.setup()
 
-from consumers.kafka_consumer import KafkaConsumer
-from consumers.config import ConsumerConfig
-from apps.common.redis_client import get_redis_client
-from apps.rules.tasks import evaluate_rule
+from apps.common.redis_client import get_redis_client  # noqa
+from apps.rules.tasks import evaluate_rule  # noqa
+
 
 logger = logging.getLogger(__name__)
 rule_eval_errors_total = Counter(

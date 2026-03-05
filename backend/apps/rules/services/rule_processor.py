@@ -14,7 +14,7 @@ from apps.rules.utils.rule_engine_utils import (
     choose_repository,
     DEFAULT_DURATION_MINUTES,
 )
-from common.redis_client import get_redis_client
+from apps.common.redis_client import get_redis_client
 from apps.common.metrics import (
     rules_evaluated_total,
     rules_triggered_total,
