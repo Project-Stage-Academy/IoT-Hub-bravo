@@ -17,8 +17,7 @@ from apps.rules.tasks import evaluate_rule
 
 logger = logging.getLogger(__name__)
 rule_eval_errors_total = Counter(
-    "rule_eval_errors_total",
-    "Number of telemetry payloads failed during rule evaluation"
+    "rule_eval_errors_total", "Number of telemetry payloads failed during rule evaluation"
 )
 
 # kafka conf
@@ -48,21 +47,21 @@ class RuleEvalHandler:
             ts = parse_datetime(ts_raw)
             if timezone.is_naive(ts):
                 ts = timezone.make_aware(ts)
-            
+
             device_serial_id = item.get("device")
 
             for metric_type, value in item.get("metrics", {}).items():
                 key = f"telemetry:{device_serial_id}:{metric_type}"
                 member = f"{ts.timestamp()}:{value}"
                 redis_client.zadd(key, {member: ts.timestamp()})
-                
-                telemetry = { 
+
+                telemetry = {
                     "device_serial_id": device_serial_id,
                     "metric_type": metric_type,
                     "value": value,
-                    "ts": ts.isoformat()
+                    "ts": ts.isoformat(),
                 }
-                
+
                 self.rule_runner.delay(telemetry)
 
         except Exception:
