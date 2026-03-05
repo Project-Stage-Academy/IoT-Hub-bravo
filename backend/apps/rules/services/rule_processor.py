@@ -8,7 +8,12 @@ from apps.devices.models.telemetry import Telemetry
 from apps.devices.models.device_metric import DeviceMetric
 from apps.rules.services.action import Action
 from apps.rules.services.condition_evaluator import ConditionEvaluator
-from apps.rules.utils.rule_engine_utils import map_telemetry_json_to_event, map_telemetry_model_to_event, choose_repository, DEFAULT_DURATION_MINUTES
+from apps.rules.utils.rule_engine_utils import (
+    map_telemetry_json_to_event,
+    map_telemetry_model_to_event,
+    choose_repository,
+    DEFAULT_DURATION_MINUTES,
+)
 from common.redis_client import get_redis_client
 from apps.common.metrics import (
     rules_evaluated_total,
@@ -48,12 +53,13 @@ class RuleProcessor:
         if rules is None:
             device_metrics = DeviceMetric.objects.filter(
                 device__serial_id=mapped_telemetry.device_serial_id,
-                metric__metric_type=mapped_telemetry.metric_type
+                metric__metric_type=mapped_telemetry.metric_type,
             )
-            rules = list(Rule.objects.filter(
-                is_active=True,
-                device_metric__in=device_metrics
-            ).select_related('device_metric__metric'))
+            rules = list(
+                Rule.objects.filter(
+                    is_active=True, device_metric__in=device_metrics
+                ).select_related('device_metric__metric')
+            )
 
             cache_rule.set(cache_key, rules, timeout=settings.RULES_CACHE_TTL)
 
@@ -70,10 +76,12 @@ class RuleProcessor:
                 window_cache[duration_minutes] = repository.get_in_window(
                     mapped_telemetry, duration_minutes
                 )
-            
+
             cached_window = window_cache[duration_minutes]
-                    
-            if ConditionEvaluator.evaluate(condition, device_metric, mapped_telemetry, cached_window):
+
+            if ConditionEvaluator.evaluate(
+                condition, device_metric, mapped_telemetry, cached_window
+            ):
                 rules_triggered_total.labels(rule_type=rule_type).inc()
                 Action.dispatch_action(rule, mapped_telemetry)
                 results.append({"rule_id": rule.id, "triggered": True})
@@ -82,10 +90,11 @@ class RuleProcessor:
 
         rule_processing_seconds.observe(time.perf_counter() - start_time)
 
-        return {"telemetry": 
-                    {"device_serial_id": mapped_telemetry.device_serial_id,
-                     "value": mapped_telemetry.value,
-                     "timestamp": mapped_telemetry.timestamp,         
-                    }, 
-                "results": results}
-
+        return {
+            "telemetry": {
+                "device_serial_id": mapped_telemetry.device_serial_id,
+                "value": mapped_telemetry.value,
+                "timestamp": mapped_telemetry.timestamp,
+            },
+            "results": results,
+        }

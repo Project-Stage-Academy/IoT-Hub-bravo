@@ -42,7 +42,7 @@ class EventAdmin(admin.ModelAdmin):
         "created_at",
         # "telemetry_link",
         # "device_link",
-        "trigger_telemetry"
+        "trigger_telemetry",
     )
 
     list_filter = ("timestamp", "created_at", "rule", "acknowledged")
@@ -56,14 +56,12 @@ class EventAdmin(admin.ModelAdmin):
     ordering = ("-timestamp",)
     actions = ["mark_acknowledged", "mark_unacknowledged"]
 
-
     @admin.display(description="Rule", ordering="rule__name")
     def rule_link(self, obj):
         if obj.rule:
             url = reverse("admin:rules_rule_change", args=[obj.rule.id])
             return format_html('<a href="{}">{}</a>', url, obj.rule.name)
         return "-"
-
 
     @admin.action(description="Mark selected events as acknowledged")
     def mark_acknowledged(self, request, queryset):

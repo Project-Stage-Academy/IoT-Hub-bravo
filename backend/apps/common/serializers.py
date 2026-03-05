@@ -68,12 +68,13 @@ class JSONSerializer(BaseSerializer):
             return None
 
         return validated
+
     def _validate_field_map(
-            self,
-            data: dict[str, Any],
-            fields: dict[str, type],
-            *,
-            required: bool,
+        self,
+        data: dict[str, Any],
+        fields: dict[str, type],
+        *,
+        required: bool,
     ) -> None:
         for field, expected_type in fields.items():
             if field not in data:

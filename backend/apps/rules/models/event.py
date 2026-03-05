@@ -21,11 +21,8 @@ class Event(models.Model):
     #     help_text="ID of the device that triggered this event",
     # )
     trigger_telemetry = models.JSONField(
-        null=True, 
-        blank=True,
-        help_text="Telemtry payload that triggered this event"
+        null=True, blank=True, help_text="Telemtry payload that triggered this event"
     )
-
 
     def get_trigger_telemetry(self):
         """Safely retrieve trigger telemetry if it still exists"""

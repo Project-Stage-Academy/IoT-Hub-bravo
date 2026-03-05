@@ -105,8 +105,7 @@ class ThresholdEvaluator:
             return False
 
         matching_count = sum(
-            1 for t in telemetries_in_window
-            if compare_func(t.value, condition_value)
+            1 for t in telemetries_in_window if compare_func(t.value, condition_value)
         )
 
         logger.info(
@@ -145,7 +144,12 @@ class RateEvaluator:
 
 class CompositeEvaluator:
     @staticmethod
-    def evaluate(condition: dict, device_metric: DeviceMetric, telemetry: TelemetryEvent, telemetries_in_window: list) -> bool:
+    def evaluate(
+        condition: dict,
+        device_metric: DeviceMetric,
+        telemetry: TelemetryEvent,
+        telemetries_in_window: list,
+    ) -> bool:
         """
         Evaluate composite rules combining multiple subconditions with AND/OR.
         """
@@ -158,7 +162,9 @@ class CompositeEvaluator:
 
         results = []
         for i, subcondition in enumerate(subconditions):
-            result = ConditionEvaluator.evaluate(subcondition, device_metric, telemetry, telemetries_in_window)
+            result = ConditionEvaluator.evaluate(
+                subcondition, device_metric, telemetry, telemetries_in_window
+            )
             logger.info(f"Subcondition {i} (type={subcondition.get('type')}): {result}")
             results.append(result)
 
@@ -188,7 +194,12 @@ class ConditionEvaluator:
         ConditionEvaluator._evaluators[rule_type] = evaluator_callable
 
     @staticmethod
-    def evaluate(condition: dict, device_metric: DeviceMetric, telemetry: TelemetryEvent, telemetries_in_window: list) -> bool:
+    def evaluate(
+        condition: dict,
+        device_metric: DeviceMetric,
+        telemetry: TelemetryEvent,
+        telemetries_in_window: list,
+    ) -> bool:
         """Evaluate rule"""
         try:
             _validate_metric(device_metric, telemetry)
@@ -199,10 +210,10 @@ class ConditionEvaluator:
                     "rule_metric": device_metric.metric.metric_type,
                     "telemetry_metric": telemetry.metric_type,
                     "error": str(e),
-                }
+                },
             )
             return False
-        
+
         rule_type = condition.get("type")
         if not rule_type:
             raise ValueError(f"Missing 'type' in rule.condition: {condition}")
@@ -212,4 +223,9 @@ class ConditionEvaluator:
             logger.warning(f"Unknown condition type: {rule_type}")
             return False
 
-        return evaluator(condition=condition, device_metric=device_metric, telemetry=telemetry, telemetries_in_window=telemetries_in_window)
+        return evaluator(
+            condition=condition,
+            device_metric=device_metric,
+            telemetry=telemetry,
+            telemetries_in_window=telemetries_in_window,
+        )

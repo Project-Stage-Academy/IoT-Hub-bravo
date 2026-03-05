@@ -34,11 +34,14 @@ def run_rule_processor(telemetry_id: int):
 @shared_task
 def evaluate_rule(telemetry: dict):
     import time
+
     t = time.perf_counter()
-    logger_celery.warning(f"[TASK START] {telemetry['device_serial_id']} {telemetry['metric_type']}")
-    
+    logger_celery.warning(
+        f"[TASK START] {telemetry['device_serial_id']} {telemetry['metric_type']}"
+    )
+
     RuleProcessor.run(telemetry)
-    
+
     logger_celery.warning(f"[TASK DONE] runtime={time.perf_counter() - t:.4f}s")
 
 

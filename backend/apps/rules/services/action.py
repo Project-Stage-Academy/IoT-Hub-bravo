@@ -53,12 +53,12 @@ class Action:
         event = Event.objects.create(
             rule=rule,
             timestamp=timezone.now(),
-            trigger_telemetry = {
+            trigger_telemetry={
                 "device_serial_id": f"{telemetry.device_serial_id}",
                 "metric_type": f"{telemetry.metric_type}",
                 "value": f"{telemetry.value}",
-                "timestamp": f"{telemetry.timestamp}"
-            }
+                "timestamp": f"{telemetry.timestamp}",
+            },
         )
 
         events_created_total.labels(severity=severity).inc()
@@ -74,7 +74,7 @@ class Action:
                         "device_serial_id": f"{telemetry.device_serial_id}",
                         "metric_type": f"{telemetry.metric_type}",
                         "value": f"{telemetry.value}",
-                        "timestamp": f"{telemetry.timestamp}"
+                        "timestamp": f"{telemetry.timestamp}",
                     },
                     "severity": severity,
                 }

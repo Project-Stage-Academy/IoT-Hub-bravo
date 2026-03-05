@@ -17,6 +17,7 @@ from apps.rules.utils.rule_engine_utils import PostgresTelemetryRepository
 # Factories
 # ============================================================================
 
+
 class TelemetryFactory:
     @staticmethod
     def create(device_metric, value, ts=None):
@@ -38,6 +39,7 @@ class TelemetryFactory:
             )
             created.append(t)
         return created
+
 
 class RuleFactory:
     @staticmethod
@@ -79,7 +81,8 @@ class ConditionFactory:
         return {
             "type": "composite",
             "operator": operator,
-            "conditions": conditions or [
+            "conditions": conditions
+            or [
                 ConditionFactory.threshold(operator=">", value=90),
                 ConditionFactory.rate(count=3, duration_minutes=5),
             ],
@@ -89,6 +92,7 @@ class ConditionFactory:
 # ============================================================================
 # Fixtures — Infrastructure
 # ============================================================================
+
 
 @pytest.fixture(autouse=True)
 def clear_rules_cache():
@@ -108,6 +112,7 @@ def force_postgres_repository():
 # ============================================================================
 # Fixtures — Models
 # ============================================================================
+
 
 @pytest.fixture
 def user():
@@ -148,6 +153,7 @@ def device_metric_humidity(other_device, humidity_metric):
 # Fixtures — Services
 # ============================================================================
 
+
 @pytest.fixture
 def rule_processor():
     return RuleProcessor()
@@ -161,6 +167,7 @@ def condition_evaluator():
 # ============================================================================
 # Fixtures — Telemetry
 # ============================================================================
+
 
 @pytest.fixture
 def high_temperature_telemetry(device_metric_temperature):
@@ -186,6 +193,7 @@ def low_humidity_telemetry(device_metric_humidity):
 # Fixtures — Rules
 # ============================================================================
 
+
 @pytest.fixture
 def temperature_threshold_rule(device_metric_temperature):
     return RuleFactory.threshold(device_metric_temperature, operator=">", value=100)
@@ -199,6 +207,7 @@ def humidity_threshold_rule(device_metric_humidity):
 # ============================================================================
 # Fixtures — Rate Rule Scenarios (rule + latest telemetry)
 # ============================================================================
+
 
 @pytest.fixture
 def rate_rule_count_met(device_metric_temperature):
@@ -219,6 +228,7 @@ def rate_rule_count_not_met(device_metric_temperature):
 # ============================================================================
 # Fixtures — Composite Rule Scenarios (rule + latest telemetry)
 # ============================================================================
+
 
 @pytest.fixture
 def composite_and_rule_all_true(device_metric_temperature):
@@ -248,6 +258,7 @@ def composite_or_rule_one_true(device_metric_temperature):
 # Fixtures — Mocks
 # ============================================================================
 
+
 @pytest.fixture
 def mock_action():
     with patch.object(Action, "dispatch_action") as mock:
@@ -256,14 +267,17 @@ def mock_action():
 
 @pytest.fixture
 def mock_eval_and_dispatch():
-    with patch.object(ConditionEvaluator, "evaluate") as mock_eval, \
-         patch.object(Action, "dispatch_action") as mock_dispatch:
+    with (
+        patch.object(ConditionEvaluator, "evaluate") as mock_eval,
+        patch.object(Action, "dispatch_action") as mock_dispatch,
+    ):
         yield {"eval": mock_eval, "dispatch": mock_dispatch}
 
 
 # ============================================================================
 # Tests — RuleProcessor wiring
 # ============================================================================
+
 
 @pytest.mark.django_db
 def test_rule_processor_calls_evaluate_and_dispatch(
@@ -282,6 +296,7 @@ def test_rule_processor_calls_evaluate_and_dispatch(
 # ============================================================================
 # Tests — Threshold rules
 # ============================================================================
+
 
 @pytest.mark.django_db
 def test_threshold_triggers_action_when_exceeded(
@@ -322,7 +337,9 @@ def test_threshold_works_with_float_values(device_metric_temperature, rule_proce
 
 
 @pytest.mark.django_db
-def test_threshold_works_with_negative_values(device_metric_temperature, rule_processor, mock_action):
+def test_threshold_works_with_negative_values(
+    device_metric_temperature, rule_processor, mock_action
+):
     telemetry = TelemetryFactory.create(device_metric_temperature, -10)
     rule = RuleFactory.threshold(device_metric_temperature, operator="<", value=-5)
 
@@ -360,6 +377,7 @@ def test_inactive_threshold_rule_does_not_trigger(
 # Tests — Rate rules
 # ============================================================================
 
+
 @pytest.mark.django_db
 def test_rate_triggers_action_when_count_met(rule_processor, rate_rule_count_met, mock_action):
     rule, latest_telemetry = rate_rule_count_met
@@ -381,6 +399,7 @@ def test_rate_no_action_when_count_not_met(rule_processor, rate_rule_count_not_m
 # ============================================================================
 # Tests — Composite rules
 # ============================================================================
+
 
 @pytest.mark.django_db
 def test_composite_and_triggers_when_all_conditions_true(
@@ -419,6 +438,7 @@ def test_composite_or_triggers_when_at_least_one_condition_true(
 # Tests — Unknown / unsupported rule types
 # ============================================================================
 
+
 @pytest.mark.django_db
 def test_unknown_rule_type_does_not_trigger(
     rule_processor, device_metric_temperature, high_temperature_telemetry, mock_action
@@ -436,6 +456,7 @@ def test_unknown_rule_type_does_not_trigger(
 # ============================================================================
 # Tests — Rule condition model parsing
 # ============================================================================
+
 
 @pytest.mark.django_db
 def test_rule_stores_threshold_condition_correctly(device_metric_temperature):
@@ -473,6 +494,7 @@ def test_rule_stores_composite_condition_correctly(device_metric_temperature):
 # ============================================================================
 # Tests — Edge cases
 # ============================================================================
+
 
 @pytest.mark.django_db
 def test_threshold_equal_to_boundary_with_gt_operator(
@@ -518,7 +540,9 @@ def test_rate_telemetry_outside_duration_not_counted(
     rule_processor, device_metric_temperature, mock_action
 ):
     """Telemetry older than duration_minutes window should not be counted."""
-    telemetries = TelemetryFactory.create_batch(device_metric_temperature, [100, 105], minutes_ago=10)
+    telemetries = TelemetryFactory.create_batch(
+        device_metric_temperature, [100, 105], minutes_ago=10
+    )
     latest = TelemetryFactory.create(device_metric_temperature, value=110)
     rule = RuleFactory.rate(device_metric_temperature, count=2, duration_minutes=5)
     print(telemetries)
@@ -531,6 +555,7 @@ def test_rate_telemetry_outside_duration_not_counted(
 # ============================================================================
 # Tests — Multiple rules at once
 # ============================================================================
+
 
 @pytest.mark.django_db
 def test_multiple_rules_same_device_metric_all_trigger(
@@ -577,6 +602,7 @@ def test_multiple_rules_mixed_active_inactive(
 # Tests — Rule caching
 # ============================================================================
 
+
 @pytest.mark.django_db
 def test_rule_cache_is_used_on_second_call(
     rule_processor, device_metric_temperature, high_temperature_telemetry, mock_action
@@ -609,6 +635,7 @@ def test_cache_invalidated_after_rule_created(
 # ============================================================================
 # Tests — Errors / exceptions
 # ============================================================================
+
 
 @pytest.mark.django_db
 def test_rule_processor_no_rules_does_not_raise(

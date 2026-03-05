@@ -9,7 +9,7 @@ from apps.devices.models.device_metric import DeviceMetric
 
 logger = logging.getLogger(__name__)
 
-MAX_REDIS_MINUTES = 60 # maybe this should be in conf?
+MAX_REDIS_MINUTES = 60  # maybe this should be in conf?
 DEFAULT_DURATION_MINUTES = 5  # default value for time window
 
 
@@ -37,6 +37,7 @@ def _get_value_field(telemetry: Telemetry) -> str:
 ### Mapping
 ###===========
 
+
 def map_telemetry_model_to_event(telemetry: Telemetry) -> TelemetryEvent:
     """
     Map Telemetry model instance to TelemetryEvent dataclass.
@@ -49,7 +50,7 @@ def map_telemetry_model_to_event(telemetry: Telemetry) -> TelemetryEvent:
         device_serial_id=telemetry.device_metric.device.serial_id,
         value=value,
         timestamp=telemetry.ts,
-        metric_type=telemetry.device_metric.metric.metric_type
+        metric_type=telemetry.device_metric.metric.metric_type,
     )
 
 
@@ -58,14 +59,14 @@ def map_telemetry_json_to_event(telemetry: dict) -> TelemetryEvent:
         device_serial_id=telemetry.get("device_serial_id"),
         value=telemetry.get("value"),
         timestamp=datetime.fromisoformat(telemetry.get("ts")),
-        metric_type=telemetry.get("metric_type")
-
+        metric_type=telemetry.get("metric_type"),
     )
 
 
 ###=========================
 ### TELEMETRY REPOSITORIES
 ###=========================
+
 
 class TelemetryRepository(ABC):
     """
@@ -74,6 +75,7 @@ class TelemetryRepository(ABC):
     This abstraction decouples the rule engine from the underlying
     storage implementation (e.g., PostgreSQL, Redis).
     """
+
     @abstractmethod
     def get_in_window(self, telemetry: TelemetryEvent, minutes: int) -> TelemetryEvent:
         """
@@ -93,7 +95,7 @@ class PostgresTelemetryRepository(TelemetryRepository):
         end = telemetry.timestamp
         start = end - timedelta(minutes=minutes)
         return start, end
-    
+
     def get_in_window(self, telemetry: TelemetryEvent, minutes: int):
         """
         Fetch telemetry records from PostgreSQL within the given time window.
@@ -103,15 +105,15 @@ class PostgresTelemetryRepository(TelemetryRepository):
         :return: List of Telemetry objects.
         """
         start, end = self._get_window(telemetry, minutes)
-        
+
         device_metrics = DeviceMetric.objects.filter(device__serial_id=telemetry.device_serial_id)
-        
+
         queryset = Telemetry.objects.filter(
             device_metric__in=device_metrics,
             ts__gte=start,
             ts__lte=end,
         )
-        mapped_telemetries = [map_telemetry_model_to_event(telemetry) for telemetry in queryset] 
+        mapped_telemetries = [map_telemetry_model_to_event(telemetry) for telemetry in queryset]
 
         return mapped_telemetries
 
@@ -126,6 +128,7 @@ class RedisTelemetryRepository(TelemetryRepository):
         - score = Unix timestamp
         - value = metric value (stringified)
     """
+
     def __init__(self, redis_client):
         """
         :param redis_client: Initialized Redis client instance
@@ -150,9 +153,11 @@ class RedisTelemetryRepository(TelemetryRepository):
         return [
             TelemetryEvent(
                 device_serial_id=telemetry.device_serial_id,
-                value=float(value.split(":", 1)[1]), # take second because member = {timestam:value}
-                timestamp=datetime.fromtimestamp(float(score)), 
-                metric_type=telemetry.metric_type
+                value=float(
+                    value.split(":", 1)[1]
+                ),  # take second because member = {timestam:value}
+                timestamp=datetime.fromtimestamp(float(score)),
+                metric_type=telemetry.metric_type,
             )
             for value, score in items
         ]

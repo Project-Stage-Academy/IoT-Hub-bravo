@@ -12,14 +12,14 @@ django.setup()
 
 from consumers.kafka_consumer import KafkaConsumer
 from consumers.config import ConsumerConfig
-from common.redis_client import get_redis_client
+from apps.common.redis_client import get_redis_client
 from apps.rules.tasks import evaluate_rule
 from apps.common.serializers import JSONSerializer
 
 logger = logging.getLogger(__name__)
 
 # kafka conf
-TOPIC = config('KAFKA_TOPIC_TELEMETRY_RAW', default='telemetry.raw') # change to telemetry.clean
+TOPIC = config('KAFKA_TOPIC_TELEMETRY_RAW', default='telemetry.raw')  # change to telemetry.clean
 CONSUME_TIMEOUT = config('KAFKA_CONSUMER_CONSUME_TIMEOUT', default=1.0, cast=float)
 DECODE_JSON = config('KAFKA_CONSUMER_DECODE_JSON', default=True, cast=bool)
 CONSUME_BATCH = config('KAFKA_CONSUMER_CONSUME_BATCH', default=True, cast=bool)
@@ -64,9 +64,9 @@ class RuleEvalHandler:
             logger.warning("Invalid telemetry payload: %s", item)
             return
 
-        ts = validated["ts"]
-        device_serial_id = validated["device"]
-        metrics = validated["metrics"]
+        ts = validated.get("ts")
+        device_serial_id = validated.get("device")
+        metrics = validated.get("metrics")
 
         for metric_type, value in metrics.items():
             key = f"telemetry:{device_serial_id}:{metric_type}"
@@ -77,7 +77,7 @@ class RuleEvalHandler:
                 "device_serial_id": device_serial_id,
                 "metric_type": metric_type,
                 "value": value,
-                "ts": ts.isoformat()
+                "ts": ts.isoformat(),
             }
 
             self.rule_runner.delay(telemetry)
@@ -103,4 +103,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
