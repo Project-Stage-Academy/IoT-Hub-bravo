@@ -540,9 +540,7 @@ def test_rate_telemetry_outside_duration_not_counted(
     rule_processor, device_metric_temperature, mock_action
 ):
     """Telemetry older than duration_minutes window should not be counted."""
-    TelemetryFactory.create_batch(
-        device_metric_temperature, [100, 105], minutes_ago=10
-    )
+    TelemetryFactory.create_batch(device_metric_temperature, [100, 105], minutes_ago=10)
     latest = TelemetryFactory.create(device_metric_temperature, value=110)
     RuleFactory.rate(device_metric_temperature, count=2, duration_minutes=5)
     rule_processor.run(latest)
