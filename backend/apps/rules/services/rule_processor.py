@@ -13,6 +13,7 @@ from apps.rules.utils.rule_engine_utils import (
     map_telemetry_model_to_event,
     choose_repository,
     DEFAULT_DURATION_MINUTES,
+    TelemetryEvent
 )
 from apps.common.redis_client import get_redis_client
 from apps.common.metrics import (
@@ -46,6 +47,8 @@ class RuleProcessor:
             mapped_telemetry = map_telemetry_model_to_event(telemetry)
         elif isinstance(telemetry, dict):
             mapped_telemetry = map_telemetry_json_to_event(telemetry)
+        elif isinstance(telemetry, TelemetryEvent):
+            mapped_telemetry = telemetry
 
         cache_key = f"{mapped_telemetry.device_serial_id}:{mapped_telemetry.metric_type}"
 
