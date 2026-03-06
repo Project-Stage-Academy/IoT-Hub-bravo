@@ -2,6 +2,8 @@ from typing import Any, Optional
 
 from apps.common.serializers import BaseSerializer
 
+ExpectedType = type | tuple[type, ...]
+
 
 class JSONSerializer(BaseSerializer):
     """
@@ -18,11 +20,11 @@ class JSONSerializer(BaseSerializer):
         _validate_fields(data)
     """
 
-    REQUIRED_FIELDS: dict[str, type] = {}
-    OPTIONAL_FIELDS: dict[str, type] = {}
+    REQUIRED_FIELDS: dict[str, ExpectedType] = {}
+    OPTIONAL_FIELDS: dict[str, ExpectedType] = {}
     STRICT_SCHEMA: bool = True
 
-    def _validate(self, data: Any) -> Optional[dict[str, Any]]:
+    def _validate(self, data: Any) -> Optional[Any]:
         """
         Validate and normalize a JSON payload according to the serializer schema.
 
@@ -83,8 +85,14 @@ class JSONSerializer(BaseSerializer):
                 continue
 
             if not isinstance(value, expected_type):
-                self._errors[field] = f'{field} must be of type {expected_type.__name__}.'
+                self._errors[field] = f'{field} must be of type {self._type_name(expected_type)}.'
                 continue
+
+    @staticmethod
+    def _type_name(t: ExpectedType) -> str:
+        if isinstance(t, tuple):
+            return ' or '.join(x.__name__ for x in t)
+        return t.__name__
 
     def _validate_no_unknown_fields(self, data: dict[str, Any]) -> None:
         allowed = set(self.REQUIRED_FIELDS) | set(self.OPTIONAL_FIELDS)
@@ -92,7 +100,7 @@ class JSONSerializer(BaseSerializer):
         if unknown:
             self._errors['non_field_errors'] = f'Unknown fields: {sorted(unknown)}'
 
-    def _validate_fields(self, data: dict[str, Any]) -> dict[str, Any]:
+    def _validate_fields(self, data: dict[str, Any]) -> Any:
         """
         Custom validation and normalization after basic schema checks.
 
@@ -115,4 +123,4 @@ class JSONSerializer(BaseSerializer):
           - If self._errors is non-empty after this method returns,
             is_valid() will return False.
         """
-        return data
+        raise NotImplementedError
