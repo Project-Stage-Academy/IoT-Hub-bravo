@@ -1,10 +1,10 @@
 from collections import defaultdict
 from django.conf import settings
-from .base_validator import BaseValidator
+from ..apps.common.base_validator import BaseValidator
 from typing import Any
 import logging
 from apps.devices.models import Device, DeviceMetric
-from validator.checker.redis_checker import build_redis_checker
+from apps.common.checker.redis_checker import build_redis_checker
 from utils.unit_aliases import REVERSE_UNIT_ALIASES
 from django.utils import timezone
 from datetime import timedelta

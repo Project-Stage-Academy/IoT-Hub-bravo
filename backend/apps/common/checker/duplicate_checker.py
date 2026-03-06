@@ -1,4 +1,4 @@
-from validator.checker.idempotency_store import IdempotencyStore
+from common.checker.idempotency_store import IdempotencyStore
 
 
 class DuplicateChecker:

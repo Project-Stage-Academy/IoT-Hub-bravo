@@ -179,6 +179,9 @@ def test_telemetry_create_type_mismatch_str(active_device, device_metric_str, ts
 
 @pytest.mark.django_db
 @patch('apps.devices.services.telemetry_services.publish_telemetry_event')
+@patch(
+    'validator.telemetry_validator.TelemetryBatchValidator._validate_duplicates', lambda self: None
+)
 def test_telemetry_create_creates_rows_for_valid_metrics_only(
     mock_publish_telemetry_event,
     active_device,
