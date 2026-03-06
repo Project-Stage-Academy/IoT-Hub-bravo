@@ -1,7 +1,9 @@
+from django.conf import settings
+
 import pytest
 from unittest.mock import patch
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, timedelta
 from validator.telemetry_validator import TelemetryBatchValidator
 from apps.devices.models import Device, Metric, DeviceMetric
 from apps.users.models import User
@@ -72,19 +74,18 @@ def device_metric(active_device, humidity_metric):
 
 
 @pytest.mark.django_db
-def test_batch_validator_success(
-    active_device, device_metric, second_device, second_device_metric
-):
+def test_batch_validator_success(active_device, device_metric, second_device, second_device_metric):
+    ts_old = timezone.now() - timedelta(seconds=settings.TELEMETRY_MAX_AGE_SECONDS + 10)
     payload = [
         {
             "device_serial_id": active_device.serial_id,
             "metrics": {"humidity": {"value": 55, "unit": "percent"}},
-            "ts": timezone.make_aware(datetime(2026, 1, 25, 11, 0)),
+            "ts": ts_old,
         },
         {
             "device_serial_id": second_device.serial_id,
             "metrics": {"temperature": {"value": 22.5, "unit": "celsius"}},
-            "ts": timezone.make_aware(datetime(2026, 1, 25, 11, 5)),
+            "ts": ts_old,
         },
     ]
 
@@ -150,6 +151,7 @@ def test_batch_validator_type_mismatch(active_device, device_metric):
 
 @pytest.mark.django_db
 def test_batch_validator_multiple_metrics(active_device, device_metric, temperature_metric):
+    ts_old = timezone.now() - timedelta(seconds=settings.TELEMETRY_MAX_AGE_SECONDS + 10)
     payload = [
         {
             "device_serial_id": active_device.serial_id,
@@ -157,7 +159,7 @@ def test_batch_validator_multiple_metrics(active_device, device_metric, temperat
                 "humidity": {"value": 61, "unit": "percent"},
                 "temperature": {"value": 33.3, "unit": "celsius"},
             },
-            "ts": timezone.make_aware(datetime(2026, 1, 25, 11, 10)),
+            "ts": ts_old,
         }
     ]
 
