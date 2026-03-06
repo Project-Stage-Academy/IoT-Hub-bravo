@@ -1,4 +1,4 @@
-from common.checker.idempotency_store import IdempotencyStore
+from apps.common.checker.idempotency_store import IdempotencyStore
 
 
 class DuplicateChecker:
