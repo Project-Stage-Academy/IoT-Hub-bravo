@@ -123,4 +123,4 @@ class JSONSerializer(BaseSerializer):
           - If self._errors is non-empty after this method returns,
             is_valid() will return False.
         """
-        raise NotImplementedError
+        return data
