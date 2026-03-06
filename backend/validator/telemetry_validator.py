@@ -1,6 +1,6 @@
 from collections import defaultdict
 from django.conf import settings
-from ..apps.common.base_validator import BaseValidator
+from apps.common.base_validator import BaseValidator
 from typing import Any
 import logging
 from apps.devices.models import Device, DeviceMetric
