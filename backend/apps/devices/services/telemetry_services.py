@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Literal
 
 from apps.devices.models import Device, DeviceMetric
 from apps.devices.models.telemetry import Telemetry
@@ -42,6 +42,13 @@ def telemetry_create(*, valid_data: list[dict]) -> TelemetryIngestResult:
         logger.info("No valid telemetry rows to create.")
         result.status = "success"
         return result
+
+    # Load DeviceMetrics for publish payloads
+    dm_ids = [row["device_metric_id"] for row in valid_data]
+    device_metrics_map = {
+        dm.id: dm
+        for dm in DeviceMetric.objects.filter(id__in=dm_ids).select_related("device", "metric")
+    }
 
     to_create = [
         Telemetry(
@@ -126,13 +133,3 @@ def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
         errors=validator.invalid_rows,
         expired_rows=validator.expired_rows,
     )
-
-
-def _value_matches_data_type(value: Any, data_type: str) -> bool:
-    if data_type == "numeric":
-        return isinstance(value, (int, float)) and not isinstance(value, bool)
-    if data_type == "bool":
-        return isinstance(value, bool)
-    if data_type == "str":
-        return isinstance(value, str)
-    return False

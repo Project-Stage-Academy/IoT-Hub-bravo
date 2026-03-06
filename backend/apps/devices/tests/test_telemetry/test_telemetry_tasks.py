@@ -1,8 +1,6 @@
 from typing import Optional
 from unittest.mock import patch, MagicMock
 
-import pytest
-
 from apps.devices.tasks import ingest_telemetry_payload
 
 

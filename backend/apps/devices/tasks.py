@@ -14,7 +14,6 @@ from apps.devices.producers import (
     get_telemetry_dlq_producer,
     get_telemetry_expired_producer,
 )
-from .services.telemetry_services import telemetry_validate, telemetry_create
 
 from apps.common.metrics import (
     ingestion_messages_total,

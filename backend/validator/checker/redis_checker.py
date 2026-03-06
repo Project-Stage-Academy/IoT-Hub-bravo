@@ -2,7 +2,6 @@ from validator.checker.config import RedisConfig
 from validator.checker.idempotency_store import RedisIdempotencyStore
 from validator.checker.duplicate_checker import DuplicateChecker
 from django.conf import settings
-from decouple import config
 
 redis_host = settings.REDIS_HOST
 redis_port = settings.REDIS_PORT

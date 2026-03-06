@@ -1,5 +1,4 @@
 from collections import defaultdict
-import datetime
 from django.conf import settings
 from .base_validator import BaseValidator
 from typing import Any
