@@ -13,6 +13,7 @@ from apps.devices.producers import (
     get_telemetry_clean_producer,
     get_telemetry_dlq_producer,
     get_telemetry_expired_producer,
+)
 from .services.telemetry_services import telemetry_validate, telemetry_create
 
 from apps.common.metrics import (
@@ -38,9 +39,9 @@ def ingest_telemetry_payload(
     self, payload: dict | list, source: str = 'unknown', **kwargs
 ) -> None:
     start_time = time.perf_counter()
-    
+
     payload = normalize_payload(payload)
-  
+
     serializer = TelemetryBatchCreateSerializer(payload)
 
     if not serializer.is_valid() and not serializer.valid_items:
@@ -157,7 +158,7 @@ def normalize_payload(payload: dict | list, source: str = 'unknown') -> list | N
 
     if isinstance(payload, list):
         return payload
-    
+
     ingestion_errors_total.labels(source=source, error_type='invalid_payload').inc()
     logger.error(f"payload must be of type dict or list, got {type(payload).__name__}")
     return
