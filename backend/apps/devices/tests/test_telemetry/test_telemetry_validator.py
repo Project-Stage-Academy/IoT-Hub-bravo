@@ -74,7 +74,9 @@ def device_metric(active_device, humidity_metric):
 
 
 @pytest.mark.django_db
-def test_batch_validator_success(active_device, device_metric, second_device, second_device_metric):
+def test_batch_validator_success(
+    active_device, device_metric, second_device, second_device_metric
+):
     ts_old = timezone.now() - timedelta(seconds=settings.TELEMETRY_MAX_AGE_SECONDS + 10)
     payload = [
         {
