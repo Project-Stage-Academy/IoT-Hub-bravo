@@ -1,9 +1,8 @@
-# Create your views here.
-
-import json
-from .services import UserService
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+
+from .services import UserService
+from apps.common.utils.views_utils import parse_json_body
 
 
 @csrf_exempt
@@ -11,10 +10,9 @@ def login(request):
     if request.method != "POST":
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    data, error_response = parse_json_body(request.body)
+    if error_response:
+        return error_response
 
     username = data.get("username")
     password = data.get("password")

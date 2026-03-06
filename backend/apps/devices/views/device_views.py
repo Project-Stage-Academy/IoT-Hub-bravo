@@ -1,5 +1,3 @@
-import json
-
 from django.http import JsonResponse, HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -18,18 +16,13 @@ from apps.devices.serializers.device_serializers.update_device_serializer import
     DeviceUpdateV1Serializer,
 )
 from apps.devices.services.device_service import DeviceService
+from apps.common.utils.views_utils import parse_json_body
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 @method_decorator(jwt_required, name="dispatch")
 @method_decorator(role_required({"GET": ["client", "admin"], "POST": ["admin"]}), name="dispatch")
 class DeviceView(View):
-    def parse_json_request(self, body: bytes):
-        try:
-            return json.loads(body), None
-        except json.JSONDecodeError:
-            return None, JsonResponse({"error": "Invalid JSON"}, status=400)
-
     def get(self, request):
         try:
             limit = int(request.GET.get("limit", 5))
@@ -48,7 +41,7 @@ class DeviceView(View):
         return JsonResponse({"total": total, "limit": limit, "offset": offset, "items": data})
 
     def post(self, request):
-        data, error_response = self.parse_json_request(request.body)
+        data, error_response = parse_json_body(request.body)
         if error_response:
             return error_response
 
@@ -87,12 +80,6 @@ class DeviceView(View):
     name='dispatch',
 )
 class DeviceDetailView(View):
-    def parse_json_request(self, body: bytes):
-        try:
-            return json.loads(body), None
-        except json.JSONDecodeError:
-            return None, JsonResponse({"error": "Invalid JSON"}, status=400)
-
     def get_device(self, pk: int):
         try:
             device = get_object_or_404(Device, pk=pk)
@@ -106,7 +93,7 @@ class DeviceDetailView(View):
 
     def put(self, request, pk: int):
         device = self.get_device(pk)
-        data, error_response = self.parse_json_request(request.body)
+        data, error_response = parse_json_body(request.body)
         if error_response:
             return error_response
 
@@ -134,7 +121,7 @@ class DeviceDetailView(View):
 
     def patch(self, request, pk: int):
         device = self.get_device(pk)
-        data, error_response = self.parse_json_request(request.body)
+        data, error_response = parse_json_body(request.body)
         if error_response:
             return error_response
 
