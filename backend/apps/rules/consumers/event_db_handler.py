@@ -23,7 +23,7 @@ class EventDBHandler:
             ecent, created = Event.objects.get_or_create(
                 id=event_uuid,
                 defaults={
-                    'timestamp': data['timestamp'],
+                    'rule_triggered_at': data['rule_triggered_at'],
                     'rule_id': data['rule_id'],
                     'acknowledged': False,
                     'trigger_device_serial_id': data['trigger_device_serial_id'],

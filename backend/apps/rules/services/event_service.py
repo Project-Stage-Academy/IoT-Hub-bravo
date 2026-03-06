@@ -28,7 +28,7 @@ def event_list(*, query: EventListQuery) -> EventListResult:
     - offset
 
     Ordering:
-    - newest first (timestamp desc)
+    - newest first (rule_triggered_at desc)
     """
     qs = Event.objects.select_related("rule").all()
 
@@ -36,7 +36,7 @@ def event_list(*, query: EventListQuery) -> EventListResult:
 
     total = qs.count()
 
-    qs = qs.order_by("-timestamp", "-id")[query.offset : query.offset + query.limit]
+    qs = qs.order_by("-rule_triggered_at", "-id")[query.offset : query.offset + query.limit]
 
     return EventListResult(
         count=total,

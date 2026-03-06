@@ -75,7 +75,7 @@ erDiagram
 
     EVENTS {
       uuid         id                         PK "UUID, default uuid4"
-      timestamptz  timestamp                  "not null, default: now()"
+      timestamptz  rule_triggered_at          "not null, default: now()"
       int          rule_id                    FK "→ rules.id, not null"
       boolean      acknowledged               "default: false, not null"
       varchar(255) trigger_device_serial_id   "not null, serial ID of the triggering device"
@@ -96,7 +96,7 @@ erDiagram
 | device_metrics   | idx_device_metrics_metric           | metric_id                        | normal     | Quick access to devices measuring a specific metric                |
 | rules            | idx_rules_device_metric             | device_metric_id                 | normal     | Find rules for specific device+metric                              |
 | rules            | idx_rules_is_active                 | is_active                        | normal     | Filter active rules quickly                                        |
-| events           | idx_events_timestamp                | timestamp                        | normal     | Time-range queries, sorting events by time                         |
+| events           | idx_events_rule_triggered_at        | rule_triggered_at                | normal     | Time-range queries, sorting events by time                         |
 | events           | idx_events_rule                     | rule_id                          | normal     | Find all events triggered by a rule                                |
 | events           | idx_events_ack                     | acknowledged                    | normal     | Filter acknowledged vs unacknowledged events                        | 
 | events           | idx_events_device_serial_id        | trigger_device_serial_id         | normal     | Filter events by triggering device serial ID                       |

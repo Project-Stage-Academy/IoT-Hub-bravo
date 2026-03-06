@@ -2090,7 +2090,7 @@
                             }
                           ],
                           "cookie": [],
-                          "body": "{\n  \"example\": null,\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"timestamp\": \"2026-01-25T09:53:00+00:00\",\n  \"created_at\": \"2026-01-25T09:55:00+00:00\",\n  \"acknowledged\": true,\n  \"rule\": {\n    \"id\": 1,\n    \"name\": \"High Temperature\"\n  },\n  \"trigger_device_serial_id\": \"SN-00001\",\n  \"trigger_context\": {\"telemetry_id\": 2, \"device_id\": 1}\n}"
+                          "body": "{\n  \"example\": null,\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"rule_triggered_at\": \"2026-01-25T09:53:00+00:00\",\n  \"created_at\": \"2026-01-25T09:55:00+00:00\",\n  \"acknowledged\": true,\n  \"rule\": {\n    \"id\": 1,\n    \"name\": \"High Temperature\"\n  },\n  \"trigger_device_serial_id\": \"SN-00001\",\n  \"trigger_context\": {\"telemetry_id\": 2, \"device_id\": 1}\n}"
                         },
                         {
                           "name": "Event not found",
@@ -2231,7 +2231,7 @@
                         }
                       ],
                       "cookie": [],
-                      "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"timestamp\": \"2026-01-25T09:53:00+00:00\",\n  \"created_at\": \"2026-01-25T09:55:00+00:00\",\n  \"acknowledged\": false,\n  \"rule\": {\n    \"id\": 1,\n    \"name\": \"High Temperature\"\n  },\n  \"trigger_device_serial_id\": \"SN-00001\",\n  \"trigger_context\": {\"telemetry_id\": 2, \"device_id\": 1}\n}"
+                      "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"rule_triggered_at\": \"2026-01-25T09:53:00+00:00\",\n  \"created_at\": \"2026-01-25T09:55:00+00:00\",\n  \"acknowledged\": false,\n  \"rule\": {\n    \"id\": 1,\n    \"name\": \"High Temperature\"\n  },\n  \"trigger_device_serial_id\": \"SN-00001\",\n  \"trigger_context\": {\"telemetry_id\": 2, \"device_id\": 1}\n}"
                     },
                     {
                       "name": "Event not found",
@@ -2419,7 +2419,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"count\": 2,\n  \"limit\": 50,\n  \"offset\": 0,\n  \"results\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"timestamp\": \"2026-01-25T09:53:00+00:00\",\n      \"created_at\": \"2026-01-25T09:55:00+00:00\",\n      \"acknowledged\": false,\n      \"rule\": {\n        \"id\": 1,\n        \"name\": \"High Temperature\"\n      },\n      \"trigger_device_serial_id\": \"SN-00001\",\n      \"trigger_context\": {\"telemetry_id\": 2, \"device_id\": 1}\n    },\n    {\n      \"id\": \"660e8400-e29b-41d4-a716-446655440001\",\n      \"timestamp\": \"2026-01-25T09:52:00+00:00\",\n      \"created_at\": \"2026-01-25T09:53:00+00:00\",\n      \"acknowledged\": true,\n      \"rule\": {\n        \"id\": 2,\n        \"name\": \"Low Battery\"\n      },\n      \"trigger_device_serial_id\": \"SN-00003\",\n      \"trigger_context\": {\"telemetry_id\": 43, \"device_id\": 3}\n    }\n  ]\n}"
+                  "body": "{\n  \"count\": 2,\n  \"limit\": 50,\n  \"offset\": 0,\n  \"results\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"rule_triggered_at\": \"2026-01-25T09:53:00+00:00\",\n      \"created_at\": \"2026-01-25T09:55:00+00:00\",\n      \"acknowledged\": false,\n      \"rule\": {\n        \"id\": 1,\n        \"name\": \"High Temperature\"\n      },\n      \"trigger_device_serial_id\": \"SN-00001\",\n      \"trigger_context\": {\"telemetry_id\": 2, \"device_id\": 1}\n    },\n    {\n      \"id\": \"660e8400-e29b-41d4-a716-446655440001\",\n      \"rule_triggered_at\": \"2026-01-25T09:52:00+00:00\",\n      \"created_at\": \"2026-01-25T09:53:00+00:00\",\n      \"acknowledged\": true,\n      \"rule\": {\n        \"id\": 2,\n        \"name\": \"Low Battery\"\n      },\n      \"trigger_device_serial_id\": \"SN-00003\",\n      \"trigger_context\": {\"telemetry_id\": 43, \"device_id\": 3}\n    }\n  ]\n}"
                 },
                 {
                   "name": "Invalid request",

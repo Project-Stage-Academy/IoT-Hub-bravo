@@ -24,7 +24,7 @@ class RuleAdmin(admin.ModelAdmin):
     def last_triggered(self, obj):
         from django.db.models import Max
 
-        latest = Event.objects.filter(rule=obj).aggregate(Max("timestamp"))["timestamp__max"]
+        latest = Event.objects.filter(rule=obj).aggregate(Max("rule_triggered_at"))["rule_triggered_at__max"]
         if latest:
             return latest
         return format_html('<span style="color: gray;">{}</span>', 'Never')
@@ -38,22 +38,22 @@ class EventAdmin(admin.ModelAdmin):
         "id",
         "rule_link",
         "acknowledged",
-        "timestamp",
+        "rule_triggered_at",
         "created_at",
         "device_link",
         "trigger_context_summary",
     )
 
-    list_filter = ("timestamp", "created_at", "rule", "acknowledged")
+    list_filter = ("rule_triggered_at", "created_at", "rule", "acknowledged")
     search_fields = (
         "id",
         "rule__name",
         "rule__device_metric__device__name",
         "trigger_device_serial_id",
     )
-    readonly_fields = ("id", "timestamp", "created_at", "trigger_context")
-    date_hierarchy = "timestamp"
-    ordering = ("-timestamp",)
+    readonly_fields = ("id", "rule_triggered_at", "created_at", "trigger_context")
+    date_hierarchy = "rule_triggered_at"
+    ordering = ("-rule_triggered_at",)
     actions = ["mark_acknowledged", "mark_unacknowledged"]
 
     @admin.display(description="Device Serial ID", ordering="trigger_device_serial_id")

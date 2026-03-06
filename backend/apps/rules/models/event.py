@@ -6,7 +6,7 @@ import uuid
 
 class Event(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    timestamp = models.DateTimeField(default=timezone.now, null=False)
+    rule_triggered_at = models.DateTimeField(default=timezone.now, null=False)
     rule = models.ForeignKey('rules.Rule', on_delete=models.CASCADE, null=False)
     acknowledged = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=False)
@@ -23,7 +23,7 @@ class Event(models.Model):
         verbose_name_plural = "Events"
         db_table = 'events'
         indexes = [
-            models.Index(fields=['timestamp'], name='idx_events_timestamp'),
+            models.Index(fields=['rule_triggered_at'], name='idx_events_rule_triggered_at'),
             models.Index(fields=['rule'], name='idx_events_rule'),
             models.Index(fields=['acknowledged'], name='idx_events_ack'),
             models.Index(fields=['trigger_device_serial_id'], name='idx_events_device_serial_id'),

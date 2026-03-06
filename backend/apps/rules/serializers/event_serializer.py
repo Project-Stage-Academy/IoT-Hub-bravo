@@ -197,7 +197,7 @@ class EventListItemSerializer:
     def to_dict(event) -> dict[str, Any]:
         return {
             "id": str(event.id),
-            "timestamp": event.timestamp.isoformat(),
+            "rule_triggered_at": event.rule_triggered_at.isoformat(),
             "created_at": event.created_at.isoformat(),
             "acknowledged": event.acknowledged,
             "rule": {
@@ -218,7 +218,7 @@ class EventDetailSerializer:
     def to_dict(event) -> dict[str, Any]:
         return {
             "id": str(event.id),
-            "timestamp": event.timestamp.isoformat(),
+            "rule_triggered_at": event.rule_triggered_at.isoformat(),
             "created_at": event.created_at.isoformat(),
             "acknowledged": event.acknowledged,
             "rule": {

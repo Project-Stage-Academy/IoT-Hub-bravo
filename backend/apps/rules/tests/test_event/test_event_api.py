@@ -162,7 +162,7 @@ def test_list_events_result_item_fields(client, client_token, event):
     item = response.json()["results"][0]
 
     assert "id" in item
-    assert "timestamp" in item
+    assert "rule_triggered_at" in item
     assert "created_at" in item
     assert "acknowledged" in item
     assert "rule" in item
@@ -183,8 +183,8 @@ def test_list_events_empty(client, client_token):
 def test_list_events_ordered_newest_first(client, client_token, rule):
     t1 = timezone.now()
     t2 = t1 + __import__("datetime").timedelta(seconds=10)
-    e1 = Event.objects.create(rule=rule, timestamp=t1)
-    e2 = Event.objects.create(rule=rule, timestamp=t2)
+    e1 = Event.objects.create(rule=rule, rule_triggered_at=t1)
+    e2 = Event.objects.create(rule=rule, rule_triggered_at=t2)
 
     response = client.get("/api/events/", **auth(client_token))
     ids = [r["id"] for r in response.json()["results"]]
@@ -399,7 +399,7 @@ def test_event_detail_response_fields(client, client_token, event):
     data = response.json()
 
     assert "id" in data
-    assert "timestamp" in data
+    assert "rule_triggered_at" in data
     assert "created_at" in data
     assert "acknowledged" in data
     assert "rule" in data

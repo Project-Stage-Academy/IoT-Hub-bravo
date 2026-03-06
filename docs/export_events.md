@@ -14,7 +14,7 @@ See the command source: [backend/apps/rules/management/commands/export_events.py
 
 ## What the command does
 
-- Exports events ordered by `timestamp` (newest first).
+- Exports events ordered by `rule_triggered_at` (newest first).
 - Default output file: `exports/events_export.csv` (created under repository root if not provided).
 - Accepts `--since` to filter events created on/after an ISO timestamp.
 - Accepts `--output` to set a custom output path.
@@ -22,7 +22,7 @@ See the command source: [backend/apps/rules/management/commands/export_events.py
 
 CSV header fields produced:
 - `id`
-- `timestamp` (Django timezone-aware datetime)
+- `rule_triggered_at` (Django timezone-aware datetime)
 - `rule` (the rule name)
 - `acknowledged` (true/false)
 - `trigger_device_serial_id` (serial ID of the triggering device)
@@ -81,14 +81,14 @@ Note: When using cron, prefer absolute paths and test the command manually befor
 
 - Output file not writable: ensure the directory exists and the process has write permission. The command will create `exports/` under the project root if no `--output` is specified.
 
-- No events exported: check the database and the `timestamp` filter; try running the command without `--since` to confirm events exist.
+- No events exported: check the database and the `rule_triggered_at` filter; try running the command without `--since` to confirm events exist.
 
 - Running on CI: ensure the CI runner has access to the Django settings and the database or use a test database seeded with events.
 
 ## Notes about timezones
 
 - The command uses Django `DateTimeField` values. When filtering with `--since`, pass timezone-aware ISO datetimes to avoid ambiguity.
-- The CSV `timestamp` values are Django datetimes and may be timezone-aware depending on your `TIME_ZONE` and `USE_TZ` settings.
+- The CSV `rule_triggered_at` values are Django datetimes and may be timezone-aware depending on your `TIME_ZONE` and `USE_TZ` settings.
 
 ## Automation ideas
 

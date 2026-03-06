@@ -51,7 +51,7 @@ def notify_event(event_id: int):
         "rule_name": event.rule.name,
         "trigger_device_serial_id": event.trigger_device_serial_id,
         "trigger_context": event.trigger_context,
-        "timestamp": event.timestamp.isoformat(),
+        "rule_triggered_at": event.rule_triggered_at.isoformat(),
     }
 
     logger_celery.info("Event notification enqueued", extra={"notification": payload})
@@ -101,7 +101,7 @@ def deliver_webhook(self, event_id: int):
         "rule_name": event.rule.name,
         "trigger_device_serial_id": event.trigger_device_serial_id,
         "trigger_context": event.trigger_context,
-        "timestamp": event.timestamp.isoformat(),
+        "rule_triggered_at": event.rule_triggered_at.isoformat(),
     }
 
     headers = {"Content-Type": "application/json"}

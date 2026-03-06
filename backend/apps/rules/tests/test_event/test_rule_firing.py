@@ -132,7 +132,7 @@ def test_dispatch_action_event_timestamp_is_recent(rule, telemetry):
         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
     after = timezone.now()
 
-    assert before <= event.timestamp <= after
+    assert before <= event.rule_triggered_at <= after
 
 
 def test_dispatch_action_event_acknowledged_defaults_false(rule, telemetry):

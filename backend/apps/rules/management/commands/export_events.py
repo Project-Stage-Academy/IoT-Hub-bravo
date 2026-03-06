@@ -31,12 +31,12 @@ class Command(BaseCommand):
                 os.makedirs(exports_dir, exist_ok=True)
                 output_file = os.path.join(exports_dir, 'events_export.csv')
 
-            qs = Event.objects.all().order_by('-timestamp')
+            qs = Event.objects.all().order_by('-rule_triggered_at')
 
             if since:
                 dt = parse_datetime(since)
                 if dt:
-                    qs = qs.filter(timestamp__gte=dt)
+                    qs = qs.filter(rule_triggered_at__gte=dt)
                 else:
                     self.stdout.write(self.style.ERROR(f"Invalid --since datetime: {since}"))
                     return
@@ -47,7 +47,7 @@ class Command(BaseCommand):
                 writer.writerow(
                     [
                         'id',
-                        'timestamp',
+                        'rule_triggered_at',
                         'rule',
                         'acknowledged',
                         'trigger_device_serial_id',
@@ -59,7 +59,7 @@ class Command(BaseCommand):
                     writer.writerow(
                         [
                             event.id,
-                            event.timestamp,
+                            event.rule_triggered_at,
                             event.rule.name,
                             event.acknowledged,
                             event.trigger_device_serial_id,

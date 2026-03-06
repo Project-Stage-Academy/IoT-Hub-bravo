@@ -4,7 +4,6 @@ from django.utils import timezone
 from apps.rules.models.event import Event
 from apps.rules.models.rule import Rule
 from apps.devices.models.telemetry import Telemetry
-from apps.rules.producers import get_rule_event_producer
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +45,7 @@ class Action:
         """
         event = Event.objects.create(
             rule=rule,
-            timestamp=timezone.now(),
+            rule_triggered_at=timezone.now(),
             trigger_device_serial_id=telemetry.device_metric.device.serial_id,
             trigger_context={
                 "telemetry_id": telemetry.id,
@@ -68,24 +67,24 @@ class Action:
             },
         )
 
-        # Publish created event to Kafka for downstream consumers
-        try:
-            producer = get_rule_event_producer()
-            payload = {
-                "event_id": str(event.id),
-                "rule_id": rule.id,
-                "rule_name": rule.name,
-                "trigger_device_serial_id": event.trigger_device_serial_id,
-                "trigger_context": event.trigger_context,
-                "timestamp": event.timestamp.isoformat(),
-            }
-            result = producer.produce(payload, key=str(event.id))
-            if result.name != 'ENQUEUED':
-                logger.warning('Failed to enqueue rule event to Kafka: %s', result)
-        except Exception:
-            logger.exception('Failed to publish event to Kafka')
+        # # Publish created event to Kafka for downstream consumers
+        # try:
+        #     producer = get_rule_event_producer()
+        #     payload = {
+        #         "event_id": str(event.id),
+        #         "rule_id": rule.id,
+        #         "rule_name": rule.name,
+        #         "trigger_device_serial_id": event.trigger_device_serial_id,
+        #         "trigger_context": event.trigger_context,
+        #         "rule_triggered_at": event.rule_triggered_at.isoformat(),
+        #     }
+        #     result = producer.produce(payload, key=str(event.id))
+        #     if result.name != 'ENQUEUED':
+        #         logger.warning('Failed to enqueue rule event to Kafka: %s', result)
+        # except Exception:
+        #     logger.exception('Failed to publish event to Kafka')
 
         for task_name in Action.TASKS:
             Action._enqueue(task_name, event.id)
 
-        return event
+        # return event

@@ -24,7 +24,7 @@ class Command(BaseCommand):
 
         payload = {
             "event_uuid": event_uuid,
-            "timestamp": timezone.now().isoformat(),
+            "rule_triggered_at": timezone.now().isoformat(),
             "rule_id": 4,
             "trigger_device_serial_id": "SN-A1-PRES-0003",
             "trigger_context": {

@@ -66,7 +66,7 @@ def test_event_timestamp_is_auto_set(rule):
     before = timezone.now()
     event = Event.objects.create(rule=rule)
     after = timezone.now()
-    assert before <= event.timestamp <= after
+    assert before <= event.rule_triggered_at <= after
 
 
 def test_event_created_at_is_auto_set(rule):
@@ -104,9 +104,9 @@ def test_event_can_be_created_with_explicit_acknowledged_true(rule):
 
 def test_event_can_be_created_with_explicit_timestamp(rule):
     ts = timezone.now()
-    event = Event.objects.create(rule=rule, timestamp=ts)
+    event = Event.objects.create(rule=rule, rule_triggered_at=ts)
     # Stored and retrieved timestamp should be equal within microsecond precision
-    assert abs((event.timestamp - ts).total_seconds()) < 1
+    assert abs((event.rule_triggered_at - ts).total_seconds()) < 1
 
 
 # ============================================================================
@@ -180,7 +180,7 @@ def test_event_verbose_name():
 
 def test_event_has_expected_indexes():
     index_field_sets = [set(idx.fields) for idx in Event._meta.indexes]
-    assert {"timestamp"} in index_field_sets
+    assert {"rule_triggered_at"} in index_field_sets
     assert {"rule"} in index_field_sets
     assert {"acknowledged"} in index_field_sets
     assert {"trigger_device_serial_id"} in index_field_sets

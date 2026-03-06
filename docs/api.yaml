@@ -1506,7 +1506,7 @@ paths:
                 offset: 0
                 results:
                   - id: "550e8400-e29b-41d4-a716-446655440000"
-                    timestamp: "2026-01-25T09:53:00+00:00"
+                    rule_triggered_at: "2026-01-25T09:53:00+00:00"
                     created_at: "2026-01-25T09:55:00+00:00"
                     acknowledged: false
                     rule:
@@ -1515,7 +1515,7 @@ paths:
                     trigger_device_serial_id: "SN-00001"
                     trigger_context: {"telemetry_id": 2, "device_id": 1, "value": {"t": "numeric", "v": "55.0"}}
                   - id: "660e8400-e29b-41d4-a716-446655440001"
-                    timestamp: "2026-01-25T09:52:00+00:00"
+                    rule_triggered_at: "2026-01-25T09:52:00+00:00"
                     created_at: "2026-01-25T09:53:00+00:00"
                     acknowledged: true
                     rule:
@@ -1561,7 +1561,7 @@ paths:
                 $ref: '#/components/schemas/Event'
               example:
                 id: "550e8400-e29b-41d4-a716-446655440000"
-                timestamp: "2026-01-25T09:53:00+00:00"
+                rule_triggered_at: "2026-01-25T09:53:00+00:00"
                 created_at: "2026-01-25T09:55:00+00:00"
                 acknowledged: false
                 rule:
@@ -1621,7 +1621,7 @@ paths:
               example:
                 example:
                 id: "550e8400-e29b-41d4-a716-446655440000"
-                timestamp: "2026-01-25T09:53:00+00:00"
+                rule_triggered_at: "2026-01-25T09:53:00+00:00"
                 created_at: "2026-01-25T09:55:00+00:00"
                 acknowledged: true
                 rule:
@@ -2626,7 +2626,7 @@ components:
     #     acknowledged:
     #       type: boolean
     #       example: false
-    #     timestamp:
+    #     rule_triggered_at:
     #       type: string
     #       format: date-time
     #       example: "2026-01-22T16:30:00Z"
@@ -2643,14 +2643,14 @@ components:
     #   required:
     #     - id
     #     - rule_id
-    #     - timestamp
+    #     - rule_triggered_at
     #     - created_at
     #     - trigger_device_serial_id
     #   example:
     #     id: "550e8400-e29b-41d4-a716-446655440000"
     #     rule_id: 1
     #     acknowledged: false
-    #     timestamp: "2026-01-22T16:30:00Z"
+    #     rule_triggered_at: "2026-01-22T16:30:00Z"
     #     created_at: "2026-01-22T16:31:00Z"
     #     trigger_device_serial_id: "SN-00001"
     #     trigger_context: {"telemetry_id": 1}
@@ -2700,7 +2700,7 @@ components:
         id:
           type: string
           format: uuid
-        timestamp:
+        rule_triggered_at:
           type: string
           format: date-time
         created_at:
@@ -2724,7 +2724,7 @@ components:
           description: Flexible context about what triggered the event
       example:
         id: "550e8400-e29b-41d4-a716-446655440000"
-        timestamp: "2026-01-25T09:20:00+00:00"
+        rule_triggered_at: "2026-01-25T09:20:00+00:00"
         created_at: "2026-01-25T09:55:00+00:00"
         acknowledged: false
         rule:
@@ -2735,7 +2735,7 @@ components:
     #       - id: "550e8400-e29b-41d4-a716-446655440000"
     #         rule_id: 1
     #         acknowledged: false
-    #         timestamp: "2026-01-22T16:30:00Z"
+    #         rule_triggered_at: "2026-01-22T16:30:00Z"
     #         created_at: "2026-01-22T16:31:00Z"
     #         trigger_device_serial_id: "SN-00001"
     #         trigger_context: {"telemetry_id": 1}

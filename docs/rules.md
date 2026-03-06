@@ -173,7 +173,7 @@ When a rule triggers, an **Event** is generated:
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "rule_id": 456,
-  "timestamp": "2026-02-09T10:05:00Z",
+  "rule_triggered_at": "2026-02-09T10:05:00Z",
   "acknowledged": false,
   "created_at": "2026-02-09T10:05:10Z",
   "trigger_device_serial_id": "SN-00042",
@@ -187,7 +187,7 @@ When a rule triggers, an **Event** is generated:
 | -------------- | -------- | -------------------------------------------------- |
 | `id`           | UUID     | Unique identifier of the event                     |
 | `rule_id`      | integer  | Reference to the rule that triggered the event     |
-| `timestamp`    | datetime | When the event occurred (evaluated telemetry time) |
+| `rule_triggered_at` | datetime | When the rule was triggered (evaluated telemetry time) |
 | `acknowledged` | boolean  | Whether the event was acknowledged                 |
 | `created_at`   | datetime | When the event record was created in the database  |
 | `trigger_device_serial_id` | string | Serial ID of the device that triggered the event |

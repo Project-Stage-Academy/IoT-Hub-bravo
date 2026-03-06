@@ -3,7 +3,7 @@
     "model": "rules.event",
     "pk": "e0b12c45-1234-4a5b-8c9d-123456789001",
     "fields": {
-      "timestamp": "2026-01-25T09:30:00+00:00",
+      "rule_triggered_at": "2026-01-25T09:30:00+00:00",
       "rule": 4,
       "acknowledged": false,
       "trigger_device_serial_id": "SN-A1-PRES-0003",
@@ -22,7 +22,7 @@
     "model": "rules.event",
     "pk": "e0b12c45-1234-4a5b-8c9d-123456789002",
     "fields": {
-      "timestamp": "2026-01-25T09:38:00+00:00",
+      "rule_triggered_at": "2026-01-25T09:38:00+00:00",
       "rule": 5,
       "acknowledged": false,
       "trigger_device_serial_id": "SN-A1-MOTION-0004",
@@ -39,7 +39,7 @@
     "model": "rules.event",
     "pk": "e0b12c45-1234-4a5b-8c9d-123456789003",
     "fields": {
-      "timestamp": "2026-01-25T09:22:00+00:00",
+      "rule_triggered_at": "2026-01-25T09:22:00+00:00",
       "rule": 6,
       "acknowledged": true,
       "trigger_device_serial_id": "SN-A1-STATUS-0005",
@@ -56,7 +56,7 @@
     "model": "rules.event",
     "pk": "e0b12c45-1234-4a5b-8c9d-123456789004",
     "fields": {
-      "timestamp": "2026-01-25T09:00:00+00:00",
+      "rule_triggered_at": "2026-01-25T09:00:00+00:00",
       "rule": 7,
       "acknowledged": true,
       "trigger_device_serial_id": "SN-A1-STATUS-0005",
@@ -73,7 +73,7 @@
     "model": "rules.event",
     "pk": "e0b12c45-1234-4a5b-8c9d-123456789005",
     "fields": {
-      "timestamp": "2026-01-25T09:13:00+00:00",
+      "rule_triggered_at": "2026-01-25T09:13:00+00:00",
       "rule": 7,
       "acknowledged": false,
       "trigger_device_serial_id": "SN-A1-STATUS-0005",
@@ -90,7 +90,7 @@
     "model": "rules.event",
     "pk": "e0b12c45-1234-4a5b-8c9d-123456789006",
     "fields": {
-      "timestamp": "2026-01-25T09:38:00+00:00",
+      "rule_triggered_at": "2026-01-25T09:38:00+00:00",
       "rule": 8,
       "acknowledged": false,
       "trigger_device_serial_id": "SN-B2-TEMP-0101",
@@ -110,7 +110,7 @@
     "model": "rules.event",
     "pk": "e0b12c45-1234-4a5b-8c9d-123456789007",
     "fields": {
-      "timestamp": "2026-01-25T09:53:00+00:00",
+      "rule_triggered_at": "2026-01-25T09:53:00+00:00",
       "rule": 9,
       "acknowledged": false,
       "trigger_device_serial_id": "SN-B2-TEMP-0101",
@@ -130,7 +130,7 @@
     "model": "rules.event",
     "pk": "e0b12c45-1234-4a5b-8c9d-123456789008",
     "fields": {
-      "timestamp": "2026-01-25T09:35:00+00:00",
+      "rule_triggered_at": "2026-01-25T09:35:00+00:00",
       "rule": 9,
       "acknowledged": true,
       "trigger_device_serial_id": "SN-B2-TEMP-0101",
@@ -150,7 +150,7 @@
     "model": "rules.event",
     "pk": "e0b12c45-1234-4a5b-8c9d-123456789009",
     "fields": {
-      "timestamp": "2026-01-25T09:50:00+00:00",
+      "rule_triggered_at": "2026-01-25T09:50:00+00:00",
       "rule": 10,
       "acknowledged": true,
       "trigger_device_serial_id": "SN-B2-FW-0103",
@@ -167,7 +167,7 @@
     "model": "rules.event",
     "pk": "e0b12c45-1234-4a5b-8c9d-123456789010",
     "fields": {
-      "timestamp": "2026-01-25T08:46:00+00:00",
+      "rule_triggered_at": "2026-01-25T08:46:00+00:00",
       "rule": 10,
       "acknowledged": false,
       "trigger_device_serial_id": "SN-B2-FW-0103",
@@ -184,7 +184,7 @@
     "model": "rules.event",
     "pk": "e0b12c45-1234-4a5b-8c9d-123456789011",
     "fields": {
-      "timestamp": "2026-01-25T09:23:00+00:00",
+      "rule_triggered_at": "2026-01-25T09:23:00+00:00",
       "rule": 11,
       "acknowledged": false,
       "trigger_device_serial_id": "SN-B2-FW-0103",
@@ -201,7 +201,7 @@
     "model": "rules.event",
     "pk": "e0b12c45-1234-4a5b-8c9d-123456789012",
     "fields": {
-      "timestamp": "2026-01-25T09:20:00+00:00",
+      "rule_triggered_at": "2026-01-25T09:20:00+00:00",
       "rule": 11,
       "acknowledged": true,
       "trigger_device_serial_id": "SN-B2-FW-0103",

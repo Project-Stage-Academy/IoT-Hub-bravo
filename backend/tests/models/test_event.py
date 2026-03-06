@@ -20,7 +20,7 @@ class TestEventCreation:
 
         assert event.id is not None
         assert event.rule is not None
-        assert event.timestamp is not None
+        assert event.rule_triggered_at is not None
         assert event.created_at is not None
 
     def test_event_default_not_acknowledged(self):
@@ -40,15 +40,15 @@ class TestEventCreation:
         event = EventFactory()
         event.refresh_from_db()
 
-        assert event.timestamp is not None
+        assert event.rule_triggered_at is not None
         assert event.created_at is not None
 
     def test_event_with_custom_timestamp(self):
         """Test creating event with custom timestamp."""
         custom_time = timezone.now() - timedelta(hours=1)
-        event = EventFactory(timestamp=custom_time)
+        event = EventFactory(rule_triggered_at=custom_time)
 
-        assert event.timestamp == custom_time
+        assert event.rule_triggered_at == custom_time
 
 
 class TestEventRelationships:
@@ -78,8 +78,8 @@ class TestEventRelationships:
         time1 = timezone.now()
         time2 = time1 + timedelta(seconds=1)
 
-        event1 = EventFactory(rule=rule, timestamp=time1)
-        event2 = EventFactory(rule=rule, timestamp=time2)
+        event1 = EventFactory(rule=rule, rule_triggered_at=time1)
+        event2 = EventFactory(rule=rule, rule_triggered_at=time2)
 
         assert event1.rule == event2.rule
         assert Event.objects.filter(rule=rule).count() == 2

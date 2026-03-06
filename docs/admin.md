@@ -108,10 +108,10 @@ DEV_SUPERUSER_PASSWORD=secret123 python manage.py setup_admin
 ### 5. Inspect Events
 
 1. Go to **Rules > Events**
-2. View list with columns: Rule, Device, Acknowledged, Timestamp
+2. View list with columns: Rule, Device, Acknowledged, Rule Triggered At
 3. Use filters:
    - **By rule**: Filter events for specific rule
-   - **By timestamp**: Use date hierarchy
+   - **By rule_triggered_at**: Use date hierarchy
    - **By acknowledged**: Filter by status
 4. Click on event ID for details
 
@@ -175,8 +175,8 @@ DEV_SUPERUSER_PASSWORD=secret123 python manage.py setup_admin
 
 ### Event
 - **Search**: rule name
-- **Filter**: timestamp, created_at, rule, acknowledged
-- **Date hierarchy**: timestamp
+- **Filter**: rule_triggered_at, created_at, rule, acknowledged
+- **Date hierarchy**: rule_triggered_at
 
 ---
 
