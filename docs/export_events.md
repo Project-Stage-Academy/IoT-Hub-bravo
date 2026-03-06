@@ -21,7 +21,7 @@ See the command source: [backend/apps/rules/management/commands/export_events.py
 - Prints a success message with the number of exported events.
 
 CSV header fields produced:
-- `id`
+- `event_uuid`
 - `rule_triggered_at` (Django timezone-aware datetime)
 - `rule` (the rule name)
 - `acknowledged` (true/false)

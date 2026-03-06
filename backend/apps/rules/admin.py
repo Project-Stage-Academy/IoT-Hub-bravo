@@ -36,6 +36,7 @@ class EventAdmin(admin.ModelAdmin):
 
     list_display = (
         "id",
+        "event_uuid",
         "rule_link",
         "acknowledged",
         "rule_triggered_at",
@@ -46,12 +47,12 @@ class EventAdmin(admin.ModelAdmin):
 
     list_filter = ("rule_triggered_at", "created_at", "rule", "acknowledged")
     search_fields = (
-        "id",
+        "event_uuid",
         "rule__name",
         "rule__device_metric__device__name",
         "trigger_device_serial_id",
     )
-    readonly_fields = ("id", "rule_triggered_at", "created_at", "trigger_context")
+    readonly_fields = ("id" ,"event_uuid", "rule_triggered_at", "created_at", "trigger_context")
     date_hierarchy = "rule_triggered_at"
     ordering = ("-rule_triggered_at",)
     actions = ["mark_acknowledged", "mark_unacknowledged"]

@@ -46,7 +46,7 @@ def notify_event(event_id: int):
         return
 
     payload = {
-        "event_id": str(event.id),
+        "event_uuid": str(event.event_uuid),
         "rule_id": event.rule.id,
         "rule_name": event.rule.name,
         "trigger_device_serial_id": event.trigger_device_serial_id,
@@ -96,7 +96,7 @@ def deliver_webhook(self, event_id: int):
         return
 
     body = {
-        "event_id": str(event.id),
+        "event_uuid": str(event.event_uuid),
         "rule_id": event.rule.id,
         "rule_name": event.rule.name,
         "trigger_device_serial_id": event.trigger_device_serial_id,
@@ -111,13 +111,13 @@ def deliver_webhook(self, event_id: int):
         if not (200 <= resp.status_code < 300):
             logger_celery.warning(
                 "Webhook delivery failed (status)",
-                extra={"status": resp.status_code, "url": resolved_url, "event_id": event.id},
+                extra={"status": resp.status_code, "url": resolved_url, "event_uuid": str(event.event_uuid)},
             )
             raise RequestException(f"Non-2xx response: {resp.status_code}")
 
-        logger_celery.info("Webhook delivered", extra={"url": resolved_url, "event_id": event.id})
+        logger_celery.info("Webhook delivered", extra={"url": resolved_url, "event_uuid": str(event.event_uuid)})
     except RequestException as exc:
         logger_celery.warning(
-            "Webhook delivery error, will retry", extra={"error": str(exc), "event_id": event.id}
+            "Webhook delivery error, will retry", extra={"error": str(exc), "event_uuid": str(event.event_uuid)}
         )
         raise

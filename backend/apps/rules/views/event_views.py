@@ -59,12 +59,12 @@ def list_events(request):
 @require_http_methods(["GET"])
 @jwt_required
 @role_required({"GET": ["client", "admin"]})
-def event_detail(request, event_id: UUID):
+def event_detail(request, event_uuid: UUID):
     """
-    GET /api/events/{id}/
+    GET /api/events/{event_uuid}/
     """
     try:
-        event = event_get(event_id=event_id)
+        event = event_get(event_uuid=event_uuid)
     except Event.DoesNotExist:
         return JsonResponse({"detail": "Event not found."}, status=404)
 
@@ -76,13 +76,13 @@ def event_detail(request, event_id: UUID):
 @require_http_methods(["POST"])
 @jwt_required
 @role_required({"POST": ["client", "admin"]})
-def ack_event(request, event_id: UUID):
+def ack_event(request, event_uuid: UUID):
     """
-    POST /api/events/{id}/ack
+    POST /api/events/{event_uuid}/ack
     Body: none
     """
     try:
-        event = event_ack(event_id=event_id)
+        event = event_ack(event_uuid=event_uuid)
     except Event.DoesNotExist:
         return JsonResponse({"detail": "Event not found."}, status=404)
 

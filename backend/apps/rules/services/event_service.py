@@ -44,14 +44,14 @@ def event_list(*, query: EventListQuery) -> EventListResult:
     )
 
 
-def event_get(*, event_id: UUID | str) -> Event:
+def event_get(*, event_uuid: UUID | str) -> Event:
     """
-    Get a single event by id.
+    Get a single event by event_uuid.
     """
-    return Event.objects.select_related("rule").get(id=event_id)
+    return Event.objects.select_related("rule").get(event_uuid=event_uuid)
 
 
-def event_ack(*, event_id: UUID | str) -> Event:
+def event_ack(*, event_uuid: UUID | str) -> Event:
     """
     Acknowledge an event.
 
@@ -59,7 +59,7 @@ def event_ack(*, event_id: UUID | str) -> Event:
     - if already acknowledged: keep it true
     - return updated event
     """
-    event = Event.objects.select_related("rule").get(id=event_id)
+    event = Event.objects.select_related("rule").get(event_uuid=event_uuid)
 
     if not event.acknowledged:
         event.acknowledged = True

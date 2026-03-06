@@ -137,7 +137,7 @@ def test_event_cascade_delete_when_rule_deleted(rule):
 
 def test_event_str_representation(rule):
     event = Event.objects.create(rule=rule)
-    assert str(event) == f"Event {event.id} - {rule.name}"
+    assert str(event) == f"Event {event.event_uuid} - {rule.name}"
 
 
 # ============================================================================

@@ -21,7 +21,7 @@ class EventDBHandler:
             event_uuid = data['event_uuid']
 
             ecent, created = Event.objects.get_or_create(
-                id=event_uuid,
+                event_uuid=event_uuid,
                 defaults={
                     'rule_triggered_at': data['rule_triggered_at'],
                     'rule_id': data['rule_id'],

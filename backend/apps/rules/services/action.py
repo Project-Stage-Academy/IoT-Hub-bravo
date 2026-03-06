@@ -58,7 +58,7 @@ class Action:
             "Event created",
             extra={
                 "context": {
-                    "event_id": str(event.id),
+                    "event_uuid": str(event.event_uuid),
                     "rule_id": rule.id,
                     "rule_name": rule.name,
                     "trigger_device_serial_id": event.trigger_device_serial_id,
@@ -71,14 +71,14 @@ class Action:
         # try:
         #     producer = get_rule_event_producer()
         #     payload = {
-        #         "event_id": str(event.id),
+        #         "event_uuid": str(event.event_uuid),
         #         "rule_id": rule.id,
         #         "rule_name": rule.name,
         #         "trigger_device_serial_id": event.trigger_device_serial_id,
         #         "trigger_context": event.trigger_context,
         #         "rule_triggered_at": event.rule_triggered_at.isoformat(),
         #     }
-        #     result = producer.produce(payload, key=str(event.id))
+        #     result = producer.produce(payload, key=str(event.event_uuid))
         #     if result.name != 'ENQUEUED':
         #         logger.warning('Failed to enqueue rule event to Kafka: %s', result)
         # except Exception:

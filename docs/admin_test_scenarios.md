@@ -86,7 +86,7 @@
 5. **Expected:** Rule created, success message shown
 6. Verify rule appears in list with Status = True (green checkmark)
 7. Navigate to **Rules > Events**
-8. **Expected:** Event list shows with columns: ID, Rule, Device, Acknowledged, Rule Triggered At
+8. **Expected:** Event list shows with columns: Event UUID, Rule, Device, Acknowledged, Rule Triggered At
 9. Select 2-3 unacknowledged events
 10. Select action **Mark selected events as acknowledged**, click **Go**
 11. **Expected:** Events now show Acknowledged = True, success message shows count

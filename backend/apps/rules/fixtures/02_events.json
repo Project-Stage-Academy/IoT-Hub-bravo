@@ -1,8 +1,9 @@
 [
   {
     "model": "rules.event",
-    "pk": "e0b12c45-1234-4a5b-8c9d-123456789001",
+    "pk": 1,
     "fields": {
+      "event_uuid": "e0b12c45-1234-4a5b-8c9d-123456789001",
       "rule_triggered_at": "2026-01-25T09:30:00+00:00",
       "rule": 4,
       "acknowledged": false,
@@ -20,8 +21,9 @@
   },
   {
     "model": "rules.event",
-    "pk": "e0b12c45-1234-4a5b-8c9d-123456789002",
+    "pk": 2,
     "fields": {
+      "event_uuid": "e0b12c45-1234-4a5b-8c9d-123456789002",
       "rule_triggered_at": "2026-01-25T09:38:00+00:00",
       "rule": 5,
       "acknowledged": false,
@@ -37,8 +39,9 @@
   },
   {
     "model": "rules.event",
-    "pk": "e0b12c45-1234-4a5b-8c9d-123456789003",
+    "pk": 3,
     "fields": {
+      "event_uuid": "e0b12c45-1234-4a5b-8c9d-123456789003",
       "rule_triggered_at": "2026-01-25T09:22:00+00:00",
       "rule": 6,
       "acknowledged": true,
@@ -54,8 +57,9 @@
   },
   {
     "model": "rules.event",
-    "pk": "e0b12c45-1234-4a5b-8c9d-123456789004",
+    "pk": 4,
     "fields": {
+      "event_uuid": "e0b12c45-1234-4a5b-8c9d-123456789004",
       "rule_triggered_at": "2026-01-25T09:00:00+00:00",
       "rule": 7,
       "acknowledged": true,
@@ -71,8 +75,9 @@
   },
   {
     "model": "rules.event",
-    "pk": "e0b12c45-1234-4a5b-8c9d-123456789005",
+    "pk": 5,
     "fields": {
+      "event_uuid": "e0b12c45-1234-4a5b-8c9d-123456789005",
       "rule_triggered_at": "2026-01-25T09:13:00+00:00",
       "rule": 7,
       "acknowledged": false,
@@ -88,8 +93,9 @@
   },
   {
     "model": "rules.event",
-    "pk": "e0b12c45-1234-4a5b-8c9d-123456789006",
+    "pk": 6,
     "fields": {
+      "event_uuid": "e0b12c45-1234-4a5b-8c9d-123456789006",
       "rule_triggered_at": "2026-01-25T09:38:00+00:00",
       "rule": 8,
       "acknowledged": false,
@@ -108,8 +114,9 @@
   },
   {
     "model": "rules.event",
-    "pk": "e0b12c45-1234-4a5b-8c9d-123456789007",
+    "pk": 7,
     "fields": {
+      "event_uuid": "e0b12c45-1234-4a5b-8c9d-123456789007",
       "rule_triggered_at": "2026-01-25T09:53:00+00:00",
       "rule": 9,
       "acknowledged": false,
@@ -128,8 +135,9 @@
   },
   {
     "model": "rules.event",
-    "pk": "e0b12c45-1234-4a5b-8c9d-123456789008",
+    "pk": 8,
     "fields": {
+      "event_uuid": "e0b12c45-1234-4a5b-8c9d-123456789008",
       "rule_triggered_at": "2026-01-25T09:35:00+00:00",
       "rule": 9,
       "acknowledged": true,
@@ -148,8 +156,9 @@
   },
   {
     "model": "rules.event",
-    "pk": "e0b12c45-1234-4a5b-8c9d-123456789009",
+    "pk": 9,
     "fields": {
+      "event_uuid": "e0b12c45-1234-4a5b-8c9d-123456789009",
       "rule_triggered_at": "2026-01-25T09:50:00+00:00",
       "rule": 10,
       "acknowledged": true,
@@ -165,8 +174,9 @@
   },
   {
     "model": "rules.event",
-    "pk": "e0b12c45-1234-4a5b-8c9d-123456789010",
+    "pk": 10,
     "fields": {
+      "event_uuid": "e0b12c45-1234-4a5b-8c9d-123456789010",
       "rule_triggered_at": "2026-01-25T08:46:00+00:00",
       "rule": 10,
       "acknowledged": false,
@@ -182,8 +192,9 @@
   },
   {
     "model": "rules.event",
-    "pk": "e0b12c45-1234-4a5b-8c9d-123456789011",
+    "pk": 11,
     "fields": {
+      "event_uuid": "e0b12c45-1234-4a5b-8c9d-123456789011",
       "rule_triggered_at": "2026-01-25T09:23:00+00:00",
       "rule": 11,
       "acknowledged": false,
@@ -199,8 +210,9 @@
   },
   {
     "model": "rules.event",
-    "pk": "e0b12c45-1234-4a5b-8c9d-123456789012",
+    "pk": 12,
     "fields": {
+      "event_uuid": "e0b12c45-1234-4a5b-8c9d-123456789012",
       "rule_triggered_at": "2026-01-25T09:20:00+00:00",
       "rule": 11,
       "acknowledged": true,

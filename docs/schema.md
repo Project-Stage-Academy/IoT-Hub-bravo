@@ -74,7 +74,8 @@ erDiagram
     }
 
     EVENTS {
-      uuid         id                         PK "UUID, default uuid4"
+      bigint       id                         PK "auto-increment"
+      uuid         event_uuid                 "UUID, unique, not null, default uuid4"
       timestamptz  rule_triggered_at          "not null, default: now()"
       int          rule_id                    FK "→ rules.id, not null"
       boolean      acknowledged               "default: false, not null"

@@ -171,7 +171,7 @@ When a rule triggers, an **Event** is generated:
 
 ```json
 {
-  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "event_uuid": "550e8400-e29b-41d4-a716-446655440000",
   "rule_id": 456,
   "rule_triggered_at": "2026-02-09T10:05:00Z",
   "acknowledged": false,
@@ -185,7 +185,7 @@ When a rule triggers, an **Event** is generated:
 
 | Field          | Type     | Description                                        |
 | -------------- | -------- | -------------------------------------------------- |
-| `id`           | UUID     | Unique identifier of the event                     |
+| `event_uuid`   | UUID     | Unique identifier of the event                     |
 | `rule_id`      | integer  | Reference to the rule that triggered the event     |
 | `rule_triggered_at` | datetime | When the rule was triggered (evaluated telemetry time) |
 | `acknowledged` | boolean  | Whether the event was acknowledged                 |

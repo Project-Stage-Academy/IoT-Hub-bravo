@@ -119,5 +119,5 @@ class TestEventStringRepresentation:
 
         result = str(event)
 
-        assert f"Event {event.id}" in result
+        assert f"Event {event.event_uuid}" in result
         assert "High Temp Alert" in result

@@ -46,7 +46,7 @@ class Command(BaseCommand):
 
                 writer.writerow(
                     [
-                        'id',
+                        'event_uuid',
                         'rule_triggered_at',
                         'rule',
                         'acknowledged',
@@ -58,7 +58,7 @@ class Command(BaseCommand):
                 for event in qs:
                     writer.writerow(
                         [
-                            event.id,
+                            event.event_uuid,
                             event.rule_triggered_at,
                             event.rule.name,
                             event.acknowledged,

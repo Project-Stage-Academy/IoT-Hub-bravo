@@ -196,7 +196,7 @@ class EventListItemSerializer:
     @staticmethod
     def to_dict(event) -> dict[str, Any]:
         return {
-            "id": str(event.id),
+            "event_uuid": str(event.event_uuid),
             "rule_triggered_at": event.rule_triggered_at.isoformat(),
             "created_at": event.created_at.isoformat(),
             "acknowledged": event.acknowledged,
@@ -217,7 +217,7 @@ class EventDetailSerializer:
     @staticmethod
     def to_dict(event) -> dict[str, Any]:
         return {
-            "id": str(event.id),
+            "event_uuid": str(event.event_uuid),
             "rule_triggered_at": event.rule_triggered_at.isoformat(),
             "created_at": event.created_at.isoformat(),
             "acknowledged": event.acknowledged,
