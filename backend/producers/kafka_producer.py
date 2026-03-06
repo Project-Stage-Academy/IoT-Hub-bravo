@@ -78,7 +78,7 @@ class KafkaProducer:
         self._producer.flush(timeout)
 
     @staticmethod
-    def _encode_payload(payload: Any, topic) -> Optional[bytes]:
+    def _encode_payload(payload: Any) -> Optional[bytes]:
         try:
             return json.dumps(payload, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
         except (TypeError, ValueError):
