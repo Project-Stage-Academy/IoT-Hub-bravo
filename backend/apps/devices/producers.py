@@ -12,6 +12,7 @@ telemetry_expired_topic = config('KAFKA_TOPIC_TELEMETRY_EXPIRED', default='telem
 
 # TODO: Shutdown
 
+
 @lru_cache(maxsize=1)
 def get_telemetry_raw_producer() -> KafkaProducer:
     return KafkaProducer(
@@ -20,26 +21,17 @@ def get_telemetry_raw_producer() -> KafkaProducer:
         poll_timeout=0.0,
     )
 
+
 @lru_cache(maxsize=1)
 def get_telemetry_clean_producer() -> KafkaProducer:
-    return KafkaProducer(
-        config=ProducerConfig(),
-        topic=telemetry_clean_topic,
-        poll_timeout=0.01
-    )
+    return KafkaProducer(config=ProducerConfig(), topic=telemetry_clean_topic, poll_timeout=0.01)
+
 
 @lru_cache(maxsize=1)
 def get_telemetry_dlq_producer() -> KafkaProducer:
-    return KafkaProducer(
-        config=ProducerConfig(),
-        topic=telemetry_dlq_topic,
-        poll_timeout=0.01
-    )
+    return KafkaProducer(config=ProducerConfig(), topic=telemetry_dlq_topic, poll_timeout=0.01)
+
 
 @lru_cache(maxsize=1)
 def get_telemetry_expired_producer() -> KafkaProducer:
-    return KafkaProducer(
-        config=ProducerConfig(),
-        topic=telemetry_expired_topic,
-        poll_timeout=0.01
-    )
+    return KafkaProducer(config=ProducerConfig(), topic=telemetry_expired_topic, poll_timeout=0.01)

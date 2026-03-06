@@ -106,5 +106,5 @@ def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
     return TelemetryValidationResult(
         validated_rows=validator.validated_rows,
         errors=validator.invalid_rows,
-        expired_rows=validator.expired_rows
+        expired_rows=validator.expired_rows,
     )

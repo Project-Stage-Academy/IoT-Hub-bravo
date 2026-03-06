@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import redis
 
+
 @dataclass
 class RedisConfig:
     host: str

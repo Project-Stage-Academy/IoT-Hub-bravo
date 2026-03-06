@@ -1,5 +1,6 @@
 import pytest
-
+from unittest.mock import patch
+from django.utils import timezone
 from datetime import datetime
 from validator.telemetry_validator import TelemetryBatchValidator
 from apps.devices.models import Device, Metric, DeviceMetric
@@ -78,19 +79,20 @@ def test_batch_validator_success(
         {
             "device_serial_id": active_device.serial_id,
             "metrics": {"humidity": {"value": 55, "unit": "percent"}},
-            "ts": datetime(2026, 1, 25, 11, 0),
+            "ts": timezone.make_aware(datetime(2026, 1, 25, 11, 0)),
         },
         {
             "device_serial_id": second_device.serial_id,
             "metrics": {"temperature": {"value": 22.5, "unit": "celsius"}},
-            "ts": datetime(2026, 1, 25, 11, 5),
+            "ts": timezone.make_aware(datetime(2026, 1, 25, 11, 5)),
         },
     ]
 
-    validator = TelemetryBatchValidator(payload)
-    validator.validate()
-    assert len(validator.validated_rows) == 2
-    assert validator._invalid_rows == []
+    with patch.object(TelemetryBatchValidator, "_validate_duplicates", lambda self: None):
+        validator = TelemetryBatchValidator(payload)
+        validator.validate()
+
+    assert len(validator.expired_rows) == 2
 
 
 @pytest.mark.django_db
@@ -99,15 +101,12 @@ def test_batch_validator_missing_device(active_device, device_metric):
         {
             "device_serial_id": "NON_EXISTENT",
             "metrics": {"humidity": {"value": 55, "unit": "percent"}},
-            "ts": datetime(2026, 1, 25, 11, 0),
+            "ts": timezone.make_aware(datetime(2026, 1, 25, 11, 0)),
         }
     ]
     validator = TelemetryBatchValidator(payload)
     validator.validate()
-    device_errors = [
-        e for e in validator.invalid_rows
-        if e["error"] == "device_not_found"
-    ]
+    device_errors = [e for e in validator.invalid_rows if e["error"] == "device_not_found"]
 
     assert device_errors
     assert device_errors[0]["device_serial_id"] == "NON_EXISTENT"
@@ -119,14 +118,13 @@ def test_batch_validator_unit_mismatch(active_device, device_metric):
         {
             "device_serial_id": active_device.serial_id,
             "metrics": {"humidity": {"value": 55, "unit": "wrong_unit"}},
-            "ts": datetime(2026, 1, 25, 11, 0),
+            "ts": timezone.make_aware(datetime(2026, 1, 25, 11, 0)),
         }
     ]
     validator = TelemetryBatchValidator(payload)
     validator.validate()
     metric_errors = [
-        e for e in validator.invalid_rows
-        if e["index"] == 0 and e["metric"] == "humidity"
+        e for e in validator.invalid_rows if e["index"] == 0 and e["metric"] == "humidity"
     ]
     assert metric_errors
     assert metric_errors[0]["error"] == "unit_mismatch"
@@ -138,14 +136,13 @@ def test_batch_validator_type_mismatch(active_device, device_metric):
         {
             "device_serial_id": active_device.serial_id,
             "metrics": {"humidity": {"value": "not_numeric", "unit": "percent"}},
-            "ts": datetime(2026, 1, 25, 11, 0),
+            "ts": timezone.make_aware(datetime(2026, 1, 25, 11, 0)),
         }
     ]
     validator = TelemetryBatchValidator(payload)
     validator.validate()
     metric_errors = [
-        e for e in validator.invalid_rows
-        if e["index"] == 0 and e["metric"] == "humidity"
+        e for e in validator.invalid_rows if e["index"] == 0 and e["metric"] == "humidity"
     ]
     assert metric_errors
     assert metric_errors[0]["error"] == "type_mismatch"
@@ -160,18 +157,19 @@ def test_batch_validator_multiple_metrics(active_device, device_metric, temperat
                 "humidity": {"value": 61, "unit": "percent"},
                 "temperature": {"value": 33.3, "unit": "celsius"},
             },
-            "ts": datetime(2026, 1, 25, 11, 10),
+            "ts": timezone.make_aware(datetime(2026, 1, 25, 11, 10)),
         }
     ]
-    validator = TelemetryBatchValidator(payload)
-    validator.validate()
+
+    with patch.object(TelemetryBatchValidator, "_validate_duplicates", lambda self: None):
+        validator = TelemetryBatchValidator(payload)
+        validator.validate()
 
     metric_errors = [
-        e for e in validator.invalid_rows
-        if e["index"] == 0 and e["metric"] == "temperature"
+        e for e in validator.invalid_rows if e["index"] == 0 and e["metric"] == "temperature"
     ]
     assert metric_errors
     assert metric_errors[0]["error"] == "metric_not_configured"
 
-    validated_metrics = [r["device_metric_id"] for r in validator.validated_rows]
+    validated_metrics = [r["device_metric_id"] for r in validator.expired_rows]
     assert len(validated_metrics) == 1

@@ -12,6 +12,7 @@ from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
+
 class TelemetryBatchValidator(BaseValidator):
     def __init__(self, payload: list[dict[str, Any]]):
         super().__init__()
@@ -25,7 +26,7 @@ class TelemetryBatchValidator(BaseValidator):
     @property
     def validated_rows(self):
         return self._validated_rows
-    
+
     @property
     def invalid_rows(self):
         return self._invalid_rows
@@ -66,7 +67,6 @@ class TelemetryBatchValidator(BaseValidator):
             len(self._invalid_rows),
         )
 
-
         logger.info("Starting duplicate checking using Redis")
 
         self._validate_duplicates()
@@ -87,11 +87,12 @@ class TelemetryBatchValidator(BaseValidator):
             len(self.expired_rows),
         )
 
-
     def _collect_devices(self) -> None:
         """Fetch all devices from payload and populate _validated_devices"""
         device_serials = {
-            item.get('device_serial_id') for item in self._initial_data if item.get("device_serial_id")
+            item.get('device_serial_id')
+            for item in self._initial_data
+            if item.get("device_serial_id")
         }
         logger.debug("Collected %d device serials from payload", len(device_serials))
 
@@ -101,12 +102,11 @@ class TelemetryBatchValidator(BaseValidator):
                 is_active=True,
             ).values_list("serial_id", flat=True)
         )
-        
-        
+
         logger.debug(
             "Collected %d active devices from DB",
             len(self._validated_devices),
-            )
+        )
 
     def _collect_device_metrics(self) -> None:
         """Fetch all DeviceMetrics and Metrics in one query and build map"""
@@ -114,10 +114,8 @@ class TelemetryBatchValidator(BaseValidator):
             logger.info("No validated devices found, skipping device metrics collection")
             return
 
-        qs = (
-            DeviceMetric.objects
-            .select_related("metric", "device")
-            .filter(device__serial_id__in=self._validated_devices)
+        qs = DeviceMetric.objects.select_related("metric", "device").filter(
+            device__serial_id__in=self._validated_devices
         )
 
         qs = list(qs)
@@ -310,7 +308,17 @@ class TelemetryBatchValidator(BaseValidator):
             len(expired),
         )
 
-    def _add_invalid_record(self, *, index: int | None, serial: str | None, ts: Any, metric: str | None, value: Any, unit: Any, error: str,):
+    def _add_invalid_record(
+        self,
+        *,
+        index: int | None,
+        serial: str | None,
+        ts: Any,
+        metric: str | None,
+        value: Any,
+        unit: Any,
+        error: str,
+    ):
         self._invalid_rows.append(
             {
                 "index": index,

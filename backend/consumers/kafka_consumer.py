@@ -129,7 +129,7 @@ class KafkaConsumer:
 
         if last_valid_message is not None:
             self._handle_and_commit(batch, last_valid_message)
-            
+
     def _handle_payload(self, payload: Any) -> bool:
         """
         Calls self._handler.handle() method with the provided payload.
