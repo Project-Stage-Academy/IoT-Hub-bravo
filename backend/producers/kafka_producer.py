@@ -30,7 +30,6 @@ class KafkaProducer:
         self._poll_timeout = poll_timeout
         self._dropped_messages = 0
 
-
     def produce(self, payload: Any, key: Any = None) -> ProduceResult:
         """
         Produce a message to the configured Kafka topic asynchronously.
