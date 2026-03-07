@@ -314,3 +314,6 @@ LOGGING = {
 }
 
 TELEMETRY_SYNC_HEADER = 'Ingest-Sync'
+
+# For development/testing, use console email backend to avoid sending real emails
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

@@ -260,6 +260,22 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
+  
+  kafka-event-notification-consumer:
+    <<: *django_base
+    image: iot-hub-kafka-event-notification-consumer
+    container_name: kafka-event-notification-consumer
+    command: [ "python", "-m", "apps.rules.consumers.run_event_notification_consumer" ]
+    environment:
+      KAFKA_GROUP_EVENT_NOTIFICATION: event-notification-group
+      KAFKA_TOPIC_RULE_EVENTS: rules.events.triggered
+    depends_on:
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   media_data:

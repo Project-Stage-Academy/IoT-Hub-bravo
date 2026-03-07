@@ -53,12 +53,18 @@ class EventDelivery(models.Model):
         indexes = [
             models.Index(fields=["status"], name="idx_event_deliveries_status"),
             models.Index(
-                fields=["status", "next_retry_at"], name="idx_event_deliveries_status_retry"
+                fields=["status", "next_retry_at"], name="idx_event_deliv_status_retry"
             ),
             models.Index(
-                fields=["status", "updated_at"], name="idx_event_deliveries_status_updated"
+                fields=["status", "updated_at"], name="idx_event_deliv_status_updated"
             ),
             models.Index(fields=["event_uuid"], name="idx_event_deliv_event_uuid"),
             models.Index(fields=["rule_id"], name="idx_event_deliv_rule_id"),
             models.Index(fields=["trigger_device_serial_id"], name="idx_event_deliv_device_id"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['event_uuid', 'delivery_type'], 
+                name='unique_event_delivery_type'
+            )
         ]

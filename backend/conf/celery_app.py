@@ -10,6 +10,7 @@ app.autodiscover_tasks()
 app.conf.imports = [
     'scripts.DB.delete_chunks',
     'scripts.DB.compress_chunks',
+    'apps.rules.tasks',
 ] 
 # for logging
 app.conf.worker_hijack_root_logger = False # to keep custom logging; don't hijack root logger
@@ -28,6 +29,11 @@ app.conf.beat_schedule = {
     'delete-yearly-jan13-3am': {
         'task': 'scripts.DB.delete_chunks.delete_chunks',
         'schedule': crontab(hour=3, minute=0, day_of_month='13', month_of_year='1'),
+    },
+
+    'recover-stuck-deliveries-every-2-mins': {
+        'task': 'apps.rules.tasks.recover_stuck_deliveries',
+        'schedule': crontab(minute='*/2'),
     },
 }
 

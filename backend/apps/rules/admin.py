@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Rule, Event
+from .models import Rule, Event, EventDelivery
 from django.urls import reverse
-
+import json
 
 @admin.register(Rule)
 class RuleAdmin(admin.ModelAdmin):
@@ -107,3 +107,72 @@ class EventAdmin(admin.ModelAdmin):
                 str(obj.trigger_context),
             )
         return "-"
+    
+@admin.register(EventDelivery)
+class EventDeliveryAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "event_link",
+        "delivery_type",
+        "status_colored",
+        "attempts",
+        "response_status",
+        "next_retry_at",
+        "updated_at",
+    )
+    
+    list_filter = ("status", "delivery_type", "created_at")
+    
+    search_fields = (
+        "event_uuid",
+        "trigger_device_serial_id",
+        "rule_id",
+    )
+    
+    readonly_fields = (
+        "event_uuid", 
+        "rule_id", 
+        "trigger_device_serial_id",
+        "delivery_type", 
+        "payload", 
+        "status", 
+        "attempts",
+        "max_attempts", 
+        "last_attempt_at", 
+        "next_retry_at",
+        "response_status", 
+        "error_message", 
+        "created_at", 
+        "updated_at"
+    )
+    
+    exclude = ("payload",)
+    
+    date_hierarchy = "created_at"
+    ordering = ("-created_at",)
+
+    @admin.display(description="Event UUID", ordering="event_uuid")
+    def event_link(self, obj):
+        """Makes the Event UUID clickable, linking to the Event changelist filtered by this UUID."""
+        if obj.event_uuid:
+            url = f"{reverse('admin:rules_event_changelist')}?q={obj.event_uuid}"
+            short_uuid = str(obj.event_uuid).split('-')[0]
+            return format_html('<a href="{}" title="{}">{}...</a>', url, obj.event_uuid, short_uuid)
+        return "-"
+
+    @admin.display(description="Status", ordering="status")
+    def status_colored(self, obj):
+        """Colors for different statuses to enhance visibility in the admin list view."""
+        colors = {
+            "pending": "orange",
+            "processing": "blue",
+            "retry": "purple",
+            "success": "green",
+            "rejected": "red",
+        }
+        color = colors.get(obj.status, "black")
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>', 
+            color, 
+            obj.get_status_display().upper()
+        )

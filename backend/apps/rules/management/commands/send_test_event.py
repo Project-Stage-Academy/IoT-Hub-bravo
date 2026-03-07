@@ -37,7 +37,14 @@ class Command(BaseCommand):
                 "notification": {
                     "channel": "email",
                     "enabled": True,
-                    "message": "This is a test email notification",
+                    "recipient": "0f8adc3e-6cab-4da0-972f-44b79f76b47a@emailhook.site",
+                    "subject": "Critical Alert: Low Pressure Detected",
+                    "message": "Atmospheric pressure has dropped below the safe threshold. Immediate check required.",
+                },
+                "webhook": {
+                    "enabled": True,
+                    "url": "https://webhook.site/0f8adc3e-6cab-4da0-972f-44b79f76b47a",
+                    #"url": "https://httpstat.us/502", 
                 }
             }
         }
