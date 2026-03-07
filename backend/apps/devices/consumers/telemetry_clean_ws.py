@@ -8,10 +8,9 @@ from decouple import config
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "conf.settings")
 django.setup()
 
-from consumers.config import ConsumerConfig
-from consumers.kafka_consumer import KafkaConsumer
-from apps.devices.kafka_handlers.telemetry_clean_handler import WebSocketTelemetryCleanHandler
-
+from consumers.config import ConsumerConfig  
+from consumers.kafka_consumer import KafkaConsumer  
+from apps.devices.kafka_handlers.telemetry_clean_handler import WebSocketTelemetryCleanHandler  
 logger = logging.getLogger(__name__)
 
 TOPIC = config("KAFKA_TOPIC_TELEMETRY_CLEAN", default="telemetry.clean")
