@@ -5,9 +5,7 @@ Tests call ingest_telemetry_payload directly with real DB to verify
 the full ingestion pipeline end-to-end.
 """
 
-import sys
-
-sys.path.insert(0, '/app')
+from datetime import datetime, timezone
 
 import pytest
 from unittest.mock import patch
@@ -23,8 +21,10 @@ from tests.fixtures.factories import (
 pytestmark = pytest.mark.django_db
 
 
-def make_payload(device_serial, metrics, ts='2026-02-04T12:00:00Z'):
+def make_payload(device_serial, metrics, ts=None):
     """Build a valid telemetry payload dict."""
+    if ts is None:
+        ts = datetime.now(timezone.utc).isoformat()
     return {
         'schema_version': 1,
         'device': device_serial,
@@ -34,14 +34,33 @@ def make_payload(device_serial, metrics, ts='2026-02-04T12:00:00Z'):
 
 
 @pytest.fixture
-def setup_device_with_metrics():
-    """Create a device with temperature (numeric) and door_open (bool) metrics."""
-    device = DeviceFactory(serial_id='INT-001', is_active=True)
-    temp_metric = MetricFactory(metric_type='temperature', data_type='numeric', unit='celsius')
-    door_metric = MetricFactory(metric_type='door_open', data_type='bool', unit='open')
-    dm_temp = DeviceMetricFactory(device=device, metric=temp_metric)
-    dm_door = DeviceMetricFactory(device=device, metric=door_metric)
-    return device, dm_temp, dm_door
+def device():
+    """Create an active device."""
+    return DeviceFactory(serial_id='INT-001', is_active=True)
+
+
+@pytest.fixture
+def temp_metric():
+    """Create a numeric temperature metric."""
+    return MetricFactory(metric_type='temperature', data_type='numeric', unit='celsius')
+
+
+@pytest.fixture
+def door_metric():
+    """Create a boolean door_open metric."""
+    return MetricFactory(metric_type='door_open', data_type='bool', unit='open')
+
+
+@pytest.fixture
+def dm_temp(device, temp_metric):
+    """Bind temperature metric to device."""
+    return DeviceMetricFactory(device=device, metric=temp_metric)
+
+
+@pytest.fixture
+def dm_door(device, door_metric):
+    """Bind door_open metric to device."""
+    return DeviceMetricFactory(device=device, metric=door_metric)
 
 
 # ──────────────────────────────────────────────
@@ -56,11 +75,10 @@ class TestSinglePayload:
     def test_valid_single_payload_creates_telemetry(
         self,
         mock_publish,
-        setup_device_with_metrics,
+        dm_temp,
+        dm_door,
     ):
         """Valid single payload creates Telemetry rows in DB."""
-        device, dm_temp, dm_door = setup_device_with_metrics
-
         payload = make_payload(
             'INT-001',
             {
@@ -80,7 +98,6 @@ class TestSinglePayload:
     def test_unknown_device_creates_no_telemetry(
         self,
         mock_publish,
-        setup_device_with_metrics,
     ):
         """Payload for non-existent device creates no Telemetry."""
         payload = make_payload(
@@ -127,25 +144,23 @@ class TestBatchPayload:
     def test_valid_batch_creates_all_telemetry(
         self,
         mock_publish,
-        setup_device_with_metrics,
+        dm_temp,
     ):
         """Batch of valid payloads creates all Telemetry rows."""
-        device, dm_temp, dm_door = setup_device_with_metrics
-
         payloads = [
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 20.0, 'unit': 'celsius'},
                 },
-                ts='2026-02-04T12:00:00Z',
+                ts='2026-01-01T12:00:00Z',
             ),
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 21.0, 'unit': 'celsius'},
                 },
-                ts='2026-02-04T12:01:00Z',
+                ts='2026-01-01T12:01:00Z',
             ),
         ]
 
@@ -156,11 +171,9 @@ class TestBatchPayload:
     def test_mixed_batch_creates_only_valid(
         self,
         mock_publish,
-        setup_device_with_metrics,
+        dm_temp,
     ):
         """Batch with valid + invalid items creates only valid Telemetry."""
-        device, dm_temp, dm_door = setup_device_with_metrics
-
         payloads = [
             make_payload(
                 'INT-001',
@@ -193,11 +206,9 @@ class TestValidationErrors:
     def test_type_mismatch_creates_no_telemetry(
         self,
         mock_publish,
-        setup_device_with_metrics,
+        dm_temp,
     ):
         """Numeric metric with string value is rejected."""
-        device, dm_temp, dm_door = setup_device_with_metrics
-
         payload = make_payload(
             'INT-001',
             {
@@ -212,11 +223,9 @@ class TestValidationErrors:
     def test_unconfigured_metric_creates_no_telemetry(
         self,
         mock_publish,
-        setup_device_with_metrics,
+        device,
     ):
         """Metric not configured for device is rejected."""
-        device, dm_temp, dm_door = setup_device_with_metrics
-
         payload = make_payload(
             'INT-001',
             {
@@ -231,14 +240,13 @@ class TestValidationErrors:
     def test_invalid_schema_version_rejects_payload(
         self,
         mock_publish,
-        setup_device_with_metrics,
     ):
         """Payload with wrong schema_version is rejected by serializer."""
         payload = {
             'schema_version': 999,
             'device': 'INT-001',
             'metrics': {'temperature': {'value': 22.5, 'unit': 'celsius'}},
-            'ts': '2026-02-04T12:00:00Z',
+            'ts': datetime.now(timezone.utc).isoformat(),
         }
 
         ingest_telemetry_payload(payload=payload, source='mqtt')
