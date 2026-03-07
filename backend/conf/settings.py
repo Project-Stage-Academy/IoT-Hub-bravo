@@ -33,6 +33,7 @@ INSTALLED_APPS += [
     'apps.devices',
     'apps.users',
     'apps.rules',
+    'apps.audit',
 ]
 
 MIDDLEWARE = [
