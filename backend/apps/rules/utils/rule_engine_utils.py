@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import timedelta, datetime
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Tuple, List
 import logging
 
 from apps.devices.models.telemetry import Telemetry
@@ -9,8 +9,14 @@ from apps.devices.models.device_metric import DeviceMetric
 
 logger = logging.getLogger(__name__)
 
-MAX_REDIS_MINUTES = 60  # maybe this should be in conf?
-DEFAULT_DURATION_MINUTES = 5  # default value for time window
+
+MAX_REDIS_MINUTES = 60
+# Threshold (in minutes) to decide whether to fetch telemetry from:
+# - Redis (short-term)
+# - PostgreSQL (long-term)
+
+DEFAULT_DURATION_MINUTES = 5
+# Default time window (in minutes) for telemetry queries in the rule engine
 
 
 @dataclass
@@ -77,7 +83,7 @@ class TelemetryRepository(ABC):
     """
 
     @abstractmethod
-    def get_in_window(self, telemetry: TelemetryEvent, minutes: int) -> TelemetryEvent:
+    def get_in_window(self, telemetry: TelemetryEvent, minutes: int) -> List[TelemetryEvent]:
         """
         Retrieve telemetry records for the same metric and device
         within the specified time window.
