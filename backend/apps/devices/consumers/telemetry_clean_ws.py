@@ -10,9 +10,9 @@ django.setup()
 
 from consumers.config import ConsumerConfig  # noqa: E402
 from consumers.kafka_consumer import KafkaConsumer  # noqa: E402
-from apps.devices.kafka_handlers.telemetry_clean_handler import (
+from apps.devices.kafka_handlers.telemetry_clean_handler import (  # noqa: E402
     WebSocketTelemetryCleanHandler,
-)  # noqa: E402lean_handler import WebSocketTelemetryCleanHandler
+)
 
 logger = logging.getLogger(__name__)
 
