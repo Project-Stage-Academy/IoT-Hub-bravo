@@ -3,7 +3,7 @@ from django.utils import timezone
 
 from apps.rules.models.event import Event
 from apps.rules.models.rule import Rule
-from apps.devices.models.telemetry import Telemetry
+from apps.rules.utils.rule_engine_utils import TelemetryEvent
 
 # Import Prometheus metrics
 from apps.common.metrics import events_created_total
@@ -42,7 +42,7 @@ class Action:
             )
 
     @staticmethod
-    def dispatch_action(rule: Rule, telemetry: Telemetry) -> Event:
+    def dispatch_action(rule: Rule, telemetry: TelemetryEvent) -> Event:
         """
         Create Event and dispatch async side-effects.
         """
@@ -53,8 +53,12 @@ class Action:
         event = Event.objects.create(
             rule=rule,
             timestamp=timezone.now(),
-            trigger_telemetry_id=telemetry.id,
-            trigger_device_id=telemetry.device_metric.device_id,
+            trigger_telemetry={
+                "device_serial_id": f"{telemetry.device_serial_id}",
+                "metric_type": f"{telemetry.metric_type}",
+                "value": f"{telemetry.value}",
+                "timestamp": f"{telemetry.timestamp}",
+            },
         )
 
         events_created_total.labels(severity=severity).inc()
@@ -66,8 +70,12 @@ class Action:
                     "event_id": event.id,
                     "rule_id": rule.id,
                     "rule_name": rule.name,
-                    "trigger_telemetry_id": telemetry.id,
-                    "trigger_device_id": telemetry.device_metric.device_id,
+                    "trigger_telemetry": {
+                        "device_serial_id": f"{telemetry.device_serial_id}",
+                        "metric_type": f"{telemetry.metric_type}",
+                        "value": f"{telemetry.value}",
+                        "timestamp": f"{telemetry.timestamp}",
+                    },
                     "severity": severity,
                 }
             },
