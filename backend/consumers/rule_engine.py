@@ -47,6 +47,11 @@ class RuleEvalHandler:
         try:
             ts_raw = item.get("ts")
             ts = parse_datetime(ts_raw)
+            if ts is None:
+                logger.warning("Invalid timestamp received", extra={"timestamp": ts_raw})
+                rule_eval_errors_total.inc()
+                return
+
             if timezone.is_naive(ts):
                 ts = timezone.make_aware(ts)
 
@@ -67,7 +72,7 @@ class RuleEvalHandler:
                     "device_serial_id": device_serial_id,
                     "metric_type": metric_type,
                     "value": value_num,
-                    "ts": ts.isoformat(),
+                    "ts": ts_raw,
                 }
 
                 self.rule_runner.delay(telemetry)

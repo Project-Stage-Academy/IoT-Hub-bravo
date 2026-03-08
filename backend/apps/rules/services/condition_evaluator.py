@@ -17,15 +17,6 @@ PYTHON_OPERATOR_MAP = {
     "!=": operator.ne,
 }
 
-COMPARISON_OPERATOR_MAP = {  # for filter
-    ">": "gt",
-    "<": "lt",
-    ">=": "gte",
-    "<=": "lte",
-    "==": "exact",
-    "!=": "exact",
-}
-
 DEFAULT_DURATION_MINUTES = 5  # default value for time window
 DEFAULT_THRESHOLD_PERCENTAGE = 0.8  # default value to meet "threshold"
 
@@ -91,7 +82,6 @@ class ThresholdEvaluator:
     def evaluate(condition: dict, telemetries_in_window: list, **kwargs) -> bool:
         """Evaluate rule for 'threshold' type"""
         condition_value = _get_value(condition)
-        comparison_operator = _get_comparison_operator(condition)
 
         total_count = len(telemetries_in_window)
         if total_count == 0:
