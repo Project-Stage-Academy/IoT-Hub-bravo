@@ -148,46 +148,6 @@ class TelemetryCreateSerializer(BaseSerializer):
 
         return ts
 
-    def validate_producer_message(self):
-        self._errors = {}
-        self._validated_data = None
-
-        dm_id = self.initial_data.get("device_metric_id")
-        ts_raw = self.initial_data.get("ts")
-        values_jsonb = self.initial_data.get("value_jsonb")
-
-        if not isinstance(dm_id, int):
-            self._errors["device_metric_id"] = "Must be integer"
-
-        ts = self._validate_ts(ts_raw)
-
-        if not isinstance(values_jsonb, dict):
-            self._errors["value_jsonb"] = "Must be dict"
-            return False
-
-        type_ = values_jsonb.get("t")
-        value = values_jsonb.get("v")
-
-        if type_ is None:
-            self._errors["value_jsonb.t"] = "Type is required"
-
-        if value is None:
-            self._errors["value_jsonb.v"] = "Value is required"
-
-        if self._errors:
-            return False
-
-        self._validated_data = {
-            "device_metric_id": dm_id,
-            "ts": ts,
-            "value_jsonb": {
-                "t": type_,
-                "v": value,
-            },
-        }
-
-        return True
-
 
 class TelemetryBatchCreateSerializer(BaseSerializer):
     def __init__(self, data: Any):

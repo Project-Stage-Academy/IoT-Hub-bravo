@@ -246,8 +246,8 @@ class TelemetryBatchValidator(BaseValidator):
             serial = item.get("device_serial_id")
             value = item.get("value_jsonb", {}).get("v")
 
-            result = checker.process(f"{dm_id},{ts}", f"Processing item: {item}")
-            if result != "ok":
+            result = checker.process(f"{dm_id},{ts}")
+            if not result:
                 self._add_invalid_record(
                     index=index,
                     serial=serial,

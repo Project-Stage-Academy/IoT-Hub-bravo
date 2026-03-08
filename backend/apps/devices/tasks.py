@@ -2,6 +2,7 @@ import logging
 from typing import Any
 from concurrent.futures import ThreadPoolExecutor
 import time
+import atexit
 
 from celery import shared_task
 from django.db import OperationalError, InterfaceError
@@ -24,6 +25,8 @@ from apps.common.metrics import (
 logger = logging.getLogger(__name__)
 
 EXECUTOR = ThreadPoolExecutor(max_workers=3)
+
+atexit.register(lambda: EXECUTOR.shutdown(wait=True))
 
 
 @shared_task(
@@ -88,15 +91,18 @@ def ingest_telemetry_payload(
     retry_jitter=True,
     retry_kwargs={"max_retries": 10},
 )
-def validate_telemetry_payload(self, payload: dict | list) -> None:
+def validate_telemetry_payload(self, payload: dict | list) -> dict:
     payload = normalize_payload(payload)
+
+    if payload is None:
+        return {"valid": 0, "errors": 1, "expired": 0}
 
     serializer = TelemetryBatchCreateSerializer(payload)
     serializer.is_valid()
 
     if not serializer.valid_items:
         logger.warning("Telemetry validation rejected: no valid items.")
-        return
+        return serializer.item_errors
 
     validation_result = telemetry_validate(payload=serializer.valid_items)
 
@@ -107,7 +113,11 @@ def validate_telemetry_payload(self, payload: dict | list) -> None:
         len(validation_result.errors),
     )
     produce_validation_results(validation_result)
-    return f"{validation_result.errors}, Expired: {validation_result.expired_rows}, Valid: {validation_result.validated_rows}"
+    return {
+        "valid": len(validation_result.validated_rows),
+        "errors": len(validation_result.errors),
+        "expired": len(validation_result.expired_rows),
+    }
 
 
 @shared_task(
@@ -118,12 +128,9 @@ def validate_telemetry_payload(self, payload: dict | list) -> None:
     retry_jitter=True,
     retry_kwargs={"max_retries": 10},
 )
-def write_telemetry_payload(self, payload: dict | list) -> None:
+def write_telemetry_payload(self, payload: dict | list) -> dict:
 
     payload = normalize_payload(payload)
-
-    valid_items = []
-    item_errors = []
 
     serializer = TelemetryBatchCreateSerializer(payload)
 
