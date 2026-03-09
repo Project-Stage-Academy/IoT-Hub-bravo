@@ -17,7 +17,7 @@ pytestmark = pytest.mark.django_db
 def make_delivery(**kwargs):
     """Create an EventDelivery with safe defaults for all required fields."""
     defaults = dict(
-        event_uuid=uuid.uuid4(),  # fresh UUID per call to avoid UniqueConstraint collisions
+        event_uuid=uuid.uuid4(),
         rule_id=1,
         trigger_device_serial_id="DEV-001",
         delivery_type=DeliveryType.WEBHOOK,

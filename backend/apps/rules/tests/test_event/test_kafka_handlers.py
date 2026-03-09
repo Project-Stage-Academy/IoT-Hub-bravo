@@ -161,7 +161,7 @@ def test_event_db_handler_is_idempotent_for_duplicate_uuid(valid_db_payload):
     """
     handler = EventDBHandler()
     handler.handle(valid_db_payload)
-    handler.handle(valid_db_payload)  # duplicate
+    handler.handle(valid_db_payload)  
 
     assert Event.objects.filter(event_uuid=valid_db_payload["event_uuid"]).count() == 1
 
@@ -177,7 +177,6 @@ def test_event_db_handler_swallows_missing_key(db):
     (logged but NOT re-raised), preventing the consumer from crashing.
     """
     handler = EventDBHandler()
-    # Should NOT raise even though required keys are absent
     handler.handle({"rule_id": 1})
     assert Event.objects.count() == 0
 
@@ -196,7 +195,7 @@ def test_event_db_handler_swallows_value_error(db):
     handler = EventDBHandler()
 
     with patch.object(Event.objects, 'get_or_create', side_effect=ValueError("bad value")):
-        handler.handle(payload)  # must not raise
+        handler.handle(payload)  
 
     assert Event.objects.count() == 0
 
@@ -309,7 +308,7 @@ def test_notification_handler_is_idempotent(webhook_only_payload):
     with patch('apps.rules.consumers.event_notification_handler.process_delivery_task'):
         handler = EventNotificationHandler()
         handler.handle(webhook_only_payload)
-        handler.handle(webhook_only_payload)  # duplicate
+        handler.handle(webhook_only_payload)  
 
     assert EventDelivery.objects.filter(
         event_uuid=webhook_only_payload["event_uuid"]
@@ -352,7 +351,6 @@ def test_notification_handler_atomic_rollback_on_second_create_failure():
         with pytest.raises(DatabaseError):
             handler.handle(payload)
 
-    # The atomic() block rolled back both writes — DB must be empty.
     assert EventDelivery.objects.count() == 0
 
 
@@ -373,7 +371,6 @@ def test_notification_handler_on_commit_dispatches_celery_task(webhook_only_payl
     ) as mock_task:
         EventNotificationHandler().handle(webhook_only_payload)
 
-    # After the real commit, .delay must have been called once with the new PK.
     mock_task.delay.assert_called_once()
     delivery_id = mock_task.delay.call_args[0][0]
     assert EventDelivery.objects.filter(id=delivery_id).exists()
