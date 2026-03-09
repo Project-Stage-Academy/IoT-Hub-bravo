@@ -30,6 +30,7 @@ INSTALLED_APPS += [
 ]
 # Local apps
 INSTALLED_APPS += [
+    'apps.common',
     'apps.devices',
     'apps.users',
     'apps.rules',
