@@ -1,99 +1,70 @@
+import uuid
 import logging
 from django.utils import timezone
 
-from apps.rules.models.event import Event
 from apps.rules.models.rule import Rule
 from apps.rules.utils.rule_engine_utils import TelemetryEvent
-
-# Import Prometheus metrics
 from apps.common.metrics import events_created_total
+
+from decouple import config
+from producers.kafka_producer import KafkaProducer
+from producers.config import ProducerConfig
 
 logger = logging.getLogger(__name__)
 
+KAFKA_TOPIC = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
+rule_event_producer = KafkaProducer(
+    config=ProducerConfig(),
+    topic=KAFKA_TOPIC
+)
 
 class Action:
     """
-    Handles dispatching side-effects for a triggered rule.
+    Handles dispatching side-effects for a triggered rule by producing an event to Kafka.
     """
 
-    TASKS = (
-        "notify_event",
-        "deliver_webhook",
-    )
-
     @staticmethod
-    def _enqueue(task_name: str, event_id) -> None:
+    def dispatch_action(rule: Rule, telemetry: TelemetryEvent) -> str:
         """
-        Enqueue Celery task by name.
-        Lazy import prevents circular dependency.
-        """
-        try:
-            from apps.rules import tasks
-
-            getattr(tasks, task_name).delay(event_id)
-            logger.info(
-                "Task enqueued",
-                extra={"context": {"task": task_name, "event_id": event_id}},
-            )
-        except Exception:
-            logger.exception(
-                "Failed to enqueue task",
-                extra={"context": {"task": task_name, "event_id": event_id}},
-            )
-
-    @staticmethod
-    def dispatch_action(rule: Rule, telemetry: TelemetryEvent) -> Event:
-        """
-        Create Event and dispatch async side-effects.
+        Produce Event to Kafka instead of creating it in the DB directly.
+        Returns the generated event_uuid.
         """
         severity = 'info'
         if rule.action and isinstance(rule.action, dict):
             severity = rule.action.get('severity', 'info')
 
-        event = Event.objects.create(
-            rule=rule,
-            rule_triggered_at=timezone.now(),
-            trigger_device_serial_id=telemetry.device_metric.device.serial_id,
-            trigger_context={
-                "telemetry_id": telemetry.id,
-                "device_id": telemetry.device_metric.device_id,
-                "value": telemetry.value_jsonb,
-            },
-        )
-
         events_created_total.labels(severity=severity).inc()
 
+        event_uuid = str(uuid.uuid4())
+
+        payload = {
+            "event_uuid": event_uuid,
+            "rule_triggered_at": timezone.now().isoformat(),
+            "rule_id": rule.id,
+            "trigger_device_serial_id": telemetry.device_serial_id,
+            "trigger_context": {
+                "metric_type": telemetry.metric_type,
+                "value": telemetry.value,
+                "telemetry_timestamp": telemetry.timestamp.isoformat(),
+            },
+            "action": rule.action if isinstance(rule.action, dict) else {}
+        }
+
         logger.info(
-            "Event created",
+            "Producing Rule Event to Kafka",
             extra={
                 "context": {
-                    "event_uuid": str(event.event_uuid),
+                    "event_uuid": event_uuid,
                     "rule_id": rule.id,
-                    "rule_name": rule.name,
-                    "trigger_device_serial_id": event.trigger_device_serial_id,
-                    "trigger_context": event.trigger_context,
+                    "trigger_device_serial_id": telemetry.device_serial_id,
                 }
             },
         )
 
-        # # Publish created event to Kafka for downstream consumers
-        # try:
-        #     producer = get_rule_event_producer()
-        #     payload = {
-        #         "event_uuid": str(event.event_uuid),
-        #         "rule_id": rule.id,
-        #         "rule_name": rule.name,
-        #         "trigger_device_serial_id": event.trigger_device_serial_id,
-        #         "trigger_context": event.trigger_context,
-        #         "rule_triggered_at": event.rule_triggered_at.isoformat(),
-        #     }
-        #     result = producer.produce(payload, key=str(event.event_uuid))
-        #     if result.name != 'ENQUEUED':
-        #         logger.warning('Failed to enqueue rule event to Kafka: %s', result)
-        # except Exception:
-        #     logger.exception('Failed to publish event to Kafka')
-
-        for task_name in Action.TASKS:
-            Action._enqueue(task_name, event.id)
-
-        # return event
+        try:
+            rule_event_producer.produce(payload=payload, key=str(rule.id))
+            
+            rule_event_producer.flush()
+            
+        except Exception:
+            logger.exception('Failed to publish event to Kafka')
