@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 from apps.devices.models import Metric, DeviceMetric, Telemetry
 from apps.devices.services.telemetry_services import telemetry_create, telemetry_validate
 
@@ -165,7 +166,9 @@ def test_telemetry_create_type_mismatch_str(active_device, device_metric_str, ts
 
 
 @pytest.mark.django_db
+@patch('apps.devices.services.telemetry_services.publish_telemetry_event')
 def test_telemetry_create_creates_rows_for_valid_metrics_only(
+    mock_publish_telemetry_event,
     active_device,
     device_metric_numeric,
     device_metric_bool,

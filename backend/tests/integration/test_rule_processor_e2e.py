@@ -2,10 +2,12 @@
 
 import pytest
 from celery import current_app
+from unittest.mock import patch
 
 from apps.devices.models import Telemetry
 from apps.rules.models import Event
 from apps.rules.services.rule_processor import RuleProcessor
+from apps.rules.utils.rule_engine_utils import PostgresTelemetryRepository
 from tests.fixtures.factories import (
     DeviceFactory,
     DeviceMetricFactory,
@@ -15,6 +17,25 @@ from tests.fixtures.factories import (
 
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def force_postgres_repository():
+    """Bypass Redis and always use PostgreSQL repository for rule engine."""
+    with patch(
+        "apps.rules.services.rule_processor.choose_repository",
+        return_value=PostgresTelemetryRepository(),
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def use_locmem_rules_cache(settings):
+    """Replace Redis-backed 'rules' cache with in-memory cache."""
+    settings.CACHES = {
+        **{k: v for k, v in settings.CACHES.items() if k != "rules"},
+        "rules": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
+    }
 
 
 class TestRuleProcessorCeleryIntegration:

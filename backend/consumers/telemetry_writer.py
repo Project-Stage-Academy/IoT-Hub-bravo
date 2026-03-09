@@ -1,4 +1,3 @@
-import logging
 import os
 import signal
 
@@ -8,6 +7,7 @@ from decouple import config
 from consumers.kafka_consumer import KafkaConsumer
 from consumers.config import ConsumerConfig
 from consumers.message_handlers import CeleryPayloadHandler
+from utils.logging import setup_logging
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf.settings')
 django.setup()
@@ -20,16 +20,6 @@ CONSUME_TIMEOUT = config('KAFKA_CONSUMER_CONSUME_TIMEOUT', default=1.0, cast=flo
 DECODE_JSON = config('KAFKA_CONSUMER_DECODE_JSON', default=True, cast=bool)
 CONSUME_BATCH = config('KAFKA_CONSUMER_CONSUME_BATCH', default=True, cast=bool)
 BATCH_MAX_SIZE = config('KAFKA_CONSUMER_BATCH_MAX_SIZE', default=100, cast=int)
-
-
-def setup_logging() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format='[%(asctime)s] %(levelname)s %(name)s %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-        force=True,
-    )
-    logging.getLogger().setLevel(logging.INFO)
 
 
 def main():

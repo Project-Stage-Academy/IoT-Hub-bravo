@@ -1,10 +1,11 @@
-import json
 from typing import Any, Callable, Optional
 
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+
+from apps.common.utils.views_utils import parse_json_body
 from apps.devices.serializers.telemetry_serializers import (
     TelemetryCreateSerializer,
     TelemetryBatchCreateSerializer,
@@ -27,7 +28,7 @@ TELEMETRY_KEY_FIELD = getattr(settings, 'TELEMETRY_KEY_FIELD', 'device')
 @csrf_exempt
 @require_http_methods(['POST'])
 def ingest_telemetry(request):
-    payload, error_response = _parse_json_body(request.body)
+    payload, error_response = parse_json_body(request.body, allow_array=True)
     if error_response:
         return error_response
 
@@ -37,20 +38,6 @@ def ingest_telemetry(request):
         return _ingest_telemetry_batch(payload)
 
     return _produce_telemetry_records(payload=payload)
-
-
-def _parse_json_body(body: bytes) -> tuple:
-    try:
-        payload = json.loads(body)
-    except json.JSONDecodeError:
-        return None, JsonResponse({'errors': {'json': 'Invalid json.'}}, status=400)
-
-    if not isinstance(payload, (dict, list)):
-        return None, JsonResponse(
-            {'errors': {'json': 'Payload must be a JSON object or a JSON array.'}},
-            status=400,
-        )
-    return payload, None
 
 
 def _should_ingest_sync(request, header_name=None) -> bool:

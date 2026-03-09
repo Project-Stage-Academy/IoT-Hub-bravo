@@ -3,7 +3,10 @@ from django.utils import timezone
 
 from apps.rules.models.event import Event
 from apps.rules.models.rule import Rule
-from apps.devices.models.telemetry import Telemetry
+from apps.rules.utils.rule_engine_utils import TelemetryEvent
+
+# Import Prometheus metrics
+from apps.common.metrics import events_created_total
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +42,14 @@ class Action:
             )
 
     @staticmethod
-    def dispatch_action(rule: Rule, telemetry: Telemetry) -> Event:
+    def dispatch_action(rule: Rule, telemetry: TelemetryEvent) -> Event:
         """
         Create Event and dispatch async side-effects.
         """
+        severity = 'info'
+        if rule.action and isinstance(rule.action, dict):
+            severity = rule.action.get('severity', 'info')
+
         event = Event.objects.create(
             rule=rule,
             rule_triggered_at=timezone.now(),
@@ -53,6 +60,8 @@ class Action:
                 "value": telemetry.value_jsonb,
             },
         )
+
+        events_created_total.labels(severity=severity).inc()
 
         logger.info(
             "Event created",

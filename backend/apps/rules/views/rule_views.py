@@ -12,8 +12,7 @@ from apps.devices.models.device import Device
 from apps.devices.models.device_metric import DeviceMetric
 from apps.users.decorators import jwt_required, role_required
 from apps.rules.services.rule_processor import RuleProcessor
-from apps.rules.utils.views_utils import parse_json_request
-
+from apps.common.utils.views_utils import parse_json_body
 
 logger = logging.getLogger("rules")
 
@@ -95,9 +94,10 @@ class RuleView(View):
 
     def post(self, request):
         """Create a new rule"""
-        data = parse_json_request(request.body)
-        if isinstance(data, JsonResponse):  # JSON parsing error, return response
-            return data
+        data, error_response = parse_json_body(request.body)
+        if error_response:
+            return error_response
+
         user = request.user
         is_admin = user.role == "admin"
 
@@ -129,9 +129,10 @@ class RuleView(View):
 
     def put(self, request, rule_id):
         """Full update"""
-        data = parse_json_request(request.body)
-        if isinstance(data, JsonResponse):  # JSON parsing error, return response
-            return data
+        data, error_response = parse_json_body(request.body)
+        if error_response:
+            return error_response
+
         user = request.user
         is_admin = user.role == "admin"
 
@@ -162,9 +163,10 @@ class RuleView(View):
 
     def patch(self, request, rule_id):
         """Partial update"""
-        data = parse_json_request(request.body)
-        if isinstance(data, JsonResponse):  # JSON parsing error, return response
-            return data
+        data, error_response = parse_json_body(request.body)
+        if error_response:
+            return error_response
+
         user = request.user
         is_admin = user.role == "admin"
 
@@ -208,9 +210,10 @@ class RuleView(View):
 class RuleEvaluateView(View):
     def post(self, request):
         user = request.user
-        data = parse_json_request(request.body)
-        if isinstance(data, JsonResponse):  # JSON parsing error, return response
-            return data
+        data, error_response = parse_json_body(request.body)
+        if error_response:
+            return error_response
+
         device_id = data.get("device_id")
         device_metric_id = data.get("device_metric_id")
         is_admin = user.role == "admin"

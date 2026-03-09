@@ -316,6 +316,7 @@ def test_filter_acknowledged_returns_400_for_invalid_value(client, client_token)
     assert "acknowledged" in response.json()["errors"]
 
 
+### TEMPORARY
 # ============================================================================
 # GET /api/events/ — filter by device_serial_id
 # ============================================================================

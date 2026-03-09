@@ -11,12 +11,15 @@ import pytest
 from unittest.mock import patch
 from django.utils import timezone
 from datetime import timedelta
+from django.core.cache import caches
 
 from apps.users.models import User
 from apps.devices.models import Device, Metric, DeviceMetric, Telemetry
 from apps.rules.models import Rule, Event
 from apps.rules.services.action import Action
 from apps.rules.services.rule_processor import RuleProcessor
+from apps.rules.utils.rule_engine_utils import PostgresTelemetryRepository
+from apps.rules.utils.rule_engine_utils import TelemetryEvent
 
 pytestmark = pytest.mark.django_db
 
@@ -60,7 +63,7 @@ def rule(device_metric):
 
 
 @pytest.fixture
-def telemetry(device_metric):
+def telemetry_orm(device_metric):  # initial name "telemetry"
     return Telemetry.objects.create(
         device_metric=device_metric,
         value_jsonb={"t": "numeric", "v": 75},
@@ -68,11 +71,69 @@ def telemetry(device_metric):
 
 
 @pytest.fixture
-def telemetry_below(device_metric):
+def telemetry(telemetry_orm):
+    """Create TelemetryEvent"""
+    return TelemetryEvent(
+        device_serial_id=telemetry_orm.device_metric.device.serial_id,
+        metric_type=telemetry_orm.device_metric.metric.metric_type,
+        value=telemetry_orm.value_jsonb['v'],
+        timestamp=telemetry_orm.ts,
+    )
+
+
+@pytest.fixture
+def telemetry_below_orm(device_metric):  # initial name "telemetry_below"
     return Telemetry.objects.create(
         device_metric=device_metric,
         value_jsonb={"t": "numeric", "v": 10},
     )
+
+
+@pytest.fixture
+def telemetry_below(telemetry_below_orm):
+    """Create TelemetryEvent"""
+    return TelemetryEvent(
+        device_serial_id=telemetry_below_orm.device_metric.device.serial_id,
+        metric_type=telemetry_below_orm.device_metric.metric.metric_type,
+        value=telemetry_below_orm.value_jsonb['v'],
+        timestamp=telemetry_below_orm.ts,
+    )
+
+
+# ============================================================================
+# Fixtures — Infrastructure
+# ============================================================================
+
+
+@pytest.fixture(autouse=True)
+def force_postgres_repository():
+    """Bypass Redis and always use PostgreSQL repository for rule engine."""
+    with patch(
+        "apps.rules.services.rule_processor.choose_repository",
+        return_value=PostgresTelemetryRepository(),
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def clear_rules_cache():
+    """Override 'rules' cache with in-memory backend to avoid Redis connection."""
+    from django.test.utils import override_settings
+
+    with override_settings(
+        CACHES={
+            **{
+                k: v
+                for k, v in __import__(
+                    'django.conf', fromlist=['settings']
+                ).settings.CACHES.items()
+                if k != 'rules'
+            },
+            "rules": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
+        }
+    ):
+        caches["rules"].clear()
+        yield
 
 
 # ============================================================================

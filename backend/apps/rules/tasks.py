@@ -33,100 +33,18 @@ def run_rule_processor(telemetry_id: int):
 
     RuleProcessor.run(telemetry)
 
+@shared_task
+def evaluate_rule(telemetry: dict):
+    import time
 
-# @shared_task(
-#     name="notify_event",
-# )
-# def notify_event(event_id: int):
-#     """
-#     Simple notification task: logs the event firing. Could be extended to persist
-#     notifications or push to a user-notification service.
-#     """
-#     try:
-#         event = Event.objects.select_related('rule').get(id=event_id)
-#     except Event.DoesNotExist:
-#         logger_celery.warning("notify_event: Event not found", extra={"event_id": event_id})
-#         return
+    t = time.perf_counter()
+    logger_celery.warning(
+        f"[TASK START] {telemetry['device_serial_id']} {telemetry['metric_type']}"
+    )
 
-#     payload = {
-#         "event_uuid": str(event.event_uuid),
-#         "rule_id": event.rule.id,
-#         "rule_name": event.rule.name,
-#         "trigger_device_serial_id": event.trigger_device_serial_id,
-#         "trigger_context": event.trigger_context,
-#         "rule_triggered_at": event.rule_triggered_at.isoformat(),
-#     }
+    RuleProcessor.run(telemetry)
 
-#     logger_celery.info("Event notification enqueued", extra={"notification": payload})
-
-
-# @shared_task(
-#     bind=True,
-#     name="deliver_webhook",
-#     autoretry_for=(RequestException,),
-#     retry_backoff=True,
-#     retry_backoff_max=60,
-#     retry_jitter=True,
-#     retry_kwargs={"max_retries": 5},
-# )
-# def deliver_webhook(self, event_id: int):
-#     """
-#     Deliver a webhook for the given event. Will retry on network errors.
-
-#     Safe default: will NOT perform external HTTP calls unless
-#     `settings.RULES_ALLOW_WEBHOOKS` is True.
-#     """
-#     try:
-#         event = Event.objects.select_related('rule').get(id=event_id)
-#     except Event.DoesNotExist:
-#         logger_celery.warning("deliver_webhook: Event not found", extra={"event_id": event_id})
-#         return
-
-#     if not getattr(settings, 'RULES_ALLOW_WEBHOOKS', False):
-#         logger_celery.info("Webhook delivery disabled by settings", extra={"event_id": event_id})
-#         return
-
-#     actions = event.rule.action or {}
-#     webhook_cfg = actions.get("webhook") or {}
-
-#     if not webhook_cfg.get("enabled"):
-#         logger_celery.info("Webhook disabled for rule", extra={"rule_id": event.rule_id})
-#         return
-
-#     resolved_url = webhook_cfg.get("url")
-#     if not resolved_url:
-#         logger_celery.warning("Webhook enabled but url missing", extra={"rule_id": event.rule_id})
-#         return
-
-#     body = {
-#         "event_uuid": str(event.event_uuid),
-#         "rule_id": event.rule.id,
-#         "rule_name": event.rule.name,
-#         "trigger_device_serial_id": event.trigger_device_serial_id,
-#         "trigger_context": event.trigger_context,
-#         "rule_triggered_at": event.rule_triggered_at.isoformat(),
-#     }
-
-#     headers = {"Content-Type": "application/json"}
-
-#     try:
-#         resp = requests.post(resolved_url, json=body, headers=headers, timeout=10)
-#         if not (200 <= resp.status_code < 300):
-#             logger_celery.warning(
-#                 "Webhook delivery failed (status)",
-#                 extra={"status": resp.status_code, "url": resolved_url, "event_uuid": str(event.event_uuid)},
-#             )
-#             raise RequestException(f"Non-2xx response: {resp.status_code}")
-
-#         logger_celery.info("Webhook delivered", extra={"url": resolved_url, "event_uuid": str(event.event_uuid)})
-#     except RequestException as exc:
-#         logger_celery.warning(
-#             "Webhook delivery error, will retry", extra={"error": str(exc), "event_uuid": str(event.event_uuid)}
-#         )
-#         raise
-# bind=True обов'язково потрібен, щоб ми мали доступ до об'єкта таски (self)
-# і могли викликати self.retry().
-# max_retries=None, бо ми будемо контролювати ліміт спроб через поле max_attempts у БД.
+    logger_celery.warning(f"[TASK DONE] runtime={time.perf_counter() - t:.4f}s")
 
 @shared_task(bind=True, max_retries=None)
 def process_delivery_task(self, delivery_id: int):
@@ -183,7 +101,6 @@ def process_delivery_task(self, delivery_id: int):
             
             raise self.retry(exc=exc, countdown=delay_seconds)
 
-
 def _process_webhook(delivery: EventDelivery):
     """Additional helper function to send HTTP POST request for webhook deliveries."""
     url = delivery.payload.get('url')
@@ -202,28 +119,6 @@ def _process_webhook(delivery: EventDelivery):
     delivery.response_status = response.status_code
     
     response.raise_for_status()
-
-
-# def _process_notification(delivery: EventDelivery):
-#     """Additional helper function to process notification deliveries."""
-#     """NOTE: This is a placeholder. In a real implementation, this would interface with an email service, push notification service, etc."""
-
-#     channel = delivery.payload.get('channel')
-#     message = delivery.payload.get('message')
-    
-#     if not channel or not message:
-#         raise ValueError("Notification channel or message missing in payload.")
-    
-#     # Here we just log the message for demonstration. In a real implementation, you would replace this with actual sending logic.
-
-#     if channel == "email":
-#         logger_celery.info("Pretending to send EMAIL: %s", message)
-#     elif channel == "telegram":
-#         logger_celery.info("Pretending to send TELEGRAM: %s", message)
-#     else:
-#         raise ValueError(f"Unsupported notification channel: {channel}")
-    
-#     delivery.response_status = 200
 
 @shared_task
 def _process_notification(delivery: EventDelivery):

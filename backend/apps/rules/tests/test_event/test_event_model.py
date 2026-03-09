@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.db import IntegrityError, connection, transaction
 
 from apps.users.models import User
-from apps.devices.models import Device, Metric, DeviceMetric, Telemetry
+from apps.devices.models import Device, Metric, DeviceMetric
 from apps.rules.models import Rule, Event
 
 pytestmark = pytest.mark.django_db
