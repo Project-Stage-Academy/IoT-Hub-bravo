@@ -12,6 +12,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,web', cast=
 
 # Django apps
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -23,10 +24,10 @@ INSTALLED_APPS = [
 # Third party apps
 INSTALLED_APPS += [
     'corsheaders',
+    'channels',
     'django_prometheus',
     'django_celery_beat',
 ]
-
 # Local apps
 INSTALLED_APPS += [
     'apps.common',
@@ -35,6 +36,16 @@ INSTALLED_APPS += [
     'apps.rules',
     'apps.audit',
 ]
+
+ASGI_APPLICATION = 'conf.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(config('REDIS_HOST', default='redis'), config('REDIS_PORT', default=6379, cast=int))],
+        },
+    },
+}
 
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
@@ -106,6 +117,19 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# Redis config
+REDIS_HOST = config('REDIS_HOST', default='redis')
+REDIS_PORT = config('REDIS_PORT', default=6379)
+REDIS_PASSWORD = config('REDIS_PASSWORD', default=None)
+REDIS_DECODE_RESPONSES = config('REDIS_DECODE_RESPONSES', default = True)
+
+REDIS_CONFIG = {
+    "host": REDIS_HOST,
+    "port": REDIS_PORT,
+    "password": REDIS_PASSWORD,
+    "decode_responses": REDIS_DECODE_RESPONSES,
+}
 
 AUTH_USER_MODEL = 'users.User'
 
@@ -179,10 +203,22 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+# Cache conf 
+RULES_CACHE_TTL = config("RULES_CACHE_TTL", default = 86400, cast=int) # default = 24h
+
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'unique-snowflake',
+    },
+    "rules": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
+        "TIMEOUT": RULES_CACHE_TTL,
+        "KEY_PREFIX": "rules",
+        "OPTIONS": {
+            "password": REDIS_PASSWORD,
+    }
     }
 }
 
@@ -244,7 +280,7 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # LOGGING configuration for django and celery
 DJANGO_LOG_LEVEL = config('DJANGO_LOG_LEVEL', default='INFO')
-CELERY_LOG_LEVEL = config('CELERY_LOG_LEVEL', default='INFO')
+CELERY_LOG_LEVEL = config('CELERY_LOG_LEVEL', default='ERROR')
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
