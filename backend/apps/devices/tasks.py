@@ -1,8 +1,6 @@
 import logging
 from typing import Any
-from concurrent.futures import ThreadPoolExecutor
 import time
-import atexit
 
 from celery import shared_task
 from django.db import OperationalError, InterfaceError
@@ -23,10 +21,6 @@ from apps.common.metrics import (
 )
 
 logger = logging.getLogger(__name__)
-
-EXECUTOR = ThreadPoolExecutor(max_workers=3)
-
-atexit.register(lambda: EXECUTOR.shutdown(wait=True))
 
 
 @shared_task(
@@ -175,47 +169,40 @@ def produce_validation_results(validation_result) -> None:
     Produce validation results into corresponding Kafka topics.
     """
 
-    producers = [
-        (get_telemetry_clean_producer(), validation_result.validated_rows),
-        (get_telemetry_dlq_producer(), validation_result.errors),
-        (get_telemetry_expired_producer(), validation_result.expired_rows),
-    ]
-
-    futures = [EXECUTOR.submit(produce_data, producer, data) for producer, data in producers]
-
-    for f in futures:
-        f.result()
-
-    for producer, _ in producers:
-        producer.flush()
+    produce_data.delay("clean", validation_result.validated_rows)
+    produce_data.delay("dlq", validation_result.errors)
+    produce_data.delay("expired", validation_result.expired_rows)
 
 
-def produce_data(producer, data: list[dict[str, Any]]) -> None:
+@shared_task
+def produce_data(producer_type: str, data: list[dict[str, Any]]) -> None:
     """
     Produce batch of records to Kafka.
     """
+    if producer_type == "clean":
+        producer = get_telemetry_clean_producer()
+    elif producer_type == "dlq":
+        producer = get_telemetry_dlq_producer()
+    elif producer_type == "expired":
+        producer = get_telemetry_expired_producer()
+
     accepted = 0
     errors = {}
-
     for index, record in enumerate(data):
         payload = {**record, "ts": record["ts"].isoformat()}
-
         result = producer.produce(
             payload=payload,
             key=record.get("device_serial_id"),
         )
-
         if result == ProduceResult.ENQUEUED:
             accepted += 1
         else:
             errors[index] = result.value
-
     logger.info(
         "Produced %d/%d messages to topic %s",
         accepted,
         len(data),
         producer.topic,
     )
-
     if errors:
         logger.warning("Producer errors: %s", errors)
