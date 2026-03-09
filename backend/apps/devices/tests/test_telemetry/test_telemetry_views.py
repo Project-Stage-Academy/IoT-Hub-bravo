@@ -186,8 +186,8 @@ def test_ingest_malformed_json_returns_400(client, telemetry_ingest_url):
 
     assert res.status_code == 400
     data = res.json()
-    assert 'errors' in data
-    assert 'json' in data['errors']
+    assert 'error' in data
+    assert 'json' in data['error'].lower()
 
 
 @override_settings(DEBUG=True)
@@ -201,5 +201,5 @@ def test_ingest_wrong_payload_type_returns_400(client, telemetry_ingest_url):
 
     assert res.status_code == 400
     data = res.json()
-    assert 'errors' in data
-    assert 'json' in data['errors']
+    assert 'error' in data
+    assert 'json' in data['error'].lower()

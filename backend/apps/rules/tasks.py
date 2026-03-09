@@ -31,6 +31,20 @@ def run_rule_processor(telemetry_id: int):
     RuleProcessor.run(telemetry)
 
 
+@shared_task
+def evaluate_rule(telemetry: dict):
+    import time
+
+    t = time.perf_counter()
+    logger_celery.warning(
+        f"[TASK START] {telemetry['device_serial_id']} {telemetry['metric_type']}"
+    )
+
+    RuleProcessor.run(telemetry)
+
+    logger_celery.warning(f"[TASK DONE] runtime={time.perf_counter() - t:.4f}s")
+
+
 @shared_task(
     name="notify_event",
 )
@@ -49,8 +63,8 @@ def notify_event(event_id: int):
         "event_id": event.id,
         "rule_id": event.rule.id,
         "rule_name": event.rule.name,
-        "trigger_telemetry_id": event.trigger_telemetry_id,
-        "trigger_device_id": event.trigger_device_id,
+        # "trigger_telemetry_id": event.trigger_telemetry_id, # temporary
+        # "trigger_device_id": event.trigger_device_id, # temporary
         "timestamp": event.timestamp.isoformat(),
     }
 
@@ -99,8 +113,8 @@ def deliver_webhook(self, event_id: int):
         "event_id": event.id,
         "rule_id": event.rule.id,
         "rule_name": event.rule.name,
-        "trigger_telemetry_id": event.trigger_telemetry_id,
-        "trigger_device_id": event.trigger_device_id,
+        # "trigger_telemetry_id": event.trigger_telemetry_id, # temporary
+        # "trigger_device_id": event.trigger_device_id, # temporary
         "timestamp": event.timestamp.isoformat(),
     }
 
