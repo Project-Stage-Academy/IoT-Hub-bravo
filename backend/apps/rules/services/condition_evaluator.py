@@ -74,7 +74,7 @@ def _get_telemetries_in_window(telemetry: Telemetry, minutes: int):
 def _get_duration_minutes(condition: dict) -> int:
     """Get minutes duration for time window from rule.condition"""
     return (
-        condition.get("duration_minutes") or condition.get("minutes") or DEFAULT_DURATION_MINUTES
+        condition.get("duration_minutes") or DEFAULT_DURATION_MINUTES
     )
 
 
