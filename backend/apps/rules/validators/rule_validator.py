@@ -5,15 +5,16 @@ import json
 from django.core.exceptions import ValidationError
 
 
-class NotificationChannels(str, Enum): ## will be better in common/utils?
+class NotificationChannels(str, Enum):  ## will be better in common/utils?
     """Enumeration of available notification delivery channels"""
 
     EMAIL = "email"
     SMS = "sms"
 
 
-class ActionTypes(str, Enum): ## will be better in common/utils?
+class ActionTypes(str, Enum):  ## will be better in common/utils?
     """Enumeration of available action types"""
+
     WEBHOOK = "webhook"
     NOTIFICATION = "notification"
 
@@ -54,7 +55,9 @@ def validate_condition(condition: dict[str, Any]) -> None:
             raise ValidationError("Invalid threshold operator")
         if "value" not in condition:
             raise ValidationError("Threshold condition requires 'value'")
-        if not isinstance(condition.get("value"), (int, float)):  ## there will be a problem with str data (new rule type?) 
+        if not isinstance(
+            condition.get("value"), (int, float)
+        ):  ## there will be a problem with str data (new rule type?)
             raise ValidationError("Condition 'value' must be number")
 
     elif condition_type == "rate":
@@ -138,15 +141,12 @@ def validate_action(action: dict[str, Any]) -> None:
     allowed = {a.value for a in ActionTypes}
 
     if not action.keys() & allowed:
-        raise ValidationError(
-            f"Action must contain at least one of: {', '.join(allowed)}"
-        )
+        raise ValidationError(f"Action must contain at least one of: {', '.join(allowed)}")
 
     unknown = action.keys() - allowed
     if unknown:
         raise ValidationError(
-            f"Unknown action type(s): {', '.join(unknown)}. "
-            f"Allowed: {', '.join(allowed)}"
+            f"Unknown action type(s): {', '.join(unknown)}. " f"Allowed: {', '.join(allowed)}"
         )
 
     if ActionTypes.WEBHOOK.value in action:
@@ -155,7 +155,7 @@ def validate_action(action: dict[str, Any]) -> None:
             raise ValidationError("Webhook must be object")
         if "url" not in webhook:
             raise ValidationError("Webhook requires 'url'")
-        
+
         validate_action_enabled(webhook)
 
     if ActionTypes.NOTIFICATION.value in action:
@@ -164,6 +164,6 @@ def validate_action(action: dict[str, Any]) -> None:
             raise ValidationError("Notification must be object")
         if "channel" not in notification:
             raise ValidationError("Notification requires 'channel'")
-        
+
         validate_action_enabled(notification)
         validate_action_notification_channel(notification)

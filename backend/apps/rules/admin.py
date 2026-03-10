@@ -9,13 +9,14 @@ from django.utils.timezone import localtime
 from .models import Rule, Event
 from .validators.rule_validator import validate_action, validate_condition
 
+
 class RuleAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
         if self.user and not self.user.is_superuser:
-            self.fields["device_metric"].queryset = (
-                self.fields["device_metric"].queryset.filter(device__user=self.user)
+            self.fields["device_metric"].queryset = self.fields["device_metric"].queryset.filter(
+                device__user=self.user
             )
 
     class Meta:
@@ -35,19 +36,6 @@ class RuleAdminForm(forms.ModelForm):
             "action": forms.Textarea(attrs={"rows": 5}),
         }
 
-    def clean_name(self):
-        name = self.cleaned_data.get("name", "").strip()
-        if not name:
-            raise ValidationError("Rule name cannot be blank or whitespace only.")
-        qs = Rule.objects.filter(name__iexact=name)
-        if self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
-        if qs.exists():
-            raise ValidationError(
-                f'A rule named "{name}" already exists (names are case-insensitive).'
-            )
-        return name
-
     def clean(self):
         cleaned = super().clean()
 
@@ -56,7 +44,24 @@ class RuleAdminForm(forms.ModelForm):
         if is_active and device_metric is None:
             raise ValidationError("Cannot activate a rule without a device metric assigned.")
         return cleaned
-    
+
+    def clean_name(self):
+        name = self.cleaned_data.get("name", "").strip()
+        if not name:
+            raise ValidationError("Rule name cannot be blank or whitespace only.")
+
+        device_metric = self.cleaned_data.get("device_metric")
+        if device_metric:
+            qs = Rule.objects.filter(name__iexact=name, device_metric=device_metric)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise ValidationError(
+                    f'A rule named "{name}" already exists for this device metric.'
+                )
+
+        return name
+
     def clean_condition(self):
         raw = self.cleaned_data.get("condition")
         validate_condition(raw)
@@ -132,39 +137,37 @@ class RuleAdmin(admin.ModelAdmin):
     )
 
     def has_add_permission(self, request):
-        return request.user.has_perm("rules.add_rule")
+        return request.user.is_staff or request.user.is_superuser
 
     def has_change_permission(self, request, obj=None):
-        if obj is None:
-            return True
-        
         if request.user.is_superuser:
             return True
-        
-        return obj.device_metric.device.user == request.user
+        if obj is None:
+            return request.user.is_staff
+
+        return request.user.is_staff and obj.device_metric.device.user == request.user
 
     def has_delete_permission(self, request, obj=None):
-        if obj is None:
-            return True
-        
         if request.user.is_superuser:
             return True
-        
-        return obj.device_metric.device.user == request.user
+        if obj is None:
+            return request.user.is_staff
+
+        return request.user.is_staff and obj.device_metric.device.user == request.user
 
     def has_view_permission(self, request, obj=None):
         if request.user.is_superuser:
             return True
+        if obj is None:
+            return request.user.is_staff
 
-        if obj is not None:
-            return obj.device_metric.device.user == request.user
-
-        return True
+        return request.user.is_staff and obj.device_metric.device.user == request.user
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
+
         return qs.filter(device_metric__device__user=request.user)
 
     def save_model(self, request, obj, form, change):

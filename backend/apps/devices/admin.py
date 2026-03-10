@@ -61,7 +61,34 @@ class DeviceAdmin(admin.ModelAdmin):
         # Reverse relations (default related_name):
         # Device -> DeviceMetric: devicemetric_set (query name: devicemetric)
         # DeviceMetric -> Telemetry: telemetry_set (query name: telemetry)
-        return qs.annotate(_latest_ts=Max("devicemetric__telemetry__ts"))
+        qs = qs.annotate(_latest_ts=Max("devicemetric__telemetry__ts"))
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(user=request.user)
+
+    def has_add_permission(self, request):
+        return request.user.is_staff or request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        if obj is None:
+            return request.user.is_staff
+        return request.user.is_staff and obj.user == request.user
+
+    def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        if obj is None:
+            return request.user.is_staff
+        return request.user.is_staff and obj.user == request.user
+
+    def has_view_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        if obj is None:
+            return request.user.is_staff
+        return request.user.is_staff and obj.user == request.user
 
     @admin.display(description="Latest Telemetry")
     def latest_telemetry_timestamp(self, obj):
@@ -186,6 +213,36 @@ class TelemetryAdmin(admin.ModelAdmin):
         self.message_user(request, f"{queryset.count()} telemetry record(s) exported to CSV.")
         return response
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(device_metric__device__user=request.user)
+
+    def has_add_permission(self, request):
+        return request.user.is_staff or request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        if obj is None:
+            return request.user.is_staff
+        return request.user.is_staff and obj.device_metric.device.user == request.user
+
+    def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        if obj is None:
+            return request.user.is_staff
+        return request.user.is_staff and obj.device_metric.device.user == request.user
+
+    def has_view_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        if obj is None:
+            return request.user.is_staff
+        return request.user.is_staff and obj.device_metric.device.user == request.user
+
 
 @admin.register(Metric)
 class MetricAdmin(admin.ModelAdmin):
@@ -202,3 +259,33 @@ class DeviceMetricAdmin(admin.ModelAdmin):
     @admin.display(boolean=True, description="Device Active")
     def device_active(self, obj):
         return obj.device.is_active
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(device__user=request.user)
+
+    def has_add_permission(self, request):
+        return request.user.is_staff or request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        if obj is None:
+            return request.user.is_staff
+        return request.user.is_staff and obj.device.user == request.user
+
+    def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        if obj is None:
+            return request.user.is_staff
+        return request.user.is_staff and obj.device.user == request.user
+
+    def has_view_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        if obj is None:
+            return request.user.is_staff
+        return request.user.is_staff and obj.device.user == request.user
