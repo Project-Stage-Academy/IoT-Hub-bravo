@@ -3,6 +3,7 @@ from unittest.mock import patch, ANY
 from django.utils import timezone
 from datetime import timedelta
 from django.core.cache import caches
+import uuid
 
 from apps.users.models import User
 from apps.devices.models import Device, Metric, DeviceMetric, Telemetry
@@ -43,8 +44,11 @@ class TelemetryFactory:
 
 class RuleFactory:
     @staticmethod
-    def create(device_metric, condition, action="notify", is_active=True):
+    def create(device_metric, condition, action="notify", is_active=True, name=None):
+        if name is None:
+            name = f"Rule-{uuid.uuid4()}"
         return Rule.objects.create(
+            name=name,
             device_metric=device_metric,
             condition=condition,
             action=action,
