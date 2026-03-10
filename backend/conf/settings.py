@@ -34,6 +34,7 @@ INSTALLED_APPS += [
     'apps.devices',
     'apps.users',
     'apps.rules',
+    'apps.audit',
 ]
 
 ASGI_APPLICATION = 'conf.asgi.application'
