@@ -1,3 +1,4 @@
+import json
 from django import forms
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
@@ -10,12 +11,11 @@ from .validators.rule_validator import validate_action, validate_condition
 
 class RuleAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop("user") 
+        self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-
-        if not user.is_superuser:
-            self.fields["device_metric"].queryset = self.fields["device_metric"].queryset.filter(
-                device__user=user
+        if self.user and not self.user.is_superuser:
+            self.fields["device_metric"].queryset = (
+                self.fields["device_metric"].queryset.filter(device__user=self.user)
             )
 
     class Meta:
@@ -58,10 +58,18 @@ class RuleAdminForm(forms.ModelForm):
         return cleaned
     
     def clean_condition(self):
-        return validate_condition(self.cleaned_data.get("condition"))
-    
+        raw = self.cleaned_data.get("condition")
+        validate_condition(raw)
+        if isinstance(raw, str):
+            return json.loads(raw)
+        return raw
+
     def clean_action(self):
-        return validate_action(self.cleaned_data.get("action"))
+        raw = self.cleaned_data.get("action")
+        validate_action(raw)
+        if isinstance(raw, str):
+            return json.loads(raw)
+        return raw
 
 
 @admin.register(Rule)
@@ -69,14 +77,13 @@ class RuleAdmin(admin.ModelAdmin):
     form = RuleAdminForm
 
     def get_form(self, request, obj=None, **kwargs):
-        # Передаємо request.user у форму
-        kwargs['form'] = self.form
-        form = super().get_form(request, obj, **kwargs)
-        # Функція, яка додає user в __init__
-        class FormWithUser(form):
+        Form = super().get_form(request, obj, **kwargs)
+
+        class FormWithUser(Form):
             def __init__(self_inner, *args, **inner_kwargs):
-                inner_kwargs['user'] = request.user
-                super().__init__(*args, **inner_kwargs)
+                inner_kwargs.setdefault("user", request.user)
+                Form.__init__(self_inner, *args, **inner_kwargs)
+
         return FormWithUser
 
     list_display = (
