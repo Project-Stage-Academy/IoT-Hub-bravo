@@ -9,34 +9,35 @@ from decouple import config
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf.settings')
 django.setup()
 
-from consumers.kafka_consumer import KafkaConsumer
-from consumers.config import ConsumerConfig
+from consumers.kafka_consumer import KafkaConsumer # noqa: E402
+from consumers.config import ConsumerConfig # noqa: E402
 
-from apps.rules.consumers.event_notification_handler import EventNotificationHandler
+from apps.rules.consumers.event_notification_handler import EventNotificationHandler # noqa: E402
 
 TOPIC = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
 GROUP_ID = config('KAFKA_GROUP_EVENT_NOTIFICATION', default='event-notification-group')
 
+
 def setup_logging() -> None:
-    logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s %(name)s %(message)s', force=True)
+    logging.basicConfig(
+        level=logging.INFO, format='[%(asctime)s] %(levelname)s %(name)s %(message)s', force=True
+    )
+
 
 def main():
     setup_logging()
     logger = logging.getLogger(__name__)
 
-    consumer_config = ConsumerConfig(
-        group_id=GROUP_ID,
-        enable_auto_commit=False 
-    )
+    consumer_config = ConsumerConfig(group_id=GROUP_ID, enable_auto_commit=False)
 
     logger.info(f"Starting Notification Consumer... Group: {GROUP_ID}, Topic: {TOPIC}")
 
     consumer = KafkaConsumer(
         config=consumer_config,
         topics=[TOPIC],
-        handler=EventNotificationHandler(), 
-        decode_json=True,               
-        consume_batch=True,             
+        handler=EventNotificationHandler(),
+        decode_json=True,
+        consume_batch=True,
         batch_max_size=50,
     )
 
@@ -52,6 +53,7 @@ def main():
     except Exception as e:
         logger.error('Consumer crashed: %s', e)
         sys.exit(1)
+
 
 if __name__ == '__main__':
     main()

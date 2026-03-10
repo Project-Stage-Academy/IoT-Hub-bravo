@@ -326,7 +326,9 @@ def test_filter_by_device_serial_id(client, client_token, rule, device, device2,
     e1 = Event.objects.create(rule=rule, trigger_device_serial_id=device.serial_id)
     Event.objects.create(rule=rule2, trigger_device_serial_id=device2.serial_id)
 
-    response = client.get(f"/api/events/?device_serial_id={device.serial_id}", **auth(client_token))
+    response = client.get(
+        f"/api/events/?device_serial_id={device.serial_id}", **auth(client_token)
+    )
     data = response.json()
 
     assert data["count"] == 1
@@ -406,6 +408,8 @@ def test_event_detail_response_fields(client, client_token, event):
     assert "rule" in data
     assert "trigger_device_serial_id" in data
     assert "trigger_context" in data
+
+
 # ============================================================================
 
 

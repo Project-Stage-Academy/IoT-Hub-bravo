@@ -6,8 +6,8 @@ Tests for Kafka consumer handlers:
 
 import uuid
 import pytest
-from unittest.mock import patch, MagicMock
-from django.db import DatabaseError, transaction
+from unittest.mock import patch
+from django.db import DatabaseError
 
 from apps.rules.consumers.event_db_handler import EventDBHandler
 from apps.rules.consumers.event_notification_handler import EventNotificationHandler
@@ -161,7 +161,7 @@ def test_event_db_handler_is_idempotent_for_duplicate_uuid(valid_db_payload):
     """
     handler = EventDBHandler()
     handler.handle(valid_db_payload)
-    handler.handle(valid_db_payload)  
+    handler.handle(valid_db_payload)
 
     assert Event.objects.filter(event_uuid=valid_db_payload["event_uuid"]).count() == 1
 
@@ -195,7 +195,7 @@ def test_event_db_handler_swallows_value_error(db):
     handler = EventDBHandler()
 
     with patch.object(Event.objects, 'get_or_create', side_effect=ValueError("bad value")):
-        handler.handle(payload)  
+        handler.handle(payload)
 
     assert Event.objects.count() == 0
 
@@ -262,9 +262,9 @@ def test_notification_handler_creates_both_deliveries(both_channels_payload):
     with patch('apps.rules.consumers.event_notification_handler.process_delivery_task'):
         EventNotificationHandler().handle(both_channels_payload)
 
-    assert EventDelivery.objects.filter(
-        event_uuid=both_channels_payload["event_uuid"]
-    ).count() == 2
+    assert (
+        EventDelivery.objects.filter(event_uuid=both_channels_payload["event_uuid"]).count() == 2
+    )
 
 
 def test_notification_handler_delivery_status_defaults_to_pending(webhook_only_payload):
@@ -308,11 +308,9 @@ def test_notification_handler_is_idempotent(webhook_only_payload):
     with patch('apps.rules.consumers.event_notification_handler.process_delivery_task'):
         handler = EventNotificationHandler()
         handler.handle(webhook_only_payload)
-        handler.handle(webhook_only_payload)  
+        handler.handle(webhook_only_payload)
 
-    assert EventDelivery.objects.filter(
-        event_uuid=webhook_only_payload["event_uuid"]
-    ).count() == 1
+    assert EventDelivery.objects.filter(event_uuid=webhook_only_payload["event_uuid"]).count() == 1
 
 
 # ============================================================================

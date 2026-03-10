@@ -44,9 +44,9 @@ class Command(BaseCommand):
                 "webhook": {
                     "enabled": True,
                     "url": "https://webhook.site/0f8adc3e-6cab-4da0-972f-44b79f76b47a",
-                    #"url": "https://httpstat.us/502", 
-                }
-            }
+                    # "url": "https://httpstat.us/502",
+                },
+            },
         }
 
         self.stdout.write(f"Sending event {event_uuid}...")

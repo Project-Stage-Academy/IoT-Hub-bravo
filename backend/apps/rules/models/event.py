@@ -13,9 +13,9 @@ class Event(models.Model):
     trigger_device_serial_id = models.CharField(max_length=255, null=False)
 
     trigger_context = models.JSONField(
-        null=True, 
+        null=True,
         blank=True,
-        help_text="Flexible context about what triggered the event (e.g., telemetry values, thresholds)"
+        help_text="Flexible context about what triggered the event (e.g., telemetry values, thresholds)",
     )
 
     class Meta:

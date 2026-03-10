@@ -227,6 +227,7 @@ def test_event_delivery_rule_id_is_stored():
     delivery = make_delivery(rule_id=42)
     assert delivery.rule_id == 42
 
+
 # ============================================================================
 # Meta / DB table
 # ============================================================================

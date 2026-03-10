@@ -9,12 +9,13 @@ from decouple import config
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf.settings')
 django.setup()
 
-from consumers.kafka_consumer import KafkaConsumer
-from consumers.config import ConsumerConfig
-from apps.rules.consumers.event_db_handler import EventDBHandler # noqa: E402
+from consumers.kafka_consumer import KafkaConsumer  # noqa: E402
+from consumers.config import ConsumerConfig  # noqa: E402
+from apps.rules.consumers.event_db_handler import EventDBHandler  # noqa: E402
 
 TOPIC = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
 GROUP_ID = config('KAFKA_GROUP_EVENT_DB_WRITER', default='event-db-writer-group')
+
 
 def setup_logging() -> None:
     logging.basicConfig(
@@ -24,14 +25,12 @@ def setup_logging() -> None:
         force=True,
     )
 
+
 def main():
     setup_logging()
     logger = logging.getLogger(__name__)
 
-    consumer_config = ConsumerConfig(
-        group_id=GROUP_ID,
-        enable_auto_commit=False
-    )
+    consumer_config = ConsumerConfig(group_id=GROUP_ID, enable_auto_commit=False)
 
     logger.info(f"Starting Event DB Consumer... Group: {GROUP_ID}, Topic: {TOPIC}")
 
@@ -56,6 +55,7 @@ def main():
     except Exception as e:
         logger.error('Consumer crashed with exception: %s', e)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

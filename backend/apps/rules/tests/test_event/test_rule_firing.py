@@ -7,7 +7,7 @@ Strategy: patch rule_event_producer so no broker is needed.
 """
 
 import pytest
-from unittest.mock import patch, MagicMock, ANY, call
+from unittest.mock import patch, MagicMock, ANY
 from django.utils import timezone
 from datetime import timedelta, datetime
 from django.core.cache import caches
@@ -250,9 +250,7 @@ def test_dispatch_action_does_not_create_event_in_db(rule, telemetry, mock_kafka
 
 def test_dispatch_action_does_not_raise_on_kafka_failure(rule, telemetry):
     """If Kafka produce raises, dispatch_action must swallow the error."""
-    with patch(
-        "apps.rules.services.action.rule_event_producer"
-    ) as mock_producer:
+    with patch("apps.rules.services.action.rule_event_producer") as mock_producer:
         mock_producer.produce.side_effect = Exception("broker down")
         try:
             Action.dispatch_action(rule=rule, telemetry=telemetry)
@@ -264,9 +262,7 @@ def test_dispatch_action_logs_exception_on_kafka_failure(rule, telemetry, caplog
     """Kafka failures must be logged for observability."""
     import logging
 
-    with patch(
-        "apps.rules.services.action.rule_event_producer"
-    ) as mock_producer:
+    with patch("apps.rules.services.action.rule_event_producer") as mock_producer:
         mock_producer.produce.side_effect = Exception("broker down")
         with caplog.at_level(logging.ERROR):
             Action.dispatch_action(rule=rule, telemetry=telemetry)
@@ -315,7 +311,9 @@ def test_rule_processor_no_dispatch_when_condition_false(rule, telemetry_below):
     mock_dispatch.assert_not_called()
 
 
-def test_rule_processor_no_kafka_produce_when_condition_false(rule, telemetry_below, mock_kafka_producer):
+def test_rule_processor_no_kafka_produce_when_condition_false(
+    rule, telemetry_below, mock_kafka_producer
+):
     """No Kafka message when the threshold condition is not met."""
     RuleProcessor.run(telemetry_below)
 
@@ -374,7 +372,9 @@ def test_multiple_rules_each_call_dispatch_action(device_metric, telemetry):
     assert rule_b in called_rules
 
 
-def test_multiple_rules_produce_distinct_event_uuids(device_metric, telemetry, mock_kafka_producer):
+def test_multiple_rules_produce_distinct_event_uuids(
+    device_metric, telemetry, mock_kafka_producer
+):
     """Each rule firing must generate a unique event_uuid in the Kafka payload."""
     Rule.objects.create(
         name="Rule A",

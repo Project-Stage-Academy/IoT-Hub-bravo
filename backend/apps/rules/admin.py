@@ -2,7 +2,6 @@ from django.contrib import admin
 from django.utils.html import format_html
 from .models import Rule, Event, EventDelivery
 from django.urls import reverse
-import json
 
 @admin.register(Rule)
 class RuleAdmin(admin.ModelAdmin):
@@ -24,7 +23,9 @@ class RuleAdmin(admin.ModelAdmin):
     def last_triggered(self, obj):
         from django.db.models import Max
 
-        latest = Event.objects.filter(rule=obj).aggregate(Max("rule_triggered_at"))["rule_triggered_at__max"]
+        latest = Event.objects.filter(rule=obj).aggregate(Max("rule_triggered_at"))[
+            "rule_triggered_at__max"
+        ]
         if latest:
             return latest
         return format_html('<span style="color: gray;">{}</span>', 'Never')
@@ -52,7 +53,7 @@ class EventAdmin(admin.ModelAdmin):
         "rule__device_metric__device__name",
         "trigger_device_serial_id",
     )
-    readonly_fields = ("id" ,"event_uuid", "rule_triggered_at", "created_at", "trigger_context")
+    readonly_fields = ("id", "event_uuid", "rule_triggered_at", "created_at", "trigger_context")
     date_hierarchy = "rule_triggered_at"
     ordering = ("-rule_triggered_at",)
     actions = ["mark_acknowledged", "mark_unacknowledged"]
@@ -107,7 +108,8 @@ class EventAdmin(admin.ModelAdmin):
                 str(obj.trigger_context),
             )
         return "-"
-    
+
+
 @admin.register(EventDelivery)
 class EventDeliveryAdmin(admin.ModelAdmin):
     list_display = (
@@ -120,34 +122,34 @@ class EventDeliveryAdmin(admin.ModelAdmin):
         "next_retry_at",
         "updated_at",
     )
-    
+
     list_filter = ("status", "delivery_type", "created_at")
-    
+
     search_fields = (
         "event_uuid",
         "trigger_device_serial_id",
         "rule_id",
     )
-    
+
     readonly_fields = (
-        "event_uuid", 
-        "rule_id", 
+        "event_uuid",
+        "rule_id",
         "trigger_device_serial_id",
-        "delivery_type", 
-        "payload", 
-        "status", 
+        "delivery_type",
+        "payload",
+        "status",
         "attempts",
-        "max_attempts", 
-        "last_attempt_at", 
+        "max_attempts",
+        "last_attempt_at",
         "next_retry_at",
-        "response_status", 
-        "error_message", 
-        "created_at", 
-        "updated_at"
+        "response_status",
+        "error_message",
+        "created_at",
+        "updated_at",
     )
-    
+
     exclude = ("payload",)
-    
+
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
 
@@ -157,7 +159,9 @@ class EventDeliveryAdmin(admin.ModelAdmin):
         if obj.event_uuid:
             url = f"{reverse('admin:rules_event_changelist')}?q={obj.event_uuid}"
             short_uuid = str(obj.event_uuid).split('-')[0]
-            return format_html('<a href="{}" title="{}">{}...</a>', url, obj.event_uuid, short_uuid)
+            return format_html(
+                '<a href="{}" title="{}">{}...</a>', url, obj.event_uuid, short_uuid
+            )
         return "-"
 
     @admin.display(description="Status", ordering="status")
@@ -172,7 +176,7 @@ class EventDeliveryAdmin(admin.ModelAdmin):
         }
         color = colors.get(obj.status, "black")
         return format_html(
-            '<span style="color: {}; font-weight: bold;">{}</span>', 
-            color, 
-            obj.get_status_display().upper()
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color,
+            obj.get_status_display().upper(),
         )

@@ -18,7 +18,9 @@ class Status(models.TextChoices):
 class EventDelivery(models.Model):
     event_uuid = models.UUIDField(null=False, help_text="Logical reference to the Event ID")
     rule_id = models.IntegerField(null=False, help_text="Logical reference to the Rule ID")
-    trigger_device_serial_id = models.CharField(max_length=255, null=False, help_text="Device serial for quick filtering")
+    trigger_device_serial_id = models.CharField(
+        max_length=255, null=False, help_text="Device serial for quick filtering"
+    )
 
     delivery_type = models.CharField(
         max_length=20,
@@ -52,19 +54,14 @@ class EventDelivery(models.Model):
         verbose_name_plural = "Event Deliveries"
         indexes = [
             models.Index(fields=["status"], name="idx_event_deliveries_status"),
-            models.Index(
-                fields=["status", "next_retry_at"], name="idx_event_deliv_status_retry"
-            ),
-            models.Index(
-                fields=["status", "updated_at"], name="idx_event_deliv_status_updated"
-            ),
+            models.Index(fields=["status", "next_retry_at"], name="idx_event_deliv_status_retry"),
+            models.Index(fields=["status", "updated_at"], name="idx_event_deliv_status_updated"),
             models.Index(fields=["event_uuid"], name="idx_event_deliv_event_uuid"),
             models.Index(fields=["rule_id"], name="idx_event_deliv_rule_id"),
             models.Index(fields=["trigger_device_serial_id"], name="idx_event_deliv_device_id"),
         ]
         constraints = [
             models.UniqueConstraint(
-                fields=['event_uuid', 'delivery_type'], 
-                name='unique_event_delivery_type'
+                fields=['event_uuid', 'delivery_type'], name='unique_event_delivery_type'
             )
         ]

@@ -33,6 +33,7 @@ def run_rule_processor(telemetry_id: int):
 
     RuleProcessor.run(telemetry)
 
+
 @shared_task
 def evaluate_rule(telemetry: dict):
     import time
@@ -45,6 +46,7 @@ def evaluate_rule(telemetry: dict):
     RuleProcessor.run(telemetry)
 
     logger_celery.warning(f"[TASK DONE] runtime={time.perf_counter() - t:.4f}s")
+
 
 @shared_task(bind=True, max_retries=None)
 def process_delivery_task(self, delivery_id: int):
@@ -79,63 +81,69 @@ def process_delivery_task(self, delivery_id: int):
         delivery.status = Status.SUCCESS
         delivery.error_message = None
         delivery.save(update_fields=['status', 'response_status', 'error_message', 'updated_at'])
-        
+
         logger_celery.info("Delivery %s completed successfully.", delivery_id)
 
     except Exception as exc:
-        logger_celery.warning("Delivery %s failed on attempt %s: %s", delivery_id, delivery.attempts, exc)
-        
+        logger_celery.warning(
+            "Delivery %s failed on attempt %s: %s", delivery_id, delivery.attempts, exc
+        )
+
         delivery.error_message = str(exc)
-        
+
         if delivery.attempts >= delivery.max_attempts:
             delivery.status = Status.REJECTED
             delivery.save(update_fields=['status', 'error_message', 'updated_at'])
-            logger_celery.error("Delivery %s REJECTED after %s attempts.", delivery_id, delivery.max_attempts)
+            logger_celery.error(
+                "Delivery %s REJECTED after %s attempts.", delivery_id, delivery.max_attempts
+            )
         else:
             delivery.status = Status.RETRY
-            
-            delay_seconds = (2 ** delivery.attempts) * 20
-            
+
+            delay_seconds = (2**delivery.attempts) * 20
+
             delivery.next_retry_at = timezone.now() + timezone.timedelta(seconds=delay_seconds)
             delivery.save(update_fields=['status', 'error_message', 'next_retry_at', 'updated_at'])
-            
+
             raise self.retry(exc=exc, countdown=delay_seconds)
+
 
 def _process_webhook(delivery: EventDelivery):
     """Additional helper function to send HTTP POST request for webhook deliveries."""
     url = delivery.payload.get('url')
     if not url:
         raise ValueError("Webhook URL is missing in payload.")
-    
+
     webhook_payload = {
         "event_uuid": str(delivery.event_uuid),
         "rule_id": delivery.rule_id,
         "device_serial": delivery.trigger_device_serial_id,
-        "timestamp": timezone.now().isoformat()
+        "timestamp": timezone.now().isoformat(),
     }
-    
+
     response = requests.post(url, json=webhook_payload, timeout=10)
-    
+
     delivery.response_status = response.status_code
-    
+
     response.raise_for_status()
+
 
 @shared_task
 def _process_notification(delivery: EventDelivery):
     """Processes a notification delivery, sending an email if the channel is 'email'. Raises exceptions on failure to trigger retries."""
-    
+
     channel = delivery.payload.get('channel')
     message_text = delivery.payload.get('message', 'Alert triggered.')
     recipient = delivery.payload.get('recipient')
     subject = delivery.payload.get('subject', f"IoT Alert: Rule {delivery.rule_id}")
-    
+
     if not channel:
         raise ValueError("Notification channel missing in payload.")
-    
+
     if channel == "email":
         if not recipient:
             raise ValueError("Recipient email is missing in payload.")
-        
+
         full_message = (
             f"{message_text}\n\n"
             f"--- Alert Details ---\n"
@@ -143,20 +151,21 @@ def _process_notification(delivery: EventDelivery):
             f"Event UUID: {delivery.event_uuid}\n\n"
             f"Sent by IoT Hub Platform"
         )
-        
+
         logger_celery.info(f"Sending real EMAIL to {recipient}...")
-        
+
         send_mail(
             subject=subject,
             message=full_message,
             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@iot-hub.local'),
             recipient_list=[recipient],
-            fail_silently=False, 
+            fail_silently=False,
         )
     else:
         raise ValueError(f"Unsupported notification channel: {channel}")
-    
+
     delivery.response_status = 200
+
 
 @shared_task
 def recover_stuck_deliveries():
@@ -165,22 +174,24 @@ def recover_stuck_deliveries():
     now = timezone.now()
 
     pending_threshold = now - timedelta(minutes=5)
-    
+
     processing_threshold = now - timedelta(minutes=15)
 
     stuck_deliveries = EventDelivery.objects.filter(
-        Q(status=Status.PENDING, updated_at__lt=pending_threshold) |
-        Q(status=Status.PROCESSING, updated_at__lt=processing_threshold) |
-        Q(status=Status.RETRY, next_retry_at__lte=now)
+        Q(status=Status.PENDING, updated_at__lt=pending_threshold)
+        | Q(status=Status.PROCESSING, updated_at__lt=processing_threshold)
+        | Q(status=Status.RETRY, next_retry_at__lte=now)
     )
 
     count = 0
     for delivery in stuck_deliveries:
         delivery.updated_at = now
         delivery.save(update_fields=['updated_at'])
-        
-        logger_celery.warning(f"Recovering stuck delivery {delivery.id} (Status: {delivery.status})")
-        
+
+        logger_celery.warning(
+            f"Recovering stuck delivery {delivery.id} (Status: {delivery.status})"
+        )
+
         process_delivery_task.delay(delivery.id)
         count += 1
 

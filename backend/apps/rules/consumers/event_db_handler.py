@@ -4,7 +4,8 @@ from apps.rules.models.event import Event
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError
 
-logger = logging.getLogger(__name__) 
+logger = logging.getLogger(__name__)
+
 
 class EventDBHandler:
     """
@@ -17,7 +18,7 @@ class EventDBHandler:
                 self._process_single(item)
         else:
             self._process_single(payload)
-    
+
     def _process_single(self, data: dict) -> None:
         """Processes a single event payload, creating an Event record in the database."""
         """NOTE: Unvalid messages should not olny be logged but also sent to a dead-letter queue for later analysis. This is a TODO for future improvement."""
@@ -33,7 +34,7 @@ class EventDBHandler:
                     'acknowledged': False,
                     'trigger_device_serial_id': data['trigger_device_serial_id'],
                     'trigger_context': data.get('trigger_context', {}),
-                }
+                },
             )
             if created:
                 logger.info('Successfully created Event with UUID %s', event_uuid)

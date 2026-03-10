@@ -93,7 +93,9 @@ def test_event_can_store_trigger_device_serial_id(rule):
 
 def test_event_can_store_trigger_context(rule):
     ctx = {"telemetry_id": 99, "value": {"t": "numeric", "v": "42.0"}}
-    event = Event.objects.create(rule=rule, trigger_device_serial_id="SN-00042", trigger_context=ctx)
+    event = Event.objects.create(
+        rule=rule, trigger_device_serial_id="SN-00042", trigger_context=ctx
+    )
     assert event.trigger_context == ctx
 
 

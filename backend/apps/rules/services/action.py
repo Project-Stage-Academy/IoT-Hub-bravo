@@ -13,10 +13,8 @@ from producers.config import ProducerConfig
 logger = logging.getLogger(__name__)
 
 KAFKA_TOPIC = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
-rule_event_producer = KafkaProducer(
-    config=ProducerConfig(),
-    topic=KAFKA_TOPIC
-)
+rule_event_producer = KafkaProducer(config=ProducerConfig(), topic=KAFKA_TOPIC)
+
 
 class Action:
     """
@@ -47,7 +45,7 @@ class Action:
                 "value": float(telemetry.value) if telemetry.value is not None else None,
                 "telemetry_timestamp": telemetry.timestamp.isoformat(),
             },
-            "action": rule.action if isinstance(rule.action, dict) else {}
+            "action": rule.action if isinstance(rule.action, dict) else {},
         }
 
         logger.info(
@@ -63,8 +61,8 @@ class Action:
 
         try:
             rule_event_producer.produce(payload=payload, key=str(rule.id))
-            
+
             rule_event_producer.flush()
-            
+
         except Exception:
             logger.exception('Failed to publish event to Kafka')

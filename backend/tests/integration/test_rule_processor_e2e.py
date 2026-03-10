@@ -76,7 +76,9 @@ class TestRuleProcessorCeleryIntegration:
         # Intercept Kafka produce to capture the payload
         produced_payloads = []
         mock_producer = MagicMock()
-        mock_producer.produce.side_effect = lambda payload, key=None: produced_payloads.append(payload)
+        mock_producer.produce.side_effect = lambda payload, key=None: produced_payloads.append(
+            payload
+        )
 
         with patch("apps.rules.services.action.rule_event_producer", mock_producer):
             RuleProcessor.run(telemetry)
