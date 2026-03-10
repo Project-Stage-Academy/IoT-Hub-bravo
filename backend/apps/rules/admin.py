@@ -3,6 +3,7 @@ from django.utils.html import format_html
 from .models import Rule, Event, EventDelivery
 from django.urls import reverse
 
+
 @admin.register(Rule)
 class RuleAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "device_metric", "rule_status", "last_triggered")

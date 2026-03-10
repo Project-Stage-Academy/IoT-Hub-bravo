@@ -9,10 +9,10 @@ from decouple import config
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf.settings')
 django.setup()
 
-from consumers.kafka_consumer import KafkaConsumer # noqa: E402
-from consumers.config import ConsumerConfig # noqa: E402
+from consumers.kafka_consumer import KafkaConsumer  # noqa: E402
+from consumers.config import ConsumerConfig  # noqa: E402
 
-from apps.rules.consumers.event_notification_handler import EventNotificationHandler # noqa: E402
+from apps.rules.consumers.event_notification_handler import EventNotificationHandler  # noqa: E402
 
 TOPIC = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
 GROUP_ID = config('KAFKA_GROUP_EVENT_NOTIFICATION', default='event-notification-group')
