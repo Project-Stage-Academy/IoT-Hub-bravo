@@ -12,18 +12,18 @@ from producers.config import ProducerConfig
 
 logger = logging.getLogger(__name__)
 
-_rule_event_producer = None
+rule_event_producer = None
 
 
 def get_producer() -> KafkaProducer:
     """Lazy initialization of Kafka producer to ensure it's created in the worker process, not at module load time."""
 
-    global _rule_event_producer
-    if _rule_event_producer is None:
+    global rule_event_producer
+    if rule_event_producer is None:
         topic = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
         logger.info(f"Initializing Kafka producer for topic {topic} in worker process.")
-        _rule_event_producer = KafkaProducer(config=ProducerConfig(), topic=topic)
-    return _rule_event_producer
+        rule_event_producer = KafkaProducer(config=ProducerConfig(), topic=topic)
+    return rule_event_producer
 
 
 class Action:
