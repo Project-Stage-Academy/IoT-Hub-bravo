@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 _rule_event_producer = None
 
+
 def get_producer() -> KafkaProducer:
     """Lazy initialization of Kafka producer to ensure it's created in the worker process, not at module load time."""
 
@@ -69,7 +70,7 @@ class Action:
 
         try:
             producer = get_producer()
-            
+
             producer.produce(payload=payload, key=str(rule.id))
             producer.flush(timeout=10.0)
 
