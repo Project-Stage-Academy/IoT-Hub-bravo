@@ -1,5 +1,6 @@
 import csv
 
+from django import forms
 from django.contrib import admin
 from django.db.models import Max
 from django.http import HttpResponse
@@ -8,8 +9,33 @@ from django.utils.html import format_html, format_html_join
 from .models import Device, Telemetry, Metric, DeviceMetric
 
 
+class DeviceAdminForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        self.current_user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        if self.current_user and not self.current_user.is_superuser:
+            self.fields["user"].disabled = True
+            self.fields["user"].required = False
+
+    class Meta:
+        model = Device
+        fields = "__all__"
+
+
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
+    form = DeviceAdminForm
+
+    def get_form(self, request, obj=None, **kwargs):
+        Form = super().get_form(request, obj, **kwargs)
+
+        class FormWithUser(Form):
+            def __init__(self_inner, *args, **inner_kwargs):
+                inner_kwargs.setdefault("user", request.user)
+                Form.__init__(self_inner, *args, **inner_kwargs)
+
+        return FormWithUser
+
     list_display = (
         "id",
         "serial_id",
@@ -52,6 +78,11 @@ class DeviceAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    def save_model(self, request, obj, form, change):
+        if not request.user.is_superuser and not obj.user_id:
+            obj.user = request.user
+        super().save_model(request, obj, form, change)
 
     def get_queryset(self, request):
         """
@@ -219,23 +250,6 @@ class TelemetryAdmin(admin.ModelAdmin):
             return qs
         return qs.filter(device_metric__device__user=request.user)
 
-    def has_add_permission(self, request):
-        return request.user.is_staff or request.user.is_superuser
-
-    def has_change_permission(self, request, obj=None):
-        if request.user.is_superuser:
-            return True
-        if obj is None:
-            return request.user.is_staff
-        return request.user.is_staff and obj.device_metric.device.user == request.user
-
-    def has_delete_permission(self, request, obj=None):
-        if request.user.is_superuser:
-            return True
-        if obj is None:
-            return request.user.is_staff
-        return request.user.is_staff and obj.device_metric.device.user == request.user
-
     def has_view_permission(self, request, obj=None):
         if request.user.is_superuser:
             return True
@@ -252,8 +266,32 @@ class MetricAdmin(admin.ModelAdmin):
     readonly_fields = ("id",)
 
 
+class DeviceMetricAdminForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        if self.user and not self.user.is_superuser:
+            self.fields["device"].queryset = self.fields["device"].queryset.filter(user=self.user)
+
+    class Meta:
+        model = DeviceMetric
+        fields = "__all__"
+
+
 @admin.register(DeviceMetric)
 class DeviceMetricAdmin(admin.ModelAdmin):
+    form = DeviceMetricAdminForm
+
+    def get_form(self, request, obj=None, **kwargs):
+        Form = super().get_form(request, obj, **kwargs)
+
+        class FormWithUser(Form):
+            def __init__(self_inner, *args, **inner_kwargs):
+                inner_kwargs.setdefault("user", request.user)
+                Form.__init__(self_inner, *args, **inner_kwargs)
+
+        return FormWithUser
+
     list_display = ("id", "device", "metric", "device_active")
 
     @admin.display(boolean=True, description="Device Active")
