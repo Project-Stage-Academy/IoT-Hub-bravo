@@ -12,8 +12,17 @@ from producers.config import ProducerConfig
 
 logger = logging.getLogger(__name__)
 
-KAFKA_TOPIC = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
-rule_event_producer = KafkaProducer(config=ProducerConfig(), topic=KAFKA_TOPIC)
+_rule_event_producer = None
+
+def get_producer() -> KafkaProducer:
+    """Lazy initialization of Kafka producer to ensure it's created in the worker process, not at module load time."""
+
+    global _rule_event_producer
+    if _rule_event_producer is None:
+        topic = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
+        logger.info(f"Initializing Kafka producer for topic {topic} in worker process.")
+        _rule_event_producer = KafkaProducer(config=ProducerConfig(), topic=topic)
+    return _rule_event_producer
 
 
 class Action:
@@ -32,7 +41,6 @@ class Action:
             severity = rule.action.get('severity', 'info')
 
         events_created_total.labels(severity=severity).inc()
-
         event_uuid = str(uuid.uuid4())
 
         payload = {
@@ -60,9 +68,10 @@ class Action:
         )
 
         try:
-            rule_event_producer.produce(payload=payload, key=str(rule.id))
-
-            rule_event_producer.flush()
+            producer = get_producer()
+            
+            producer.produce(payload=payload, key=str(rule.id))
+            producer.flush(timeout=10.0)
 
         except Exception:
             logger.exception('Failed to publish event to Kafka')
