@@ -2,6 +2,7 @@ import logging
 import time
 from django.core.cache import caches
 from django.conf import settings
+from django.db.models.signals import post_save, post_delete
 
 from apps.rules.models.rule import Rule
 from apps.devices.models.telemetry import Telemetry
@@ -49,10 +50,24 @@ class RuleProcessor:
             mapped_telemetry = map_telemetry_json_to_event(telemetry)
         elif isinstance(telemetry, TelemetryEvent):
             mapped_telemetry = telemetry
+        else:
+            raise TypeError(f"Unsupported telemetry type: {type(telemetry)}")    
 
         cache_key = f"{mapped_telemetry.device_serial_id}:{mapped_telemetry.metric_type}"
 
-        rules = cache_rule.get(cache_key)
+        rules = cache_rule.get_or_set(
+            cache_key,
+            lambda: list(
+                Rule.objects.filter(
+                    is_active=True, device_metric__in=DeviceMetric.objects.filter(
+                        device__serial_id=mapped_telemetry.device_serial_id,
+                        metric__metric_type=mapped_telemetry.metric_type,
+                    )
+                ).select_related('device_metric__metric')
+            ),
+            timeout=settings.RULES_CACHE_TTL
+        )
+
         if rules is None:
             device_metrics = DeviceMetric.objects.filter(
                 device__serial_id=mapped_telemetry.device_serial_id,

@@ -30,9 +30,6 @@ def rule_create(rule_data: dict[str, Any]) -> Rule:
 
 def rule_put(rule_id: int, rule_data: dict[str, Any]) -> Rule:
     logger.debug("Full update rule id=%s", rule_id)
-    # for field in required_fields:
-    #     if field not in rule_data:
-    #         raise ValidationError(f"{field} is required for PUT")
 
     rule = Rule.objects.get(id=rule_id)
 
