@@ -17,7 +17,6 @@ PYTHON_OPERATOR_MAP = {
     "!=": operator.ne,
 }
 
-DEFAULT_DURATION_MINUTES = 5  # default value for time window
 DEFAULT_THRESHOLD_PERCENTAGE = 0.8  # default value to meet "threshold"
 
 
@@ -53,19 +52,6 @@ def _validate_metric(device_metric, telemetry: TelemetryEvent) -> None:
             },
         )
         raise ValueError("Rule metric must match a telemetry metric field")
-
-
-def _get_duration_minutes(condition: dict) -> int:
-    """Get minutes duration for time window from rule.condition"""
-    return condition.get("duration_minutes") or DEFAULT_DURATION_MINUTES
-
-
-def _validate_duration_minutes(value: Any) -> int:
-    """Ensure duration_minutes is int >= 0, fallback to default if invalid"""
-    if isinstance(value, int) and value > 0:
-        return value
-    logger.warning(f"Invalid duration_minutes: {value}, using default {DEFAULT_DURATION_MINUTES}")
-    return DEFAULT_DURATION_MINUTES
 
 
 def _validate_count(value: Any) -> int:
@@ -115,16 +101,15 @@ class RateEvaluator:
         in the past `duration_minutes` meets or exceeds `count`.
         """
         count_required = _validate_count(condition.get("count"))
-        duration_minutes = _validate_duration_minutes(_get_duration_minutes(condition))
 
-        if count_required is None or duration_minutes is None:
-            logger.error("Rate rule missing 'count' or 'duration_minutes'")
+        if count_required is None:
+            logger.error("Rate rule missing 'count'")
             return False
 
         event_count = len(telemetries_in_window)
 
         logger.info(
-            f"Rate rule check: {event_count} events in last {duration_minutes} min, need {count_required}"
+            f"Rate rule check: {event_count} events, need {count_required}"
         )
 
         return event_count >= count_required
