@@ -33,7 +33,7 @@ INSTALLED_APPS += [
     'apps.common',
     'apps.devices',
     'apps.users',
-    'apps.rules',
+    'apps.rules.apps.RulesConfig',
 ]
 
 ASGI_APPLICATION = 'conf.asgi.application'
