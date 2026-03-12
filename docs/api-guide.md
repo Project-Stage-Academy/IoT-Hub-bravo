@@ -106,6 +106,15 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 | `/api/telemetry/{id}/` | PATCH  | `telemetry:write`  | admin          |
 | `/api/telemetry/{id}/` | DELETE | `telemetry:delete` | admin          |
 
+**Rules API**
+| Endpoint                  | Method              | Required Scope    | Required Role      |
+| ------------------------- | ------------------- | ----------------- | ------------------ |
+| `/api/rules/`             | GET                 | `rules:read`      | client, admin      |
+| `/api/rules/`             | POST                | `rules:write`     | client, admin      |
+| `/api/rules/{id}/`        | GET                 | `rules:read`      | client, admin      |
+| `/api/rules/{id}/`        | PUT, PATCH, DELETE   | `rules:write`     | client, admin      |
+| `/api/rules/evaluate/`    | POST                | `rules:write`     | client, admin      |
+
 **Events API**
 | Endpoint                  | Method | Required Scope    | Required Role      |
 | ------------------------- | ------ | ----------------- | ------------------ |
