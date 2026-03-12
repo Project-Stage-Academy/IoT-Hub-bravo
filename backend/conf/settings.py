@@ -352,3 +352,9 @@ LOGGING = {
 }
 
 TELEMETRY_SYNC_HEADER = 'Ingest-Sync'
+TELEMETRY_MAX_AGE_SECONDS = config('TELEMETRY_MAX_AGE_SECONDS', default=3600, cast=int)
+
+# Redis configuration
+
+REDIS_HOST = config('REDIS_HOST', default='redis')
+REDIS_PORT = config('REDIS_PORT', default='6379')

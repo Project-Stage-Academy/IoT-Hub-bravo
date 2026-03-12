@@ -6,9 +6,9 @@ class BaseValidator:
     def errors(self):
         return self._errors
 
-    def is_valid(self) -> bool:
-        self._validate()
+    def validate(self) -> None:
+        self._validate_payload()
         return not self._errors
 
-    def _validate(self):
+    def _validate_payload(self):
         raise NotImplementedError

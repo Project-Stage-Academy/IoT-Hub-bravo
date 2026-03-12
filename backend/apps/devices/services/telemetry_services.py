@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Literal
 
 from apps.devices.models import Device, DeviceMetric
 from apps.devices.models.telemetry import Telemetry
@@ -16,19 +16,17 @@ IngestStatus = Literal["success", "partial_success", "failed"]
 class TelemetryValidationResult:
     validated_rows: list[dict] = field(default_factory=list)
     errors: list[dict] = field(default_factory=list)
+    expired_rows: list[dict] = field(default_factory=list)
 
 
 @dataclass(slots=True)
 class TelemetryIngestResult:
     attempted_count: int = 0  # how many rows we tried to create
     created_count: int = 0  # how many were actually inserted
-    errors: list[dict] = field(default_factory=list)
     status: IngestStatus = "success"
 
 
-def telemetry_create(
-    *, valid_data: list[dict], validation_errors: list[dict] | None = None
-) -> TelemetryIngestResult:
+def telemetry_create(*, valid_data: list[dict]) -> TelemetryIngestResult:
     """
     Service function to ingest telemetry. Creates multiple
     Telemetry objects for each metric-value pair provided.
@@ -38,12 +36,11 @@ def telemetry_create(
     logger.info("Starting telemetry ingestion for %d items", len(valid_data))
 
     result = TelemetryIngestResult()
-    result.errors = validation_errors or []
     result.attempted_count = len(valid_data)
 
     if not valid_data:
         logger.info("No valid telemetry rows to create.")
-        result.status = "failed" if result.errors else "success"
+        result.status = "success"
         return result
 
     # Load DeviceMetrics for publish payloads
@@ -61,11 +58,6 @@ def telemetry_create(
         )
         for row in valid_data
     ]
-
-    logger.info(
-        "Attempting to create %d telemetry rows.",
-        result.attempted_count,
-    )
 
     created_objects = Telemetry.objects.bulk_create(
         to_create,
@@ -87,9 +79,13 @@ def telemetry_create(
                 ts=row["ts"],
             )
 
-    if result.errors and result.created_count == 0:
+    if result.attempted_count == 0:
+        result.status = "success"
+
+    elif result.created_count == 0:
         result.status = "failed"
-    elif result.errors:
+
+    elif result.created_count < result.attempted_count:
         result.status = "partial_success"
     else:
         result.status = "success"
@@ -118,7 +114,7 @@ def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
         payload_list = payload
 
     validator = TelemetryBatchValidator(payload=payload_list)
-    validator.is_valid()
+    validator.validate()
 
     if validator.errors:
         logger.warning(
@@ -133,15 +129,7 @@ def telemetry_validate(payload: dict | list[dict]) -> TelemetryValidationResult:
     )
 
     return TelemetryValidationResult(
-        validated_rows=validator.validated_rows, errors=validator.errors
+        validated_rows=validator.validated_rows,
+        errors=validator.invalid_rows,
+        expired_rows=validator.expired_rows,
     )
-
-
-def _value_matches_data_type(value: Any, data_type: str) -> bool:
-    if data_type == "numeric":
-        return isinstance(value, (int, float)) and not isinstance(value, bool)
-    if data_type == "bool":
-        return isinstance(value, bool)
-    if data_type == "str":
-        return isinstance(value, str)
-    return False

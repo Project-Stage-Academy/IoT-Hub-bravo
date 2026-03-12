@@ -251,6 +251,17 @@ services:
       kafka:
         condition: service_healthy
 
+  kafka-telemetry-validator:
+    <<: *django_base
+    image: iot-hub-kafka-telemetry-validator
+    container_name: kafka-telemetry-validator
+    command: [ "python", "-m", "consumers.telemetry_validator" ]
+    environment:
+      KAFKA_GROUP_ID: telemetry-validator
+    depends_on:
+      kafka:
+        condition: service_healthy
+        
   rule-engine:
     <<: *django_base
     image: iot-hub-rule-engine
