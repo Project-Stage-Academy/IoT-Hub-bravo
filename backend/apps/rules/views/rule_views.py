@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.db import IntegrityError
 
 from apps.rules.serializers.rule_serializers import RuleCreateSerializer, RulePatchSerializer
 from apps.rules.services.rule_service import rule_create, rule_put, rule_patch, rule_delete
@@ -115,7 +116,19 @@ class RuleView(View):
                 {"code": 403, "message": "DeviceMetric does not belong to the user"}, status=403
             )
 
-        rule = rule_create(rule_data=serializer.validated_data)
+        try:
+            rule = rule_create(rule_data=serializer.validated_data)
+        except IntegrityError as e:
+            if "unique_rule_name_per_device_metric" in str(e):
+                return JsonResponse(
+                    {
+                        "code": 400,
+                        "message": "Rule with this name already exists for this device_metric.",
+                    },
+                    status=400,
+                )
+            raise
+
         data = {
             "id": rule.id,
             "name": rule.name,

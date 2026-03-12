@@ -57,9 +57,7 @@ def _validate_metric(device_metric, telemetry: TelemetryEvent) -> None:
 
 def _get_duration_minutes(condition: dict) -> int:
     """Get minutes duration for time window from rule.condition"""
-    return (
-        condition.get("duration_minutes") or condition.get("minutes") or DEFAULT_DURATION_MINUTES
-    )
+    return condition.get("duration_minutes") or DEFAULT_DURATION_MINUTES
 
 
 def _validate_duration_minutes(value: Any) -> int:
