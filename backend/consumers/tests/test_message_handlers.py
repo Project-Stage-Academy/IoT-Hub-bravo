@@ -14,7 +14,7 @@ class TestCeleryPayloadHandler:
         payload = {'device_id': 'DEV-001', 'temperature': 25.5}
         handler.handle(payload)
 
-        task.delay.assert_called_once_with(payload)
+        task.delay.assert_called_once_with(payload, source='unknown')
 
     def test_handle_calls_task_delay_with_list_payload(self):
         """Test handle() calls task.delay() with a list payload."""
@@ -24,7 +24,7 @@ class TestCeleryPayloadHandler:
         payload = [{'device_id': 'DEV-001'}, {'device_id': 'DEV-002'}]
         handler.handle(payload)
 
-        task.delay.assert_called_once_with(payload)
+        task.delay.assert_called_once_with(payload, source='unknown')
 
     def test_stores_task_reference(self):
         """Test that constructor stores the task internally."""

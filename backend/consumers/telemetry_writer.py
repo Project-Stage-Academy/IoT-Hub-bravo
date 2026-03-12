@@ -48,7 +48,7 @@ def main():
     consumer = KafkaConsumer(
         config=ConsumerConfig(),
         topics=[TOPIC],
-        handler=CeleryPayloadHandler(ingest_telemetry_payload),
+        handler=CeleryPayloadHandler(ingest_telemetry_payload, source='kafka'),
         consume_timeout=CONSUME_TIMEOUT,
         decode_json=DECODE_JSON,
         consume_batch=CONSUME_BATCH,
