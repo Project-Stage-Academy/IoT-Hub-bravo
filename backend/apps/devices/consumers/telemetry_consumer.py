@@ -1,9 +1,17 @@
 import json
 from urllib.parse import parse_qs
 from channels.generic.websocket import AsyncWebsocketConsumer
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TelemetryConsumer(AsyncWebsocketConsumer):
+    """
+    WebSocket consumer for telemetry stream. Requires JWT with claim 'role' (admin/client).
+    Close codes 4401/4403/4404 are application-specific (RFC 6455 allows 4xxx for app use).
+    """
+
     ALLOWED_ROLES = {"admin", "client"}
     BASE_GROUP = "telemetry.global"
 
@@ -19,6 +27,10 @@ class TelemetryConsumer(AsyncWebsocketConsumer):
             await self.close(code=4403)
             return
 
+        if self.channel_layer is None:
+            await self.close(code=4404)
+            return
+
         params = parse_qs(self.scope.get("query_string", b"").decode())
         device = (params.get("device", [None])[0] or "").strip()
         metric = (params.get("metric", [None])[0] or "").strip()
@@ -29,14 +41,15 @@ class TelemetryConsumer(AsyncWebsocketConsumer):
         if metric:
             self.groups_to_join.append(f"telemetry.metric.{metric}")
 
-        for group_name in self.groups_to_join:
-            await self.channel_layer.group_add(group_name, self.channel_name)
+        try:
+            for group_name in self.groups_to_join:
+                await self.channel_layer.group_add(group_name, self.channel_name)
+        except Exception as e:
+            logger.error("Error connecting to telemetry stream: %s", e)
+            await self.close(code=4500)
+            return
 
         await self.accept()
-
-        if self.channel_layer is None:
-            await self.close(code=4404)
-            return
 
     async def disconnect(self, close_code):
         if self.channel_layer is not None:
