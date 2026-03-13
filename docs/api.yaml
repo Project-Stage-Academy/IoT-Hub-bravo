@@ -1665,6 +1665,84 @@ paths:
               example:
                 detail: "Event not found"
 
+  /api/events/external/:
+    post:
+      tags:
+        - External Integrations
+      operationId: receiveExternalEvent
+      summary: Receive event from external system
+      description: |
+        Accepts events originating from external systems such as webhooks or third-party IoT platforms.
+        The event is validated and mapped to internal actions (for example creating an Event or triggering a Rule).
+
+        ### Example Use Case
+        An external IoT platform detects high temperature and sends a webhook to this endpoint.
+        The system maps the event to an internal rule and creates an Event record.
+
+      security:
+        - BearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalEventRequest"
+            example:
+              source: "external_iot_platform"
+              external_event_id: "evt-884422"
+              device_external_id: "device-77"
+              event_type: "temperature_alert"
+              timestamp: "2026-03-12T10:15:00Z"
+              payload:
+                temperature: 85.2
+                unit: "celsius"
+
+      responses:
+        "202":
+          description: Event accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalEventAccepted"
+              example:
+                status: accepted
+                event_id: 345
+                message: Event successfully received and queued for processing
+
+        "400":
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: 400
+                message: Invalid event payload
+
+        "401":
+          description: Unauthorized request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "409":
+          description: Duplicate external event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: 409
+                message: Event with this external_event_id already processed
+
+        "500":
+          description: Internal processing error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   securitySchemes:
@@ -2031,54 +2109,6 @@ components:
         - status
       example:
         status: "accepted"
-
-    # TelemetryPatch:
-    #   type: object
-    #   properties:
-    #     key:
-    #       type: string
-    #       example: "temperature"
-    #     value:
-    #       type: number
-    #       example: 24.3
-    #   example:
-    #     key: "temperature"
-    #     value: 24.3
-
-    # VersionedTelemetryCreate:
-    #   type: object
-    #   properties:
-    #     schema_version:
-    #       type: string
-    #       example: "v1"
-    #     telemetry:
-    #       $ref: '#/components/schemas/TelemetryCreate'
-    #   required:
-    #     - schema_version
-    #     - telemetry
-    #   example:
-    #     schema_version: "v2"
-    #     telemetry:
-    #       device_id: 1
-    #       key: "humidity"
-    #       value: 25.43
-
-    # VersionedTelemetryPatch:
-    #   type: object
-    #   properties:
-    #     schema_version:
-    #       type: string
-    #       example: "v1.0"
-    #     telemetry:
-    #       $ref: '#/components/schemas/TelemetryPatch'
-    #   required:
-    #     - schema_version
-    #     - telemetry
-    #   example:
-    #     schema_version: "v1.2"
-    #     telemetry:
-    #       key: "temperature"
-    #       value: 24.3
 
     AuthLoginRequest:
       type: object
@@ -2634,84 +2664,6 @@ components:
         rule_id: 1
         triggered: true    
     
-    # NOTE: for future usage
-    # Event:
-    #   type: object
-    #   description: Rule evaluation event (rule firing)
-    #   properties:
-    #     id:
-    #       type: integer
-    #       example: 11
-    #     rule_id:
-    #       type: integer
-    #       example: 66
-    #     acknowledged:
-    #       type: boolean
-    #       example: false
-    #     timestamp:
-    #       type: string
-    #       format: date-time
-    #       example: "2026-01-22T16:30:00Z"
-    #     created_at:
-    #       type: string
-    #       format: date-time
-    #       example: "2026-01-22T16:31:00Z"
-    #     trigger_telemetry_id:
-    #       type: integer
-    #       nullable: true
-    #       example: 11
-    #   required:
-    #     - id
-    #     - rule_id
-    #     - timestamp
-    #     - created_at
-    #   example:
-    #     id: 1
-    #     rule_id: 1
-    #     acknowledged: false
-    #     timestamp: "2026-01-22T16:30:00Z"
-    #     created_at: "2026-01-22T16:31:00Z"
-    #     trigger_telemetry_id: 1
-
-
-    # PaginatedEvents:
-    #   type: object
-    #   properties:
-    #     total:
-    #       type: integer
-    #       example: 50
-    #     limit:
-    #       type: integer
-    #       example: 20
-    #     offset:
-    #       type: integer
-    #       example: 0
-    #     items:
-    #       type: array
-    #       items:
-    #         $ref: '#/components/schemas/Event'
-    #   required:
-    #     - total
-    #     - limit
-    #     - offset
-    #     - items
-    #   example:
-    #     total: 50
-    #     limit: 20
-    #     offset: 0
-    #     items:
-    #       - id: "550e8400-e29b-41d4-a716-446655440000"
-    #         name: "High Temperature Alert"
-    #         description: "Alert when temperature exceeds 30°C"
-    #         is_active: true
-    #         condition:
-    #           type: "threshold"
-    #           operator: ">"
-    #           value: 30
-    #         action:
-    #           type: "notify"
-    #           message: "User_1 temperature is overwhelming"
-    #         device_metric: "123e4567-e89b-12d3-a456-426614174000"
     Event:
       type: object
       properties:
@@ -2754,3 +2706,56 @@ components:
               value: 60
               unit: "celsius"
           ts: "2024-04-13T18:45:37Z"
+
+    ExternalEventRequest:
+      type: object
+      required:
+        - source
+        - external_event_id
+        - event_type
+        - timestamp
+      properties:
+
+        source:
+          type: string
+          description: Name of the external system sending the event
+          example: external_iot_platform
+
+        external_event_id:
+          type: string
+          description: Unique identifier of the event in the external system
+          example: evt-884422
+
+        device_external_id:
+          type: string
+          description: Device identifier used by the external system
+
+        event_type:
+          type: string
+          description: Type of the external event
+          example: temperature_alert
+
+        timestamp:
+          type: string
+          format: date-time
+
+        payload:
+          type: object
+          description: Raw payload received from the external system
+          additionalProperties: true
+
+
+    ExternalEventAccepted:
+      type: object
+      properties:
+
+        status:
+          type: string
+          example: accepted
+
+        event_id:
+          type: integer
+          description: Internal event ID created by the system
+
+        message:
+          type: string
