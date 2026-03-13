@@ -5,7 +5,7 @@ Tests call ingest_telemetry_payload directly with real DB to verify
 the full ingestion pipeline end-to-end.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import pytest
 from unittest.mock import patch
@@ -153,26 +153,27 @@ class TestBatchPayload:
         dm_temp,
     ):
         """Batch of valid payloads creates all Telemetry rows."""
+        now = datetime.now(timezone.utc)
         payloads = [
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 20.0, 'unit': 'celsius'},
                 },
-                ts='2026-03-13T12:00:00Z',
+                ts=now.isoformat(),
             ),
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 21.0, 'unit': 'celsius'},
                 },
-                ts='2026-03-13T12:01:00Z',
+                ts=(now + timedelta(seconds=1)).isoformat(),
             ),
         ]
-
         ingest_telemetry_payload(payload=payloads, source='kafka')
 
         assert Telemetry.objects.filter(device_metric=dm_temp).count() == 2
+
 
     def test_mixed_batch_creates_only_valid(
         self,
