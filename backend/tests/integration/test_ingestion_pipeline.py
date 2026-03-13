@@ -268,7 +268,7 @@ class TestValidationErrors:
 class TestEdgeCases:
     """E2E tests for edge cases."""
 
-    def test_invalid_payload_type_logs_error(self,caplog):
+    def test_invalid_payload_type_logs_error(self, caplog):
 
         invalid_payload = "not-valid"
 
