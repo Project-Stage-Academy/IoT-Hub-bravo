@@ -150,7 +150,7 @@ class TestBatchPayload:
         dm_temp,
     ):
         """Batch of valid payloads creates all Telemetry rows."""
-        ts = timezone.now().isoformat()
+        ts = datetime.now(timezone.utc).isoformat()
         payloads = [
             make_payload(
                 'INT-001',
@@ -267,12 +267,15 @@ class TestValidationErrors:
 class TestEdgeCases:
     """E2E tests for edge cases."""
 
-    def test_invalid_payload_type_logs_error(self, caplog):
-        """Non dict/list payload logs an error and does not raise."""
-        with caplog.at_level("ERROR"):
-            ingest_telemetry_payload(payload='not-valid', source='mqtt')
+    def test_invalid_payload_type_logs_error(self, caplog, mocker):
+        invalid_payload = "not-valid"
 
-        assert any("payload must be of type dict or list" in rec.message for rec in caplog.records)
+        fake_self = mocker.Mock()
+        with caplog.at_level("ERROR"):
+            result = ingest_telemetry_payload(fake_self, payload=invalid_payload, source="mqtt")
+
+        assert result is None
+        assert "payload must be of type dict or list" in caplog.text
 
     def test_empty_batch_returns_early(self, mock_publish):
         """Empty list payload is rejected by serializer."""
