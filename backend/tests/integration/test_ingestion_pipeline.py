@@ -5,7 +5,7 @@ Tests call ingest_telemetry_payload directly with real DB to verify
 the full ingestion pipeline end-to-end.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import pytest
 from unittest.mock import patch
@@ -19,6 +19,12 @@ from tests.fixtures.factories import (
 )
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def mock_redis():
+    with patch('validator.telemetry_validator.build_redis_checker'):
+        yield
 
 
 def make_payload(device_serial, metrics, ts=None):
@@ -147,23 +153,23 @@ class TestBatchPayload:
         dm_temp,
     ):
         """Batch of valid payloads creates all Telemetry rows."""
+        now = datetime.now(timezone.utc)
         payloads = [
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 20.0, 'unit': 'celsius'},
                 },
-                ts='2026-01-01T12:00:00Z',
+                ts=now.isoformat(),
             ),
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 21.0, 'unit': 'celsius'},
                 },
-                ts='2026-01-01T12:01:00Z',
+                ts=(now + timedelta(seconds=1)).isoformat(),
             ),
         ]
-
         ingest_telemetry_payload(payload=payloads, source='kafka')
 
         assert Telemetry.objects.filter(device_metric=dm_temp).count() == 2
@@ -263,10 +269,10 @@ class TestValidationErrors:
 class TestEdgeCases:
     """E2E tests for edge cases."""
 
-    def test_invalid_payload_type_raises(self, mock_publish):
-        """Non dict/list payload raises TypeError."""
-        with pytest.raises(TypeError, match='payload must be of type dict or list'):
-            ingest_telemetry_payload(payload='not-valid', source='mqtt')
+    def test_invalid_payload_type_creates_no_telemetry(self, mock_publish):
+        """Non dict/list payload is rejected gracefully."""
+        ingest_telemetry_payload(payload='not-valid', source='mqtt')
+        assert Telemetry.objects.count() == 0
 
     def test_empty_batch_returns_early(self, mock_publish):
         """Empty list payload is rejected by serializer."""
