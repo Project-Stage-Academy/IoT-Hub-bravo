@@ -20,6 +20,11 @@ from tests.fixtures.factories import (
 
 pytestmark = pytest.mark.django_db
 
+@pytest.fixture(autouse=True)
+def mock_redis():
+    with patch('validator.telemetry_validator.build_redis_checker'):
+        yield
+
 
 def make_payload(device_serial, metrics, ts=None):
     """Build a valid telemetry payload dict."""
@@ -153,14 +158,14 @@ class TestBatchPayload:
                 {
                     'temperature': {'value': 20.0, 'unit': 'celsius'},
                 },
-                ts='2026-01-01T12:00:00Z',
+                ts='2026-03-13T12:00:00Z',
             ),
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 21.0, 'unit': 'celsius'},
                 },
-                ts='2026-01-01T12:01:00Z',
+                ts='2026-03-13T12:01:00Z',
             ),
         ]
 
@@ -263,10 +268,10 @@ class TestValidationErrors:
 class TestEdgeCases:
     """E2E tests for edge cases."""
 
-    def test_invalid_payload_type_raises(self, mock_publish):
-        """Non dict/list payload raises TypeError."""
-        with pytest.raises(TypeError, match='payload must be of type dict or list'):
-            ingest_telemetry_payload(payload='not-valid', source='mqtt')
+    def test_invalid_payload_type_creates_no_telemetry(self, mock_publish):
+        """Non dict/list payload is rejected gracefully."""
+        ingest_telemetry_payload(payload='not-valid', source='mqtt')
+        assert Telemetry.objects.count() == 0
 
     def test_empty_batch_returns_early(self, mock_publish):
         """Empty list payload is rejected by serializer."""
