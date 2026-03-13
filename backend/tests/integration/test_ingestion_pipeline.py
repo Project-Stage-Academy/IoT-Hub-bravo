@@ -8,6 +8,7 @@ the full ingestion pipeline end-to-end.
 from datetime import datetime, timezone
 
 import pytest
+import fakeredis
 from unittest.mock import patch
 
 from apps.devices.models.telemetry import Telemetry
@@ -69,6 +70,7 @@ def dm_door(device, door_metric):
 
 
 @patch('apps.devices.services.telemetry_services.publish_telemetry_event')
+@patch("apps.common.checker.idempotency_store.redis.Redis", fakeredis.FakeRedis)
 class TestSinglePayload:
     """E2E tests for single dict payloads."""
 
