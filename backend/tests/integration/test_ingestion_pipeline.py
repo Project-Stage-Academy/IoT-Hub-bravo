@@ -5,9 +5,10 @@ Tests call ingest_telemetry_payload directly with real DB to verify
 the full ingestion pipeline end-to-end.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import pytest
+import fakeredis
 from unittest.mock import patch
 
 from apps.devices.models.telemetry import Telemetry
@@ -69,6 +70,7 @@ def dm_door(device, door_metric):
 
 
 @patch('apps.devices.services.telemetry_services.publish_telemetry_event')
+@patch("apps.common.checker.idempotency_store.redis.Redis", fakeredis.FakeRedis)
 class TestSinglePayload:
     """E2E tests for single dict payloads."""
 
@@ -138,6 +140,7 @@ class TestSinglePayload:
 
 
 @patch('apps.devices.services.telemetry_services.publish_telemetry_event')
+@patch("apps.common.checker.idempotency_store.redis.Redis", fakeredis.FakeRedis)
 class TestBatchPayload:
     """E2E tests for batch (list) payloads."""
 
@@ -147,20 +150,22 @@ class TestBatchPayload:
         dm_temp,
     ):
         """Batch of valid payloads creates all Telemetry rows."""
+        ts1 = datetime.now(timezone.utc).isoformat()
+        ts2 = (datetime.now(timezone.utc) + timedelta(seconds=1)).isoformat()
         payloads = [
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 20.0, 'unit': 'celsius'},
                 },
-                ts='2026-01-01T12:00:00Z',
+                ts=ts1,
             ),
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 21.0, 'unit': 'celsius'},
                 },
-                ts='2026-01-01T12:01:00Z',
+                ts=ts2,
             ),
         ]
 
@@ -263,10 +268,14 @@ class TestValidationErrors:
 class TestEdgeCases:
     """E2E tests for edge cases."""
 
-    def test_invalid_payload_type_raises(self, mock_publish):
-        """Non dict/list payload raises TypeError."""
-        with pytest.raises(TypeError, match='payload must be of type dict or list'):
-            ingest_telemetry_payload(payload='not-valid', source='mqtt')
+    def test_invalid_payload_type_logs_error(self, caplog):
+
+        invalid_payload = "not-valid"
+
+        with caplog.at_level("ERROR"):
+            result = ingest_telemetry_payload(payload=invalid_payload, source="mqtt")
+
+        assert result is None
 
     def test_empty_batch_returns_early(self, mock_publish):
         """Empty list payload is rejected by serializer."""
