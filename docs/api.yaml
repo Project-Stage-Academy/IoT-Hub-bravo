@@ -2735,7 +2735,9 @@ components:
         trigger_telemetry:
           allOf:
             - $ref: "#/components/schemas/Telemetry"
-          nullable: true
+            - type: object
+              nullable: true
+          description: Snapshot of telemetry payload that triggered this event
       example:
         id: 123
         timestamp: "2026-01-25T09:20:00+00:00"
