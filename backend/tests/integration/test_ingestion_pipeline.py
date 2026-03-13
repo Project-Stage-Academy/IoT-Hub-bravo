@@ -20,6 +20,7 @@ from tests.fixtures.factories import (
 
 pytestmark = pytest.mark.django_db
 
+
 @pytest.fixture(autouse=True)
 def mock_redis():
     with patch('validator.telemetry_validator.build_redis_checker'):

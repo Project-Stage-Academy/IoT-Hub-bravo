@@ -101,7 +101,9 @@ def validate_telemetry_payload(self, payload: dict | list) -> dict:
 
     if not serializer.valid_items:
         error_count = len(serializer.item_errors) if serializer.item_errors else len(payload)
-        ingestion_errors_total.labels(source=source, error_type='validation_error').inc(error_count)
+        ingestion_errors_total.labels(source=source, error_type='validation_error').inc(
+            error_count
+        )
         ingestion_messages_total.labels(source=source, status='error').inc(error_count)
         logger.warning("Telemetry validation rejected: no valid items.")
         latency = time.perf_counter() - start_time
@@ -116,7 +118,9 @@ def validate_telemetry_payload(self, payload: dict | list) -> dict:
     if valid_count > 0:
         ingestion_messages_total.labels(source=source, status='success').inc(valid_count)
     if error_count > 0:
-        ingestion_errors_total.labels(source=source, error_type='validation_error').inc(error_count)
+        ingestion_errors_total.labels(source=source, error_type='validation_error').inc(
+            error_count
+        )
         ingestion_messages_total.labels(source=source, status='error').inc(error_count)
 
     latency = time.perf_counter() - start_time
@@ -134,7 +138,6 @@ def validate_telemetry_payload(self, payload: dict | list) -> dict:
         "errors": error_count,
         "expired": len(validation_result.expired_rows),
     }
-
 
 
 @shared_task(
