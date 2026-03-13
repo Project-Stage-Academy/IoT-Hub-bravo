@@ -140,6 +140,7 @@ class TestSinglePayload:
 
 
 @patch('apps.devices.services.telemetry_services.publish_telemetry_event')
+@patch("apps.common.checker.idempotency_store.redis.Redis", fakeredis.FakeRedis)
 class TestBatchPayload:
     """E2E tests for batch (list) payloads."""
 
@@ -265,10 +266,12 @@ class TestValidationErrors:
 class TestEdgeCases:
     """E2E tests for edge cases."""
 
-    def test_invalid_payload_type_raises(self, mock_publish):
-        """Non dict/list payload raises TypeError."""
-        with pytest.raises(TypeError, match='payload must be of type dict or list'):
+    def test_invalid_payload_type_logs_error(self, caplog, mock_publish):
+        """Non dict/list payload logs an error and does not raise."""
+        with caplog.at_level("ERROR"):
             ingest_telemetry_payload(payload='not-valid', source='mqtt')
+
+        assert any("payload must be of type dict or list" in rec.message for rec in caplog.records)
 
     def test_empty_batch_returns_early(self, mock_publish):
         """Empty list payload is rejected by serializer."""
