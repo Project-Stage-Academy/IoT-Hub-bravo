@@ -22,6 +22,8 @@ tags:
     description: Business logic rules and event management
   - name: Events
     description: Events triggered by rules
+  - name: External Integrations
+    description: APIs for receiving events from external systems
 
 
 paths:
@@ -690,163 +692,6 @@ paths:
                   value:
                     code: 400
                     message: "Invalid telemetry payload."
-
-  # Note: The following endpoints for /api/telemetry/{id} are defined but commented out to focus on the more critical paths for testing. They can be uncommented and implemented later as needed.
-  # /api/telemetry/{id}:
-  #   get:
-  #     tags:
-  #       - Telemetry
-  #     summary: Get telemetry by id
-  #     description: Returns a telemetry record by its unique ID.
-  #     operationId: getTelemetryById
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: integer
-  #           example: 1
-  #     responses:
-  #       '200':
-  #         description: Telemetry found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Telemetry'
-  #             examples:
-  #               example_telemetry:
-  #                 value:
-  #                   id: 1
-  #                   device_id: 1
-  #                   value: 23.5
-  #                   timestamp: "2026-02-09T12:00:00Z"
-  #       '404':
-  #         description: Telemetry not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #             examples:
-  #               not_found:
-  #                 value:
-  #                   code: 404
-  #                   message: "Telemetry record not found."
-  #   put:
-  #     tags:
-  #       - Telemetry
-  #     summary: Replace telemetry
-  #     description: Fully replaces an existing telemetry record.
-  #     operationId: replaceTelemetry
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: integer
-  #           example: 1
-  #     requestBody:
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: '#/components/schemas/VersionedTelemetryCreate'
-  #           examples:
-  #             replace_telemetry:
-  #               value:
-  #                 schema_version: "v1"
-  #                 telemetry:
-  #                   device_id: 1
-  #                   value: 24.0
-  #     responses:
-  #       '200':
-  #         description: Telemetry updated
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Telemetry'
-  #       '400':
-  #         description: Invalid request
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #       '404':
-  #         description: Telemetry not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #   patch:
-  #     tags:
-  #       - Telemetry
-  #     summary: Partially update telemetry
-  #     operationId: patchTelemetry
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: integer
-  #     requestBody:
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: '#/components/schemas/VersionedTelemetryPatch'
-  #     responses:
-  #       '200':
-  #         description: Telemetry updated
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Telemetry'
-  #       '400':
-  #         description: Invalid patch
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #       '404':
-  #         description: Telemetry not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #   delete:
-  #     tags:
-  #       - Telemetry
-  #     summary: Delete telemetry
-  #     description: Deletes a telemetry record by ID.
-  #     operationId: deleteTelemetry
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: integer
-  #           example: 1 
-  #     responses:
-  #       '204':
-  #         description: Telemetry deleted successfully
-  #       '404':
-  #         description: Telemetry not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #             examples:
-  #               not_found:
-  #                 value:
-  #                   code: 404
-  #                   message: "Telemetry record not found."
 
   /api/rules/:
     get:
@@ -1726,6 +1571,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: 401
+                message: Authentication credentials were not provided
 
         "409":
           description: Duplicate external event
@@ -1743,6 +1591,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: 500
+                message: Unexpected error while processing external event
 
 components:
   securitySchemes:
@@ -2723,7 +2574,7 @@ components:
 
         external_event_id:
           type: string
-          description: Unique identifier of the event in the external system
+          description: Unique identifier of the event in the external system used for idempotency
           example: evt-884422
 
         device_external_id:
@@ -2743,6 +2594,15 @@ components:
           type: object
           description: Raw payload received from the external system
           additionalProperties: true
+      example:
+        source: external_iot_platform
+        external_event_id: evt-884422
+        device_external_id: thermostat-77
+        event_type: temperature_alert
+        timestamp: "2026-03-12T10:15:00Z"
+        payload:
+          temperature: 85.2
+          unit: celsius
 
 
     ExternalEventAccepted:
@@ -2759,3 +2619,7 @@ components:
 
         message:
           type: string
+      example:
+        status: accepted
+        event_id: 345
+        message: Event successfully received and queued for processing
