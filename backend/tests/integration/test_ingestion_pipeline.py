@@ -5,7 +5,7 @@ Tests call ingest_telemetry_payload directly with real DB to verify
 the full ingestion pipeline end-to-end.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import pytest
 import fakeredis
@@ -150,21 +150,22 @@ class TestBatchPayload:
         dm_temp,
     ):
         """Batch of valid payloads creates all Telemetry rows."""
-        ts = datetime.now(timezone.utc).isoformat()
+        ts1 = datetime.now(timezone.utc).isoformat()
+        ts2 = (datetime.now(timezone.utc) + timedelta(seconds=1)).isoformat()
         payloads = [
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 20.0, 'unit': 'celsius'},
                 },
-                ts=ts,
+                ts=ts1,
             ),
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 21.0, 'unit': 'celsius'},
                 },
-                ts=ts,
+                ts=ts2,
             ),
         ]
 
@@ -267,12 +268,12 @@ class TestValidationErrors:
 class TestEdgeCases:
     """E2E tests for edge cases."""
 
-    def test_invalid_payload_type_logs_error(self, caplog, mocker):
+    def test_invalid_payload_type_logs_error(self,caplog):
+
         invalid_payload = "not-valid"
 
-        fake_self = mocker.Mock()
         with caplog.at_level("ERROR"):
-            result = ingest_telemetry_payload(fake_self, payload=invalid_payload, source="mqtt")
+            result = ingest_telemetry_payload(payload=invalid_payload, source="mqtt")
 
         assert result is None
         assert "payload must be of type dict or list" in caplog.text
