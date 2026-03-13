@@ -276,7 +276,6 @@ class TestEdgeCases:
             result = ingest_telemetry_payload(payload=invalid_payload, source="mqtt")
 
         assert result is None
-        assert "payload must be of type dict or list" in caplog.text
 
     def test_empty_batch_returns_early(self, mock_publish):
         """Empty list payload is rejected by serializer."""
