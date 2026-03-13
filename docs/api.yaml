@@ -1512,8 +1512,14 @@ paths:
                     rule:
                       id: 1
                       name: "High Temperature"
-                    trigger_telemetry_id: 2
-                    trigger_device_id: 1
+                    trigger_telemetry:
+                      id: 1
+                      device_id: 1
+                      metric:
+                        temperature:
+                          value: 60
+                          unit: "celsius"
+                      ts: "2024-04-13T18:45:37Z"
                   - id: 124
                     timestamp: "2026-01-25T09:52:00+00:00"
                     created_at: "2026-01-25T09:53:00+00:00"
@@ -1521,8 +1527,14 @@ paths:
                     rule:
                       id: 2
                       name: "Low Battery"
-                    trigger_telemetry_id: 43
-                    trigger_device_id: 3
+                    trigger_telemetry:
+                      id: 3
+                      device_id: 43
+                      metric:
+                        battery:
+                          value: 5
+                          unit: "%"
+                      ts: "2024-04-13T18:45:37Z"
         '400':
           description: Invalid request
           content:
@@ -1567,8 +1579,14 @@ paths:
                 rule:
                   id: 1
                   name: "High Temperature"
-                trigger_telemetry_id: 2
-                trigger_device_id: 1
+                trigger_telemetry:
+                  id: 1
+                  device_id: 1
+                  metric:
+                    temperature:
+                      value: 60
+                      unit: "celsius"
+                  ts: "2024-04-13T18:45:37Z"
 
         '404':
           description: Event not found
@@ -1626,8 +1644,14 @@ paths:
                 rule:
                   id: 1
                   name: "High Temperature"
-                trigger_telemetry_id: 2
-                trigger_device_id: 1
+                trigger_telemetry:
+                  id: 1
+                  device_id: 1
+                  metric:
+                    temperature:
+                      value: 60
+                      unit: "celsius"
+                  ts: "2024-04-13T18:45:37Z"
 
         '404':
           description: Event not found
@@ -2708,11 +2732,9 @@ components:
               type: integer
             name:
               type: string
-        trigger_telemetry_id:
-          type: integer
-          nullable: true
-        trigger_device_id:
-          type: integer
+        trigger_telemetry:
+          allOf:
+            - $ref: "#/components/schemas/Telemetry"
           nullable: true
       example:
         id: 123
@@ -2722,11 +2744,11 @@ components:
         rule:
           id: 2
           name: "High Temperature Alert"
-        trigger_telemetry_id: 2
-        trigger_device_id: 1
-    #       - id: 1
-    #         rule_id: 1
-    #         acknowledged: false
-    #         timestamp: "2026-01-22T16:30:00Z"
-    #         created_at: "2026-01-22T16:31:00Z"
-    #         trigger_telemetry_id: 1        
+        trigger_telemetry:
+          id: 1
+          device_id: 1
+          metric:
+            temperature:
+              value: 60
+              unit: "celsius"
+          ts: "2024-04-13T18:45:37Z"
