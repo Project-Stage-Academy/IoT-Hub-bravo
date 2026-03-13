@@ -174,7 +174,6 @@ class TestBatchPayload:
 
         assert Telemetry.objects.filter(device_metric=dm_temp).count() == 2
 
-
     def test_mixed_batch_creates_only_valid(
         self,
         mock_publish,
