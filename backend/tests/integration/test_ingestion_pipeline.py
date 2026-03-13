@@ -150,20 +150,21 @@ class TestBatchPayload:
         dm_temp,
     ):
         """Batch of valid payloads creates all Telemetry rows."""
+        ts = timezone.now().isoformat()
         payloads = [
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 20.0, 'unit': 'celsius'},
                 },
-                ts='2026-01-01T12:00:00Z',
+                ts=ts,
             ),
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 21.0, 'unit': 'celsius'},
                 },
-                ts='2026-01-01T12:01:00Z',
+                ts=ts,
             ),
         ]
 
@@ -266,7 +267,7 @@ class TestValidationErrors:
 class TestEdgeCases:
     """E2E tests for edge cases."""
 
-    def test_invalid_payload_type_logs_error(self, caplog, mock_publish):
+    def test_invalid_payload_type_logs_error(self, caplog):
         """Non dict/list payload logs an error and does not raise."""
         with caplog.at_level("ERROR"):
             ingest_telemetry_payload(payload='not-valid', source='mqtt')
