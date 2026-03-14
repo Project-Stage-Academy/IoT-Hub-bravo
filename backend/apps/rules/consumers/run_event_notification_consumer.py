@@ -1,7 +1,6 @@
 import logging
 import os
 import signal
-import sys
 
 import django
 from decouple import config
