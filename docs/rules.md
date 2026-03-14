@@ -171,12 +171,13 @@ When a rule triggers, an **Event** is generated:
 
 ```json
 {
-  "id": 123,
+  "event_uuid": "550e8400-e29b-41d4-a716-446655440000",
   "rule_id": 456,
-  "timestamp": "2026-02-09T10:05:00Z",
+  "rule_triggered_at": "2026-02-09T10:05:00Z",
   "acknowledged": false,
   "created_at": "2026-02-09T10:05:10Z",
-  "trigger_telemetry_id": 123,
+  "trigger_device_serial_id": "SN-00042",
+  "trigger_context": {"telemetry_id": 123, "device_id": 7, "value": {"t": "numeric", "v": "35.5"}}
 }
 ```
 
@@ -184,9 +185,10 @@ When a rule triggers, an **Event** is generated:
 
 | Field          | Type     | Description                                        |
 | -------------- | -------- | -------------------------------------------------- |
-| `id`           | integer  | Unique identifier of the event                     |
+| `event_uuid`   | UUID     | Unique identifier of the event                     |
 | `rule_id`      | integer  | Reference to the rule that triggered the event     |
-| `timestamp`    | datetime | When the event occurred (evaluated telemetry time) |
+| `rule_triggered_at` | datetime | When the rule was triggered (evaluated telemetry time) |
 | `acknowledged` | boolean  | Whether the event was acknowledged                 |
 | `created_at`   | datetime | When the event record was created in the database  |
-| `trigger_telemetry_id`   | int | Which telemtry trigger the event  |
+| `trigger_device_serial_id` | string | Serial ID of the device that triggered the event |
+| `trigger_context` | JSON (nullable) | Flexible context about what triggered the event (e.g., telemetry values, thresholds) |

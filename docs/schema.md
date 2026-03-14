@@ -74,13 +74,14 @@ erDiagram
     }
 
     EVENTS {
-      bigint      id                    PK "bigserial, auto-increment"
-      timestamptz  timestamp             "not null, default: now()"
-      int          rule_id               FK "→ rules.id, not null"
-      boolean      acknowledged          "default: false, not null"
-      bigint       trigger_telemetry_id  "nullable, ID of the telemetry that triggered this event"
-      bigint       trigger_device_id     "nullable, ID of the device that triggered this event"
-      timestamp    created_at            "default: CURRENT_TIMESTAMP, not null"
+      bigint       id                         PK "auto-increment"
+      uuid         event_uuid                 "UUID, unique, not null, default uuid4"
+      timestamptz  rule_triggered_at          "not null, default: now()"
+      int          rule_id                    FK "→ rules.id, not null"
+      boolean      acknowledged               "default: false, not null"
+      varchar(255) trigger_device_serial_id   "not null, serial ID of the triggering device"
+      jsonb        trigger_context            "nullable, flexible context about the trigger"
+      timestamp    created_at                 "default: CURRENT_TIMESTAMP, not null"
     }
 ```
 
@@ -96,11 +97,10 @@ erDiagram
 | device_metrics   | idx_device_metrics_metric           | metric_id                        | normal     | Quick access to devices measuring a specific metric                |
 | rules            | idx_rules_device_metric             | device_metric_id                 | normal     | Find rules for specific device+metric                              |
 | rules            | idx_rules_is_active                 | is_active                        | normal     | Filter active rules quickly                                        |
-| events           | idx_events_timestamp                | timestamp                        | normal     | Time-range queries, sorting events by time                         |
+| events           | idx_events_rule_triggered_at        | rule_triggered_at                | normal     | Time-range queries, sorting events by time                         |
 | events           | idx_events_rule                     | rule_id                          | normal     | Find all events triggered by a rule                                |
 | events           | idx_events_ack                     | acknowledged                    | normal     | Filter acknowledged vs unacknowledged events                        | 
-| events           | idx_events_telemetry_id            | trigger_telemetry_id             | normal     | Link events back to triggering telemetry for root cause analysis   |
-| events           | idx_events_device_id               | trigger_device_id                | normal     | Link events back to triggering device for root cause analysis      |
+| events           | idx_events_device_serial_id        | trigger_device_serial_id         | normal     | Filter events by triggering device serial ID                       |
 | telemetries      | unique_telemetry_per_metric_time    | device_metric_id, ts             | **unique** | Prevent duplicate measurements at same timestamp                   |
 | telemetries      | idx_telemetries_metric_time         | device_metric_id, ts             | normal     | Fast time-series queries per metric (most frequent access pattern) |
 | telemetries      | idx_telemetries_timestamp           | ts                               | normal     | Global time-range queries across all telemetry                     |

@@ -1,16 +1,15 @@
 """
 Tests verifying that rule firing:
-  1. Creates an Event with correct field values
-  2. Enqueues notify_event Celery task
-  3. Enqueues deliver_webhook Celery task
+  1. Produces an event payload to Kafka via Action.dispatch_action
+  2. RuleProcessor.run calls Action.dispatch_action for matching rules
 
-Strategy: patch task .delay() so no broker is needed.
+Strategy: patch rule_event_producer so no broker is needed.
 """
 
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock, ANY
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.core.cache import caches
 
 from apps.users.models import User
@@ -57,13 +56,13 @@ def rule(device_metric):
         name="Threshold Rule",
         device_metric=device_metric,
         condition={"type": "threshold", "operator": ">", "value": 50},
-        action={"webhook": {"enabled": False}},
+        action={"webhook": {"enabled": False}, "severity": "warning"},
         is_active=True,
     )
 
 
 @pytest.fixture
-def telemetry_orm(device_metric):  # initial name "telemetry"
+def telemetry_orm(device_metric):
     return Telemetry.objects.create(
         device_metric=device_metric,
         value_jsonb={"t": "numeric", "v": 75},
@@ -72,7 +71,7 @@ def telemetry_orm(device_metric):  # initial name "telemetry"
 
 @pytest.fixture
 def telemetry(telemetry_orm):
-    """Create TelemetryEvent"""
+    """Create TelemetryEvent (above threshold)."""
     return TelemetryEvent(
         device_serial_id=telemetry_orm.device_metric.device.serial_id,
         metric_type=telemetry_orm.device_metric.metric.metric_type,
@@ -82,7 +81,7 @@ def telemetry(telemetry_orm):
 
 
 @pytest.fixture
-def telemetry_below_orm(device_metric):  # initial name "telemetry_below"
+def telemetry_below_orm(device_metric):
     return Telemetry.objects.create(
         device_metric=device_metric,
         value_jsonb={"t": "numeric", "v": 10},
@@ -91,7 +90,7 @@ def telemetry_below_orm(device_metric):  # initial name "telemetry_below"
 
 @pytest.fixture
 def telemetry_below(telemetry_below_orm):
-    """Create TelemetryEvent"""
+    """Create TelemetryEvent (below threshold)."""
     return TelemetryEvent(
         device_serial_id=telemetry_below_orm.device_metric.device.serial_id,
         metric_type=telemetry_below_orm.device_metric.metric.metric_type,
@@ -136,294 +135,199 @@ def clear_rules_cache():
         yield
 
 
+@pytest.fixture
+def mock_kafka_producer():
+    """Patch the module-level rule_event_producer in action.py to avoid real Kafka."""
+    mock_producer = MagicMock()
+    with patch("apps.rules.services.action.rule_event_producer", mock_producer):
+        yield mock_producer
+
+
 # ============================================================================
-# Action.dispatch_action — Event creation
+# Action.dispatch_action — Kafka producer calls
 # ============================================================================
 
 
-def test_dispatch_action_creates_event(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay"),
-        patch("apps.rules.tasks.deliver_webhook.delay"),
-    ):
-        event = Action.dispatch_action(rule=rule, telemetry=telemetry)
+def test_dispatch_action_calls_kafka_produce(rule, telemetry, mock_kafka_producer):
+    """dispatch_action must call rule_event_producer.produce() exactly once."""
+    Action.dispatch_action(rule=rule, telemetry=telemetry)
 
-    assert event is not None
-    assert Event.objects.filter(id=event.id).exists()
+    mock_kafka_producer.produce.assert_called_once()
 
 
-def test_dispatch_action_event_links_correct_rule(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay"),
-        patch("apps.rules.tasks.deliver_webhook.delay"),
-    ):
-        event = Action.dispatch_action(rule=rule, telemetry=telemetry)
+def test_dispatch_action_calls_kafka_flush(rule, telemetry, mock_kafka_producer):
+    """dispatch_action must call rule_event_producer.flush() to ensure delivery."""
+    Action.dispatch_action(rule=rule, telemetry=telemetry)
 
-    assert event.rule_id == rule.id
+    mock_kafka_producer.flush.assert_called_once()
 
 
-# TEMPORARY
-# def test_dispatch_action_event_stores_trigger_telemetry_id(rule, telemetry):
-#     with (
-#         patch("apps.rules.tasks.notify_event.delay"),
-#         patch("apps.rules.tasks.deliver_webhook.delay"),
-#     ):
-#         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
+def test_dispatch_action_produces_with_rule_id_as_key(rule, telemetry, mock_kafka_producer):
+    """Kafka message key should be the rule's primary key (as string)."""
+    Action.dispatch_action(rule=rule, telemetry=telemetry)
 
-#     assert event.trigger_telemetry_id == telemetry.id
+    _, kwargs = mock_kafka_producer.produce.call_args
+    assert kwargs["key"] == str(rule.id)
 
 
-# TEMPORARY
-# def test_dispatch_action_event_stores_trigger_device_id(rule, telemetry):
-#     with (
-#         patch("apps.rules.tasks.notify_event.delay"),
-#         patch("apps.rules.tasks.deliver_webhook.delay"),
-#     ):
-#         event = Action.dispatch_action(rule=rule, telemetry=telemetry)
-
-#     assert event.trigger_device_id == telemetry.device_metric.device_id
+# ============================================================================
+# Action.dispatch_action — Payload contents
+# ============================================================================
 
 
-def test_dispatch_action_event_timestamp_is_recent(rule, telemetry):
+def test_dispatch_action_payload_contains_event_uuid(rule, telemetry, mock_kafka_producer):
+    """Produced payload must include a non-empty event_uuid."""
+    Action.dispatch_action(rule=rule, telemetry=telemetry)
+
+    _, kwargs = mock_kafka_producer.produce.call_args
+    payload = kwargs["payload"]
+    assert "event_uuid" in payload
+    assert payload["event_uuid"]
+
+
+def test_dispatch_action_payload_contains_rule_id(rule, telemetry, mock_kafka_producer):
+    """Produced payload must contain the triggering rule's id."""
+    Action.dispatch_action(rule=rule, telemetry=telemetry)
+
+    _, kwargs = mock_kafka_producer.produce.call_args
+    payload = kwargs["payload"]
+    assert payload["rule_id"] == rule.id
+
+
+def test_dispatch_action_payload_contains_device_serial_id(rule, telemetry, mock_kafka_producer):
+    """Produced payload must contain the triggering device serial id."""
+    Action.dispatch_action(rule=rule, telemetry=telemetry)
+
+    _, kwargs = mock_kafka_producer.produce.call_args
+    payload = kwargs["payload"]
+    assert payload["trigger_device_serial_id"] == telemetry.device_serial_id
+
+
+def test_dispatch_action_payload_contains_trigger_context(rule, telemetry, mock_kafka_producer):
+    """Produced payload must include trigger_context with metric info."""
+    Action.dispatch_action(rule=rule, telemetry=telemetry)
+
+    _, kwargs = mock_kafka_producer.produce.call_args
+    payload = kwargs["payload"]
+    assert "trigger_context" in payload
+    ctx = payload["trigger_context"]
+    assert ctx["metric_type"] == telemetry.metric_type
+    assert ctx["value"] == telemetry.value
+
+
+def test_dispatch_action_payload_timestamp_is_recent(rule, telemetry, mock_kafka_producer):
+    """rule_triggered_at in the payload should fall within the test window."""
     before = timezone.now()
-    with (
-        patch("apps.rules.tasks.notify_event.delay"),
-        patch("apps.rules.tasks.deliver_webhook.delay"),
-    ):
-        event = Action.dispatch_action(rule=rule, telemetry=telemetry)
+    Action.dispatch_action(rule=rule, telemetry=telemetry)
     after = timezone.now()
 
-    assert before <= event.timestamp <= after
+    _, kwargs = mock_kafka_producer.produce.call_args
+    payload = kwargs["payload"]
+    triggered_at = datetime.fromisoformat(payload["rule_triggered_at"])
+    assert before <= triggered_at <= after
 
 
-def test_dispatch_action_event_acknowledged_defaults_false(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay"),
-        patch("apps.rules.tasks.deliver_webhook.delay"),
-    ):
-        event = Action.dispatch_action(rule=rule, telemetry=telemetry)
+def test_dispatch_action_payload_contains_action_from_rule(rule, telemetry, mock_kafka_producer):
+    """Produced payload must carry the rule's action dict."""
+    Action.dispatch_action(rule=rule, telemetry=telemetry)
 
-    assert event.acknowledged is False
+    _, kwargs = mock_kafka_producer.produce.call_args
+    payload = kwargs["payload"]
+    assert payload["action"] == rule.action
 
 
-def test_dispatch_action_persists_event_to_db(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay"),
-        patch("apps.rules.tasks.deliver_webhook.delay"),
-    ):
-        event = Action.dispatch_action(rule=rule, telemetry=telemetry)
+def test_dispatch_action_does_not_create_event_in_db(rule, telemetry, mock_kafka_producer):
+    """Action no longer writes Events to the DB directly — that is the consumer's job."""
+    Action.dispatch_action(rule=rule, telemetry=telemetry)
 
-    db_event = Event.objects.get(id=event.id)
-    assert db_event.rule_id == rule.id
-    # assert db_event.trigger_telemetry_id == telemetry.id # TEMPORARY
+    assert Event.objects.count() == 0
 
 
 # ============================================================================
-# Action.dispatch_action — notify_event task enqueueing
+# Action.dispatch_action — failure tolerance
 # ============================================================================
 
 
-def test_dispatch_action_enqueues_notify_event(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay"),
-    ):
-        event = Action.dispatch_action(rule=rule, telemetry=telemetry)
-
-    mock_notify.assert_called_once_with(event.id)
-
-
-def test_dispatch_action_enqueues_notify_event_with_correct_event_id(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay"),
-    ):
-        event = Action.dispatch_action(rule=rule, telemetry=telemetry)
-
-    args, _ = mock_notify.call_args
-    assert args[0] == event.id
-
-
-# ============================================================================
-# Action.dispatch_action — deliver_webhook task enqueueing
-# ============================================================================
-
-
-def test_dispatch_action_enqueues_deliver_webhook(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay"),
-        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
-    ):
-        event = Action.dispatch_action(rule=rule, telemetry=telemetry)
-
-    mock_webhook.assert_called_once_with(event.id)
-
-
-def test_dispatch_action_enqueues_deliver_webhook_with_correct_event_id(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay"),
-        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
-    ):
-        event = Action.dispatch_action(rule=rule, telemetry=telemetry)
-
-    args, _ = mock_webhook.call_args
-    assert args[0] == event.id
-
-
-# ============================================================================
-# Action.dispatch_action — both tasks enqueued together
-# ============================================================================
-
-
-def test_dispatch_action_enqueues_both_tasks(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
-    ):
-        Action.dispatch_action(rule=rule, telemetry=telemetry)
-
-    assert mock_notify.call_count == 1
-    assert mock_webhook.call_count == 1
-
-
-def test_dispatch_action_tasks_receive_same_event_id(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
-    ):
-        event = Action.dispatch_action(rule=rule, telemetry=telemetry)
-
-    notify_id = mock_notify.call_args[0][0]
-    webhook_id = mock_webhook.call_args[0][0]
-    assert notify_id == event.id
-    assert webhook_id == event.id
-
-
-# ============================================================================
-# Action._enqueue — failure tolerance
-# ============================================================================
-
-
-def test_event_is_created_even_if_task_enqueue_fails(rule, telemetry):
-    """
-    _enqueue swallows all exceptions — Event must exist even when broker is down.
-    """
-    with (
-        patch("apps.rules.tasks.notify_event.delay", side_effect=Exception("broker down")),
-        patch("apps.rules.tasks.deliver_webhook.delay", side_effect=Exception("broker down")),
-    ):
-        event = Action.dispatch_action(rule=rule, telemetry=telemetry)
-
-    assert Event.objects.filter(id=event.id).exists()
-
-
-def test_enqueue_failure_does_not_raise(rule, telemetry):
-    """dispatch_action must not propagate task-level exceptions."""
-    with (
-        patch("apps.rules.tasks.notify_event.delay", side_effect=RuntimeError("oops")),
-        patch("apps.rules.tasks.deliver_webhook.delay", side_effect=RuntimeError("oops")),
-    ):
+def test_dispatch_action_does_not_raise_on_kafka_failure(rule, telemetry):
+    """If Kafka produce raises, dispatch_action must swallow the error."""
+    with patch("apps.rules.services.action.rule_event_producer") as mock_producer:
+        mock_producer.produce.side_effect = Exception("broker down")
         try:
             Action.dispatch_action(rule=rule, telemetry=telemetry)
         except Exception:
-            pytest.fail("dispatch_action must not raise when enqueueing fails")
+            pytest.fail("dispatch_action must not re-raise Kafka exceptions")
 
 
-def test_first_task_failure_does_not_prevent_second_task(rule, telemetry):
-    """If notify_event.delay raises, deliver_webhook.delay must still be attempted."""
-    with (
-        patch("apps.rules.tasks.notify_event.delay", side_effect=Exception("fail")),
-        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
-    ):
-        Action.dispatch_action(rule=rule, telemetry=telemetry)
+def test_dispatch_action_logs_exception_on_kafka_failure(rule, telemetry, caplog):
+    """Kafka failures must be logged for observability."""
+    import logging
 
-    mock_webhook.assert_called_once()
+    with patch("apps.rules.services.action.rule_event_producer") as mock_producer:
+        mock_producer.produce.side_effect = Exception("broker down")
+        with caplog.at_level(logging.ERROR):
+            Action.dispatch_action(rule=rule, telemetry=telemetry)
 
-
-# ============================================================================
-# RuleProcessor end-to-end: condition TRUE → Event + tasks
-# ============================================================================
-
-
-def test_rule_processor_fires_creates_event(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay"),
-        patch("apps.rules.tasks.deliver_webhook.delay"),
-    ):
-        RuleProcessor.run(telemetry)
-
-    assert Event.objects.filter(rule=rule).count() == 1
-
-
-def test_rule_processor_fires_enqueues_notify_event(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay"),
-    ):
-        RuleProcessor.run(telemetry)
-
-    mock_notify.assert_called_once()
-
-
-def test_rule_processor_fires_enqueues_deliver_webhook(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay"),
-        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
-    ):
-        RuleProcessor.run(telemetry)
-
-    mock_webhook.assert_called_once()
-
-
-def test_rule_processor_enqueues_tasks_with_created_event_id(rule, telemetry):
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
-    ):
-        RuleProcessor.run(telemetry)
-
-    event = Event.objects.filter(rule=rule).first()
-    assert event is not None
-    mock_notify.assert_called_once_with(event.id)
-    mock_webhook.assert_called_once_with(event.id)
+    assert any("Kafka" in r.message or "publish" in r.message for r in caplog.records)
 
 
 # ============================================================================
-# RuleProcessor: condition FALSE → no Event, no tasks
+# RuleProcessor end-to-end: condition TRUE → dispatch_action called
 # ============================================================================
 
 
-def test_rule_processor_no_event_when_condition_false(rule, telemetry_below):
-    """Telemetry value 10 does NOT satisfy '>50' — no event, no tasks."""
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
-    ):
+def test_rule_processor_fires_calls_dispatch_action(rule, telemetry):
+    """When condition is met, RuleProcessor.run must call Action.dispatch_action."""
+    with patch.object(Action, "dispatch_action") as mock_dispatch:
+        RuleProcessor.run(telemetry)
+
+    mock_dispatch.assert_called_once_with(rule, ANY)
+
+
+def test_rule_processor_fires_produces_to_kafka(rule, telemetry, mock_kafka_producer):
+    """RuleProcessor end-to-end: matching rule → Kafka produce is called."""
+    RuleProcessor.run(telemetry)
+
+    mock_kafka_producer.produce.assert_called_once()
+
+
+def test_rule_processor_payload_has_correct_rule_id(rule, telemetry, mock_kafka_producer):
+    """Kafka payload produced during RuleProcessor run must reference the triggered rule."""
+    RuleProcessor.run(telemetry)
+
+    _, kwargs = mock_kafka_producer.produce.call_args
+    assert kwargs["payload"]["rule_id"] == rule.id
+
+
+# ============================================================================
+# RuleProcessor: condition FALSE → no dispatch
+# ============================================================================
+
+
+def test_rule_processor_no_dispatch_when_condition_false(rule, telemetry_below):
+    """Value 10 does NOT satisfy '>50' — dispatch_action must not be called."""
+    with patch.object(Action, "dispatch_action") as mock_dispatch:
         RuleProcessor.run(telemetry_below)
 
-    assert Event.objects.filter(rule=rule).count() == 0
-    mock_notify.assert_not_called()
-    mock_webhook.assert_not_called()
+    mock_dispatch.assert_not_called()
 
 
-def test_rule_processor_no_tasks_when_condition_false(rule, telemetry_below):
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
-    ):
-        RuleProcessor.run(telemetry_below)
+def test_rule_processor_no_kafka_produce_when_condition_false(
+    rule, telemetry_below, mock_kafka_producer
+):
+    """No Kafka message when the threshold condition is not met."""
+    RuleProcessor.run(telemetry_below)
 
-    assert mock_notify.call_count == 0
-    assert mock_webhook.call_count == 0
+    mock_kafka_producer.produce.assert_not_called()
 
 
 # ============================================================================
-# RuleProcessor: inactive rule → no Event, no tasks
+# RuleProcessor: inactive rule → no dispatch
 # ============================================================================
 
 
-def test_inactive_rule_does_not_fire_event(device_metric, telemetry):
-    inactive = Rule.objects.create(
+def test_inactive_rule_does_not_dispatch(device_metric, telemetry):
+    """Inactive rule must not trigger dispatch_action even if condition would match."""
+    Rule.objects.create(
         name="Inactive",
         device_metric=device_metric,
         condition={"type": "threshold", "operator": ">", "value": 50},
@@ -431,23 +335,19 @@ def test_inactive_rule_does_not_fire_event(device_metric, telemetry):
         is_active=False,
     )
 
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
-    ):
+    with patch.object(Action, "dispatch_action") as mock_dispatch:
         RuleProcessor.run(telemetry)
 
-    assert Event.objects.filter(rule=inactive).count() == 0
-    mock_notify.assert_not_called()
-    mock_webhook.assert_not_called()
+    mock_dispatch.assert_not_called()
 
 
 # ============================================================================
-# RuleProcessor: multiple rules → each gets its own Event + tasks
+# RuleProcessor: multiple rules → each triggers its own dispatch
 # ============================================================================
 
 
-def test_multiple_rules_each_create_own_event(device_metric, telemetry):
+def test_multiple_rules_each_call_dispatch_action(device_metric, telemetry):
+    """Two matching rules should each independently call dispatch_action."""
     rule_a = Rule.objects.create(
         name="Rule A",
         device_metric=device_metric,
@@ -463,17 +363,19 @@ def test_multiple_rules_each_create_own_event(device_metric, telemetry):
         is_active=True,
     )
 
-    with (
-        patch("apps.rules.tasks.notify_event.delay"),
-        patch("apps.rules.tasks.deliver_webhook.delay"),
-    ):
+    with patch.object(Action, "dispatch_action") as mock_dispatch:
         RuleProcessor.run(telemetry)
 
-    assert Event.objects.filter(rule=rule_a).count() == 1
-    assert Event.objects.filter(rule=rule_b).count() == 1
+    assert mock_dispatch.call_count == 2
+    called_rules = {c.args[0] for c in mock_dispatch.call_args_list}
+    assert rule_a in called_rules
+    assert rule_b in called_rules
 
 
-def test_multiple_rules_enqueue_tasks_per_rule(device_metric, telemetry):
+def test_multiple_rules_produce_distinct_event_uuids(
+    device_metric, telemetry, mock_kafka_producer
+):
+    """Each rule firing must generate a unique event_uuid in the Kafka payload."""
     Rule.objects.create(
         name="Rule A",
         device_metric=device_metric,
@@ -489,44 +391,15 @@ def test_multiple_rules_enqueue_tasks_per_rule(device_metric, telemetry):
         is_active=True,
     )
 
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
-    ):
-        RuleProcessor.run(telemetry)
+    RuleProcessor.run(telemetry)
 
-    assert mock_notify.call_count == 2
-    assert mock_webhook.call_count == 2
+    assert mock_kafka_producer.produce.call_count == 2
+    uuids = {c[1]["payload"]["event_uuid"] for c in mock_kafka_producer.produce.call_args_list}
+    assert len(uuids) == 2, "Each rule firing must produce a unique event_uuid"
 
 
-def test_multiple_rules_tasks_called_with_distinct_event_ids(device_metric, telemetry):
-    Rule.objects.create(
-        name="Rule A",
-        device_metric=device_metric,
-        condition={"type": "threshold", "operator": ">", "value": 50},
-        action={"webhook": {"enabled": False}},
-        is_active=True,
-    )
-    Rule.objects.create(
-        name="Rule B",
-        device_metric=device_metric,
-        condition={"type": "threshold", "operator": ">", "value": 10},
-        action={"webhook": {"enabled": False}},
-        is_active=True,
-    )
-
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay"),
-    ):
-        RuleProcessor.run(telemetry)
-
-    called_event_ids = {c.args[0] for c in mock_notify.call_args_list}
-    assert len(called_event_ids) == 2, "Each rule firing should produce a unique event_id"
-
-
-def test_only_matching_rule_fires_when_mixed_conditions(device_metric, telemetry_below):
-    """telemetry_below (value=10): '>50' fails, '>5' passes."""
+def test_only_matching_rule_dispatches_when_mixed_conditions(device_metric, telemetry_below):
+    """telemetry_below (value=10): '>50' fails, '>5' passes — only low rule dispatches."""
     Rule.objects.create(
         name="High Threshold",
         device_metric=device_metric,
@@ -542,28 +415,26 @@ def test_only_matching_rule_fires_when_mixed_conditions(device_metric, telemetry
         is_active=True,
     )
 
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay"),
-    ):
+    with patch.object(Action, "dispatch_action") as mock_dispatch:
         RuleProcessor.run(telemetry_below)
 
-    assert Event.objects.filter(rule=low_rule).count() == 1
-    assert mock_notify.call_count == 1
+    assert mock_dispatch.call_count == 1
+    assert mock_dispatch.call_args.args[0] == low_rule
 
 
 # ============================================================================
-# Rate-condition rule → Event + tasks on trigger
+# Rate-condition rule → dispatch on trigger
 # ============================================================================
 
 
-def test_rate_rule_fires_creates_event_and_enqueues_tasks(device_metric):
+def test_rate_rule_fires_calls_dispatch_action(device_metric):
+    """Rate rule with count=3 met → dispatch_action must be called once."""
     now = timezone.now()
-    for v in [100, 105, 110]:
+    for i, v in enumerate([100, 105, 110]):
         Telemetry.objects.create(
             device_metric=device_metric,
             value_jsonb={"t": "numeric", "v": v},
-            created_at=now - timedelta(minutes=1),
+            ts=now - timedelta(minutes=1) + timedelta(seconds=i),
         )
 
     rate_rule = Rule.objects.create(
@@ -574,12 +445,9 @@ def test_rate_rule_fires_creates_event_and_enqueues_tasks(device_metric):
         is_active=True,
     )
 
-    with (
-        patch("apps.rules.tasks.notify_event.delay") as mock_notify,
-        patch("apps.rules.tasks.deliver_webhook.delay") as mock_webhook,
-    ):
-        RuleProcessor.run(Telemetry.objects.filter(device_metric=device_metric).last())
+    latest = Telemetry.objects.filter(device_metric=device_metric).last()
 
-    assert Event.objects.filter(rule=rate_rule).count() == 1
-    mock_notify.assert_called_once()
-    mock_webhook.assert_called_once()
+    with patch.object(Action, "dispatch_action") as mock_dispatch:
+        RuleProcessor.run(latest)
+
+    mock_dispatch.assert_called_once_with(rate_rule, ANY)
