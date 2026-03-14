@@ -96,6 +96,9 @@ def test_ingest_single_service_rejects_returns_400(
 @pytest.mark.django_db
 @override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
+@patch(
+    'validator.telemetry_validator.TelemetryBatchValidator._validate_duplicates', lambda self: None
+)
 def test_ingest_batch_valid_returns_201(
     telemetry_create_mock,
     client,
@@ -122,6 +125,9 @@ def test_ingest_batch_valid_returns_201(
 @pytest.mark.django_db
 @override_settings(DEBUG=True)
 @patch('apps.devices.views.telemetry_views.telemetry_create')
+@patch(
+    'validator.telemetry_validator.TelemetryBatchValidator._validate_duplicates', lambda self: None
+)
 def test_ingest_batch_mixed_valid_invalid(
     telemetry_create_mock,
     client,

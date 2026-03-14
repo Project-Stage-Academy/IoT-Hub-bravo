@@ -173,6 +173,7 @@ class Command(BaseCommand):
         self._loaddata("04_telemetries.json")
         self._loaddata("01_rules.json")
         self._loaddata("02_events.json")
+        self._loaddata("01_audit_logs.json")
 
     def _loaddata(self, fixture):
         """Load a single fixture via Django loaddata."""
@@ -225,6 +226,7 @@ class Command(BaseCommand):
             "devices.Device",
             "devices.Metric",
             "users.User",
+            "audit.AuditLog",
         ]
 
         for model_path in models_to_clear:
