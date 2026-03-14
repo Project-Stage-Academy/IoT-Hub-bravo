@@ -48,11 +48,7 @@ def main():
     signal.signal(signal.SIGTERM, handle_shutdown)
     signal.signal(signal.SIGINT, handle_shutdown)
 
-    try:
-        consumer.start()
-    except Exception as e:
-        logger.error('Consumer crashed: %s', e)
-        sys.exit(1)
+    consumer.start()
 
 
 if __name__ == '__main__':
