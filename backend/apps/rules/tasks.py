@@ -64,6 +64,8 @@ def process_delivery_task(self, delivery_id: int):
 
             if delivery.attempts >= delivery.max_attempts:
                 logger_celery.warning("Delivery %s reached max attempts. Skipping.", delivery_id)
+                delivery.status = Status.REJECTED
+                delivery.save(update_fields=['status', 'updated_at'])
                 return
 
             if delivery.status == Status.PROCESSING:
