@@ -9,21 +9,19 @@ from apps.common.metrics import events_created_total
 from decouple import config
 from producers.kafka_producer import KafkaProducer
 from producers.config import ProducerConfig
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
-rule_event_producer = None
-
-
+@lru_cache(maxsize=1)
 def get_producer() -> KafkaProducer:
-    """Lazy initialization of Kafka producer to ensure it's created in the worker process, not at module load time."""
-
-    global rule_event_producer
-    if rule_event_producer is None:
-        topic = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
-        logger.info(f"Initializing Kafka producer for topic {topic} in worker process.")
-        rule_event_producer = KafkaProducer(config=ProducerConfig(), topic=topic)
-    return rule_event_producer
+    """
+    Lazy initialization of Kafka producer.
+    @lru_cache(maxsize=1) ensures this is only executed once per worker process.
+    """
+    topic = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
+    logger.info(f"Initializing Kafka producer for topic {topic} in worker process.")
+    return KafkaProducer(config=ProducerConfig(), topic=topic)
 
 
 class Action:
