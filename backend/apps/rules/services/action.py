@@ -7,7 +7,7 @@ from apps.rules.utils.rule_engine_utils import TelemetryEvent
 from apps.common.metrics import events_created_total
 
 from decouple import config
-from producers.kafka_producer import KafkaProducer
+from producers.kafka_producer import KafkaProducer, ProduceResult
 from producers.config import ProducerConfig
 from functools import lru_cache
 
@@ -66,11 +66,20 @@ class Action:
             },
         )
 
-        try:
-            producer = get_producer()
+        producer = get_producer()
+        result = producer.produce(payload=payload, key=str(rule.id))
 
-            producer.produce(payload=payload, key=str(rule.id))
-            producer.flush(timeout=10.0)
-
-        except Exception:
-            logger.exception('Failed to publish event to Kafka')
+        if result == ProduceResult.ENQUEUED:
+            unsent_messages = producer.flush(timeout=10.0)
+            
+            if unsent_messages > 0:
+                logger.error(
+                    f"Flush timed out! {unsent_messages} messages failed to reach Kafka "
+                    f"for Rule {rule.id}."
+                )
+            else:
+                logger.info(f"Event for Rule {rule.id} successfully delivered to Kafka.")
+        else:
+            logger.error(
+                f"Failed to enqueue event for Rule {rule.id}. Reason: {result.name}"
+            )
