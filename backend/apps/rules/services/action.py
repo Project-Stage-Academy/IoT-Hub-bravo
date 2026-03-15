@@ -13,6 +13,7 @@ from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
+
 @lru_cache(maxsize=1)
 def get_producer() -> KafkaProducer:
     """
@@ -71,7 +72,7 @@ class Action:
 
         if result == ProduceResult.ENQUEUED:
             unsent_messages = producer.flush(timeout=10.0)
-            
+
             if unsent_messages > 0:
                 logger.error(
                     f"Flush timed out! {unsent_messages} messages failed to reach Kafka "
@@ -80,6 +81,4 @@ class Action:
             else:
                 logger.info(f"Event for Rule {rule.id} successfully delivered to Kafka.")
         else:
-            logger.error(
-                f"Failed to enqueue event for Rule {rule.id}. Reason: {result.name}"
-            )
+            logger.error(f"Failed to enqueue event for Rule {rule.id}. Reason: {result.name}")
