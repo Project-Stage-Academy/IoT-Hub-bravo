@@ -15,6 +15,7 @@ from tests.fixtures.factories import (
     MetricFactory,
     RuleFactory,
 )
+from producers.kafka_producer import ProduceResult
 
 
 pytestmark = pytest.mark.django_db
@@ -52,11 +53,7 @@ class TestRuleProcessorCeleryIntegration:
         """
         E2E: Telemetry → RuleProcessor → Action.dispatch_action → Kafka payload
              → EventDBHandler → Event saved to DB.
-
-        The Kafka broker is replaced by capturing the produced payload and
-        feeding it directly into the EventDBHandler, so no real broker is needed.
         """
-
         device = DeviceFactory(serial_id="E2E-001")
         metric = MetricFactory(metric_type="temperature", data_type="numeric")
         device_metric = DeviceMetricFactory(device=device, metric=metric)
@@ -72,17 +69,18 @@ class TestRuleProcessorCeleryIntegration:
             value_jsonb={"t": "numeric", "v": 35},
         )
 
-        produced_payloads = []
-        mock_producer = MagicMock()
-        mock_producer.produce.side_effect = lambda payload, key=None: produced_payloads.append(
-            payload
-        )
+        with patch("apps.rules.services.action.get_producer") as mock_get_producer:
+            mock_producer = MagicMock()
+            mock_producer.produce.return_value = ProduceResult.ENQUEUED
+            mock_producer.flush.return_value = 0
+            mock_get_producer.return_value = mock_producer
 
-        with patch("apps.rules.services.action.rule_event_producer", mock_producer):
             RuleProcessor.run(telemetry)
 
-        assert len(produced_payloads) == 1
-        payload = produced_payloads[0]
+        mock_producer.produce.assert_called_once()
+        _, kwargs = mock_producer.produce.call_args
+        payload = kwargs["payload"]
+
         assert payload["rule_id"] == rule.id
         assert payload["trigger_device_serial_id"] == device.serial_id
 

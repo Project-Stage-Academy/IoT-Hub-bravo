@@ -19,6 +19,7 @@ from apps.rules.services.action import Action
 from apps.rules.services.rule_processor import RuleProcessor
 from apps.rules.utils.rule_engine_utils import PostgresTelemetryRepository
 from apps.rules.utils.rule_engine_utils import TelemetryEvent
+from producers.kafka_producer import ProduceResult
 
 pytestmark = pytest.mark.django_db
 
@@ -137,9 +138,13 @@ def clear_rules_cache():
 
 @pytest.fixture
 def mock_kafka_producer():
-    """Patch the module-level rule_event_producer in action.py to avoid real Kafka."""
+    """Patch get_producer in action.py to avoid real Kafka."""
     mock_producer = MagicMock()
-    with patch("apps.rules.services.action.rule_event_producer", mock_producer):
+
+    mock_producer.produce.return_value = ProduceResult.ENQUEUED
+    mock_producer.flush.return_value = 0
+
+    with patch("apps.rules.services.action.get_producer", return_value=mock_producer):
         yield mock_producer
 
 
@@ -248,26 +253,32 @@ def test_dispatch_action_does_not_create_event_in_db(rule, telemetry, mock_kafka
 # ============================================================================
 
 
-def test_dispatch_action_does_not_raise_on_kafka_failure(rule, telemetry):
-    """If Kafka produce raises, dispatch_action must swallow the error."""
-    with patch("apps.rules.services.action.rule_event_producer") as mock_producer:
-        mock_producer.produce.side_effect = Exception("broker down")
-        try:
-            Action.dispatch_action(rule=rule, telemetry=telemetry)
-        except Exception:
-            pytest.fail("dispatch_action must not re-raise Kafka exceptions")
-
-
-def test_dispatch_action_logs_exception_on_kafka_failure(rule, telemetry, caplog):
-    """Kafka failures must be logged for observability."""
+def test_dispatch_action_logs_error_on_enqueue_failure(
+    rule, telemetry, caplog, mock_kafka_producer
+):
+    """If Kafka produce fails (returns error enum), dispatch_action must log it and skip flush."""
     import logging
 
-    with patch("apps.rules.services.action.rule_event_producer") as mock_producer:
-        mock_producer.produce.side_effect = Exception("broker down")
-        with caplog.at_level(logging.ERROR):
-            Action.dispatch_action(rule=rule, telemetry=telemetry)
+    mock_kafka_producer.produce.return_value = ProduceResult.BUFFER_FULL
 
-    assert any("Kafka" in r.message or "publish" in r.message for r in caplog.records)
+    with caplog.at_level(logging.ERROR):
+        Action.dispatch_action(rule=rule, telemetry=telemetry)
+
+    mock_kafka_producer.flush.assert_not_called()
+    assert any("Failed to enqueue event" in r.message for r in caplog.records)
+
+
+def test_dispatch_action_logs_error_on_flush_timeout(rule, telemetry, caplog, mock_kafka_producer):
+    """If flush times out (returns >0 unsent messages), it must be logged as an error."""
+    import logging
+
+    mock_kafka_producer.produce.return_value = ProduceResult.ENQUEUED
+    mock_kafka_producer.flush.return_value = 1
+
+    with caplog.at_level(logging.ERROR):
+        Action.dispatch_action(rule=rule, telemetry=telemetry)
+
+    assert any("Flush timed out" in r.message for r in caplog.records)
 
 
 # ============================================================================
