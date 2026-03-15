@@ -52,23 +52,41 @@ def evaluate_rule(telemetry: dict):
 def process_delivery_task(self, delivery_id: int):
     """Asynchronous task to process an EventDelivery (webhook or notification) with retry logic and status updates in the database."""
     try:
-        delivery = EventDelivery.objects.get(id=delivery_id)
+        delivery = EventDelivery.objects.select_for_update(id=delivery_id)
+
+        if delivery.status in [Status.SUCCESS, Status.REJECTED]:
+            logger_celery.info(
+                "Delivery %s is already %s. Skipping.", delivery_id, delivery.status
+            )
+            return
+
+        if delivery.attempts >= delivery.max_attempts:
+            logger_celery.warning("Delivery %s reached max attempts. Skipping.", delivery_id)
+            return
+
+        if delivery.status == Status.PROCESSING:
+            logger_celery.warning(
+                "Delivery %s is currently being processed. Skipping.", delivery_id
+            )
+            return
+
+        if delivery.status == Status.RETRY and delivery.next_retry_at:
+            if timezone.now() < delivery.next_retry_at:
+                logger_celery.info(
+                    "Delivery %s is in RETRY but it's too early (next: %s). Skipping.",
+                    delivery_id,
+                    delivery.next_retry_at,
+                )
+                return
+
+        delivery.status = Status.PROCESSING
+        delivery.attempts += 1
+        delivery.last_attempt_at = timezone.now()
+        delivery.save(update_fields=['status', 'attempts', 'last_attempt_at', 'updated_at'])
+
     except EventDelivery.DoesNotExist:
         logger_celery.error("EventDelivery %s not found. Dropping task.", delivery_id)
         return
-
-    if delivery.status == Status.SUCCESS:
-        logger_celery.info("Delivery %s already successful. Skipping.", delivery_id)
-        return
-
-    if delivery.attempts >= delivery.max_attempts:
-        logger_celery.warning("Delivery %s reached max attempts. Skipping.", delivery_id)
-        return
-
-    delivery.status = Status.PROCESSING
-    delivery.attempts += 1
-    delivery.last_attempt_at = timezone.now()
-    delivery.save(update_fields=['status', 'attempts', 'last_attempt_at', 'updated_at'])
 
     try:
         if delivery.delivery_type == DeliveryType.WEBHOOK:
