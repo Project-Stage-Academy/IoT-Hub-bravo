@@ -127,6 +127,9 @@ def process_delivery_task(self, delivery_id: int):
             delivery.next_retry_at = timezone.now() + timezone.timedelta(seconds=delay_seconds)
             delivery.save(update_fields=['status', 'error_message', 'next_retry_at', 'updated_at'])
 
+            if delay_seconds >= 3600:
+                return
+
             raise self.retry(exc=exc, countdown=delay_seconds)
 
 
