@@ -34,7 +34,10 @@ class WebSocketTelemetryCleanHandler(KafkaPayloadHandler):
         # Type and format validation for critical fields
         device_serial_id = payload.get("device_serial_id")
         if not isinstance(device_serial_id, str) or not (device_serial_id or "").strip():
-            logger.error("telemetry.clean 'device_serial_id' must be a non-empty string, got %s", type(device_serial_id))
+            logger.error(
+                "telemetry.clean 'device_serial_id' must be a non-empty string, got %s",
+                type(device_serial_id),
+            )
             return
         device_id = payload.get("device_id")
         if not isinstance(device_id, int):
@@ -42,11 +45,16 @@ class WebSocketTelemetryCleanHandler(KafkaPayloadHandler):
             return
         metric = payload.get("metric")
         if not isinstance(metric, str) or not (metric or "").strip():
-            logger.error("telemetry.clean 'metric' must be a non-empty string, got %s", type(metric))
+            logger.error(
+                "telemetry.clean 'metric' must be a non-empty string, got %s", type(metric)
+            )
             return
         metric_type = payload.get("metric_type")
         if not isinstance(metric_type, str) or not (metric_type or "").strip():
-            logger.error("telemetry.clean 'metric_type' must be a non-empty string, got %s", type(metric_type))
+            logger.error(
+                "telemetry.clean 'metric_type' must be a non-empty string, got %s",
+                type(metric_type),
+            )
             return
 
         ts_raw = payload["ts"]

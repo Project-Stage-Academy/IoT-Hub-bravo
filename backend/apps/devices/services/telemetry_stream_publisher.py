@@ -18,9 +18,7 @@ def _normalize_telemetry_value(value):
         return float(value)
     if hasattr(value, "isoformat"):
         return value.isoformat()
-    logger.error(
-        "Telemetry value not JSON-serializable, using str(): %s", type(value)
-    )
+    logger.error("Telemetry value not JSON-serializable, using str(): %s", type(value))
     return str(value)
 
 

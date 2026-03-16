@@ -9,4 +9,3 @@ def setup_logging() -> None:
         force=True,
     )
     logging.getLogger().setLevel(logging.INFO)
-
