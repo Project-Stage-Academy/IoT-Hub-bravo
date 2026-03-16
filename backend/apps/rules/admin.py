@@ -6,9 +6,6 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.timezone import localtime
 from .models import Rule, Event, EventDelivery
-
-
-from .models import Rule, Event
 from .validators.rule_validator import validate_action, validate_condition
 
 
