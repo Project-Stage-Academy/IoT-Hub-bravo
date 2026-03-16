@@ -2,6 +2,7 @@
 
 # Test factories
 factory_boy>=3.3.0
+fakeredis>=2.34.1
 
 # HTTP mocking
 responses>=0.25.0
