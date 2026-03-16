@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize_telemetry_value(value):
-    """Return a JSON-serializable value for WebSocket payload."""
+    """Return a JSON-serializable value for WebSocket payload. Logs and returns str(value) on unsupported types."""
     if value is None or isinstance(value, (bool, int, str)):
         return value
     if isinstance(value, float):
@@ -18,16 +18,20 @@ def _normalize_telemetry_value(value):
         return float(value)
     if hasattr(value, "isoformat"):
         return value.isoformat()
-    raise TypeError(f"Telemetry value not JSON-serializable: {type(value)}")
+    logger.error(
+        "Telemetry value not JSON-serializable, using str(): %s", type(value)
+    )
+    return str(value)
 
 
 def _ts_to_iso(ts) -> str:
-    """Normalize ts to ISO string (datetime or str accepted)."""
+    """Normalize ts to ISO string (datetime or str accepted). Uses now() and logs on invalid type."""
     if isinstance(ts, str):
         return ts
     if hasattr(ts, "isoformat"):
         return ts.isoformat()
-    raise TypeError(f"Telemetry ts must be datetime or str, got {type(ts)}")
+    logger.warning("Telemetry ts invalid type, using now(): got %s", type(ts))
+    return now().isoformat()
 
 
 def publish_telemetry_event(
@@ -38,8 +42,13 @@ def publish_telemetry_event(
     Returns True if sent successfully, False otherwise.
     Callers that require at-least-once delivery (e.g. Kafka handler) should raise on False.
     """
-    value_safe = _normalize_telemetry_value(value)
-    ts_str = _ts_to_iso(ts)
+    try:
+        value_safe = _normalize_telemetry_value(value)
+        ts_str = _ts_to_iso(ts)
+    except Exception as e:
+        logger.exception("Error normalizing telemetry for WebSocket: %s", e)
+        value_safe = str(value) if value is not None else None
+        ts_str = now().isoformat()
     payload = {
         "event_id": str(uuid.uuid4()),
         "type": "telemetry.update",

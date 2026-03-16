@@ -1,9 +1,23 @@
 import json
-from urllib.parse import parse_qs
-from channels.generic.websocket import AsyncWebsocketConsumer
 import logging
+from urllib.parse import parse_qs
+
+from asgiref.sync import sync_to_async
+from channels.generic.websocket import AsyncWebsocketConsumer
+
+from apps.devices.models import Device
+from apps.users.models import UserRole
 
 logger = logging.getLogger(__name__)
+
+
+@sync_to_async
+def _device_belongs_to_user(device_serial_id: str, user) -> bool:
+    return Device.objects.filter(
+        serial_id=device_serial_id,
+        user=user,
+        is_active=True,
+    ).exists()
 
 
 class TelemetryConsumer(AsyncWebsocketConsumer):
@@ -34,6 +48,25 @@ class TelemetryConsumer(AsyncWebsocketConsumer):
         params = parse_qs(self.scope.get("query_string", b"").decode())
         device = (params.get("device", [None])[0] or "").strip()
         metric = (params.get("metric", [None])[0] or "").strip()
+
+        # Device-level authorization: non-admin users can subscribe only to their own devices
+        if device and role != UserRole.ADMIN:
+            try:
+                allowed = await _device_belongs_to_user(device, user)
+            except Exception as e:
+                logger.error("Error checking device ownership for '%s': %s", device, e)
+                await self.close(code=4500)
+                return
+
+            if not allowed:
+                logger.warning(
+                    "User %s (role=%s) attempted to subscribe to unauthorized device '%s'",
+                    getattr(user, "id", None),
+                    role,
+                    device,
+                )
+                await self.close(code=4403)
+                return
 
         self.groups_to_join = [self.BASE_GROUP]
         if device:
