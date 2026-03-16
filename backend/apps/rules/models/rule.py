@@ -18,6 +18,11 @@ class Rule(models.Model):
             models.Index(fields=['device_metric'], name='idx_rules_device_metric'),
             models.Index(fields=['is_active'], name='idx_rules_is_active'),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['device_metric', 'name'], name='unique_rule_name_per_device_metric'
+            )
+        ]
 
     def __str__(self):
         return self.name

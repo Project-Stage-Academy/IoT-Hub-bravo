@@ -847,7 +847,7 @@ paths:
                   condition:
                     type: "rate"
                     count: 10
-                    minutes: 300
+                    duration_minutes: 300
                   action:
                     webhook:
                       url: "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e"
@@ -2343,7 +2343,7 @@ components:
           minimum: 1
           description: Number of events threshold
           example: 10
-        minutes:
+        duration_minutes:
           type: integer
           minimum: 1
           description: Time window in seconds
@@ -2351,11 +2351,11 @@ components:
       required:
         - type
         - count
-        - minutes
+        - duration_minutes
       example:
         type: "rate"
         count: 10
-        minutes: 300
+        duration_minutes: 300
 
     RuleConditionComposite:
       type: object
@@ -2390,7 +2390,7 @@ components:
             value: 35
           - type: "rate"
             count: 5
-            minutes: 20
+            duration_minutes: 20
 
     PaginatedRules:
       type: object
