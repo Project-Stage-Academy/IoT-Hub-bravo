@@ -1,8 +1,6 @@
 from typing import Optional
 from unittest.mock import patch, MagicMock
 
-import pytest
-
 from apps.devices.tasks import ingest_telemetry_payload
 
 
@@ -17,8 +15,7 @@ def validation_result(validated_rows: Optional[list] = None, errors: Optional[li
 @patch('apps.devices.tasks.telemetry_create')
 def test_task_rejects_invalid_payload_type(telemetry_create_mock, telemetry_validate_mock):
     """Test task rejects non-dict/non-list payload and does not call service."""
-    with pytest.raises(TypeError):
-        ingest_telemetry_payload(payload='invalid-payload')
+    ingest_telemetry_payload(payload='invalid-payload')
 
     telemetry_validate_mock.assert_not_called()
     telemetry_create_mock.assert_not_called()

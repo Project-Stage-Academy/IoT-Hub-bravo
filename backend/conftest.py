@@ -1,6 +1,7 @@
 """Pytest configuration for Django tests."""
 
 import os
+
 import django
 import pytest
 from django.conf import settings
