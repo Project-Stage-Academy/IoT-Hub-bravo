@@ -25,8 +25,7 @@ CSV header fields produced:
 - `timestamp` (Django timezone-aware datetime)
 - `rule` (the rule name)
 - `acknowledged` (true/false)
-- `trigger_telemetry_id` (nullable)
-- `trigger_device_id` (nullable)
+- `trigger_telemetry` (nullable)
 
 ## Usage examples
 

@@ -1,11 +1,11 @@
 {
   "info": {
-    "_postman_id": "168ed335-1098-4631-b27d-621deb89a5d2",
+    "_postman_id": "d219726d-8961-446f-856f-1ee74698a651",
     "name": "IoT Hub API",
     "description": "API for managing devices, telemetry, and rules with full CRUD support, JWT authentication,\npagination, schema versioning, and example payloads for testing.\n",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "44793776",
-    "_collection_link": "https://go.postman.co/collection/44793776-168ed335-1098-4631-b27d-621deb89a5d2?source=collection_link"
+    "_exporter_id": "51641265",
+    "_collection_link": "https://go.postman.co/collection/51641265-d219726d-8961-446f-856f-1ee74698a651?source=collection_link"
   },
   "item": [
     {
@@ -1704,7 +1704,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"total\": 2,\n  \"limit\": 5,\n  \"offset\": 0,\n  \"items\": [\n    {\n      \"id\": 1,\n      \"device_id\": 1,\n      \"metric\": \"temperature\",\n      \"value\": 23.5,\n      \"ts\": \"2026-02-09T12:00:00Z\"\n    },\n    {\n      \"id\": 2,\n      \"device_id\": 1,\n      \"metric\": \"temperature\",\n      \"value\": 24,\n      \"ts\": \"2026-02-09T12:05:00Z\"\n    }\n  ]\n}"
+                  "body": "{\n  \"total\": 2,\n  \"limit\": 5,\n  \"offset\": 0,\n  \"items\": [\n    {\n      \"id\": 1,\n      \"device_id\": 1,\n      \"metric\": {\n        \"temperature\": {\n          \"value\": 23.5,\n          \"unit\": \"celsius\"\n        }\n      },\n      \"ts\": \"2026-02-09T12:00:00Z\"\n    },\n    {\n      \"id\": 2,\n      \"device_id\": 1,\n      \"metric\": {\n        \"temperature\": {\n          \"value\": 24,\n          \"unit\": \"celsius\"\n        }\n      },\n      \"ts\": \"2026-02-09T12:05:00Z\"\n    }\n  ]\n}"
                 },
                 {
                   "name": "Invalid request",
@@ -1792,7 +1792,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"schema_version\": 1,\n  \"device\": \"DEV-001\",\n  \"ts\": \"2026-02-04T12:00:00Z\",\n  \"metrics\": {\n    \"temperature\": 21.5,\n    \"door_open\": false,\n    \"status\": \"ok\"\n  }\n}",
+                  "raw": "{\n  \"schema_version\": 1,\n  \"device\": \"DEV-001\",\n  \"ts\": \"2026-02-04T12:00:00Z\",\n  \"metric\": {\n    \"temperature\": {\n      \"value\": 21.5,\n      \"unit\": \"celsius\"\n    },\n    \"door_open\": {\n      \"value\": false,\n      \"unit\": \"closed\"\n    },\n    \"status\": {\n      \"value\": \"ok\",\n      \"unit\": \"Online\"\n    }\n  }\n}",
                   "options": {
                     "raw": {
                       "headerFamily": "json",
@@ -1840,7 +1840,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"schema_version\": 1,\n  \"device\": \"DEV-001\",\n  \"ts\": \"2026-02-04T12:00:00Z\",\n  \"metrics\": {\n    \"temperature\": 21.5,\n    \"door_open\": false,\n    \"status\": \"ok\"\n  }\n}",
+                      "raw": "{\n  \"schema_version\": 1,\n  \"device\": \"DEV-001\",\n  \"ts\": \"2026-02-04T12:00:00Z\",\n  \"metric\": {\n    \"temperature\": {\n      \"value\": 21.6,\n      \"unit\": \"celsius\"\n    },\n    \"door_open\": {\n      \"value\": false,\n      \"unit\": \"closed\"\n    },\n    \"status\": {\n      \"value\": \"ok\",\n      \"unit\": \"Online\"\n    }\n  }\n}",
                       "options": {
                         "raw": {
                           "headerFamily": "json",
@@ -1898,7 +1898,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"schema_version\": 1,\n  \"device\": \"DEV-001\",\n  \"ts\": \"2026-02-04T12:00:00Z\",\n  \"metrics\": {\n    \"temperature\": 21.5,\n    \"door_open\": false,\n    \"status\": \"ok\"\n  }\n}",
+                      "raw": "{\n  \"schema_version\": 1,\n  \"device\": \"DEV-001\",\n  \"ts\": \"2026-02-04T12:00:00Z\",\n  \"metric\": {\n    \"temperature\": {\n      \"value\": 21.6,\n      \"unit\": \"celsius\"\n    },\n    \"door_open\": {\n      \"value\": false,\n      \"unit\": \"closed\"\n    },\n    \"status\": {\n      \"value\": \"ok\",\n      \"unit\": \"Online\"\n    }\n  }\n}",
                       "options": {
                         "raw": {
                           "headerFamily": "json",
@@ -1956,7 +1956,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"schema_version\": 1,\n  \"device\": \"DEV-001\",\n  \"ts\": \"2026-02-04T12:00:00Z\",\n  \"metrics\": {\n    \"temperature\": 21.5,\n    \"door_open\": false,\n    \"status\": \"ok\"\n  }\n}",
+                      "raw": "{\n  \"schema_version\": 1,\n  \"device\": \"DEV-001\",\n  \"ts\": \"2026-02-04T12:00:00Z\",\n  \"metric\": {\n    \"temperature\": {\n      \"value\": 21.6,\n      \"unit\": \"celsius\"\n    },\n    \"door_open\": {\n      \"value\": false,\n      \"unit\": \"closed\"\n    },\n    \"status\": {\n      \"value\": \"ok\",\n      \"unit\": \"Online\"\n    }\n  }\n}",
                       "options": {
                         "raw": {
                           "headerFamily": "json",
@@ -1987,6 +1987,1321 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"code\": 400,\n  \"message\": \"Invalid telemetry payload.\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "rules",
+          "item": [
+            {
+              "name": "{id}",
+              "item": [
+                {
+                  "name": "Get rule by ID",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{bearerToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/rules/:id/",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "rules",
+                        ":id",
+                        ""
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "3400"
+                        }
+                      ]
+                    },
+                    "description": "Returns full rule details by its unique identifier.\nIncludes condition definition, action configuration, and current state.\n"
+                  },
+                  "response": [
+                    {
+                      "name": "Rule found",
+                      "originalRequest": {
+                        "method": "GET",
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/:id/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            ":id",
+                            ""
+                          ],
+                          "variable": [
+                            {
+                              "key": "id",
+                              "value": "3400"
+                            }
+                          ]
+                        }
+                      },
+                      "status": "OK",
+                      "code": 200,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"schema_version\": 1,\n  \"id\": 31,\n  \"name\": \"Updated Rule\",\n  \"is_active\": false,\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  },\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \">\",\n    \"value\": 13\n  },\n  \"device_metric_id\": 2\n}"
+                    },
+                    {
+                      "name": "Invalid request",
+                      "originalRequest": {
+                        "method": "GET",
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/:id/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            ":id",
+                            ""
+                          ],
+                          "variable": [
+                            {
+                              "key": "id",
+                              "value": "3400"
+                            }
+                          ]
+                        }
+                      },
+                      "status": "Bad Request",
+                      "code": 400,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"message\": \"Invalid rule definition\",\n  \"code\": 400\n}"
+                    },
+                    {
+                      "name": "Rule not found",
+                      "originalRequest": {
+                        "method": "GET",
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/:id/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            ":id",
+                            ""
+                          ],
+                          "variable": [
+                            {
+                              "key": "id",
+                              "value": "3400"
+                            }
+                          ]
+                        }
+                      },
+                      "status": "Not Found",
+                      "code": 404,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"message\": \"Rule not found\",\n  \"code\": 404\n}"
+                    }
+                  ]
+                },
+                {
+                  "name": "Replace rule completely",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{bearerToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"schema_version\": 1,\n  \"name\": \"High Temperature Alert\",\n  \"description\": \"Alert when temperature exceeds 30°C\",\n  \"is_active\": true,\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \">\",\n    \"value\": 30\n  },\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  },\n  \"device_metric_id\": 1\n}",
+                      "options": {
+                        "raw": {
+                          "headerFamily": "json",
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/rules/:id/",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "rules",
+                        ":id",
+                        ""
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "3400"
+                        }
+                      ]
+                    },
+                    "description": "Replaces the entire rule definition.\nAll rule fields must be provided in the request body.\nMissing fields will be overwritten with new values.\n"
+                  },
+                  "response": [
+                    {
+                      "name": "Rule updated",
+                      "originalRequest": {
+                        "method": "PUT",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"schema_version\": 1,\n  \"name\": \"Updated Rule\",\n  \"description\": \"Changed description\",\n  \"is_active\": false,\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \">\",\n    \"value\": 13\n  },\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  },\n  \"device_metric_id\": 2\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/:id/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            ":id",
+                            ""
+                          ],
+                          "variable": [
+                            {
+                              "key": "id",
+                              "value": "3400"
+                            }
+                          ]
+                        }
+                      },
+                      "status": "OK",
+                      "code": 200,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"schema_version\": 1,\n  \"id\": 44,\n  \"name\": \"Updated Rule\",\n  \"is_active\": false,\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  },\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \">\",\n    \"value\": 13\n  },\n  \"device_metric_id\": 1\n}"
+                    },
+                    {
+                      "name": "Invalid request",
+                      "originalRequest": {
+                        "method": "PUT",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"schema_version\": 1,\n  \"name\": \"Updated Rule\",\n  \"description\": \"Changed description\",\n  \"is_active\": false,\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \">\",\n    \"value\": 13\n  },\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  },\n  \"device_metric_id\": 2\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/:id/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            ":id",
+                            ""
+                          ],
+                          "variable": [
+                            {
+                              "key": "id",
+                              "value": "3400"
+                            }
+                          ]
+                        }
+                      },
+                      "status": "Bad Request",
+                      "code": 400,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"message\": \"Invalid rule definition\",\n  \"code\": 400\n}"
+                    },
+                    {
+                      "name": "Rule not found",
+                      "originalRequest": {
+                        "method": "PUT",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"schema_version\": 1,\n  \"name\": \"Updated Rule\",\n  \"description\": \"Changed description\",\n  \"is_active\": false,\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \">\",\n    \"value\": 13\n  },\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  },\n  \"device_metric_id\": 2\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/:id/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            ":id",
+                            ""
+                          ],
+                          "variable": [
+                            {
+                              "key": "id",
+                              "value": "3400"
+                            }
+                          ]
+                        }
+                      },
+                      "status": "Not Found",
+                      "code": 404,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"message\": \"Rule not found\",\n  \"code\": 404\n}"
+                    }
+                  ]
+                },
+                {
+                  "name": "Partially update rule",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{bearerToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"is_active\": false\n}",
+                      "options": {
+                        "raw": {
+                          "headerFamily": "json",
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/rules/:id/",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "rules",
+                        ":id",
+                        ""
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "3400"
+                        }
+                      ]
+                    },
+                    "description": "Updates one or more fields of an existing rule.\nOnly provided fields are modified; all others remain unchanged.\n"
+                  },
+                  "response": [
+                    {
+                      "name": "Rule updated",
+                      "originalRequest": {
+                        "method": "PATCH",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"schema_version\": 1,\n  \"name\": \"Updated Rule\",\n  \"is_active\": false,\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \"<\",\n    \"value\": 10\n  },\n  \"device_metric_id\": 1,\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  }\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/:id/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            ":id",
+                            ""
+                          ],
+                          "variable": [
+                            {
+                              "key": "id",
+                              "value": "3400"
+                            }
+                          ]
+                        }
+                      },
+                      "status": "OK",
+                      "code": 200,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"status\": 200,\n  \"rule_id\": 1\n}"
+                    },
+                    {
+                      "name": "Invalid request",
+                      "originalRequest": {
+                        "method": "PATCH",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"schema_version\": 1,\n  \"name\": \"Updated Rule\",\n  \"is_active\": false,\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \"<\",\n    \"value\": 10\n  },\n  \"device_metric_id\": 1,\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  }\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/:id/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            ":id",
+                            ""
+                          ],
+                          "variable": [
+                            {
+                              "key": "id",
+                              "value": "3400"
+                            }
+                          ]
+                        }
+                      },
+                      "status": "Bad Request",
+                      "code": 400,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"message\": \"Invalid rule definition\",\n  \"code\": 400\n}"
+                    },
+                    {
+                      "name": "Rule not found",
+                      "originalRequest": {
+                        "method": "PATCH",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"schema_version\": 1,\n  \"name\": \"Updated Rule\",\n  \"is_active\": false,\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \"<\",\n    \"value\": 10\n  },\n  \"device_metric_id\": 1,\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  }\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/:id/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            ":id",
+                            ""
+                          ],
+                          "variable": [
+                            {
+                              "key": "id",
+                              "value": "3400"
+                            }
+                          ]
+                        }
+                      },
+                      "status": "Not Found",
+                      "code": 404,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"message\": \"Rule not found\",\n  \"code\": 404\n}"
+                    }
+                  ]
+                },
+                {
+                  "name": "Delete rule",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{bearerToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/rules/:id/",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "rules",
+                        ":id",
+                        ""
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "3400"
+                        }
+                      ]
+                    },
+                    "description": "Permanently deletes a rule.\nDeleted rules are no longer evaluated and cannot be restored.\n"
+                  },
+                  "response": [
+                    {
+                      "name": "Rule deleted",
+                      "originalRequest": {
+                        "method": "DELETE",
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/:id/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            ":id",
+                            ""
+                          ],
+                          "variable": [
+                            {
+                              "key": "id",
+                              "value": "3400"
+                            }
+                          ]
+                        }
+                      },
+                      "status": "No Content",
+                      "code": 204,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{}"
+                    },
+                    {
+                      "name": "Rule not found",
+                      "originalRequest": {
+                        "method": "DELETE",
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/:id/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            ":id",
+                            ""
+                          ],
+                          "variable": [
+                            {
+                              "key": "id",
+                              "value": "3400"
+                            }
+                          ]
+                        }
+                      },
+                      "status": "Not Found",
+                      "code": 404,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"code\": 404,\n  \"message\": \"Rule not found\"\n}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "evaluate",
+              "item": [
+                {
+                  "name": "Manually trigger rule evaluation",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{bearerToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"rule_id\": 12,\n  \"device_id\": 5\n}",
+                      "options": {
+                        "raw": {
+                          "headerFamily": "json",
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/rules/evaluate/",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "rules",
+                        "evaluate",
+                        ""
+                      ]
+                    },
+                    "description": "Triggers manual evaluation of all enabled rules for debugging and demo purposes.\nThis endpoint runs the rule processor immediately instead of waiting for the scheduled task.\n"
+                  },
+                  "response": [
+                    {
+                      "name": "Evaluation results",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"device_id\": 9\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/evaluate/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            "evaluate",
+                            ""
+                          ]
+                        }
+                      },
+                      "status": "OK",
+                      "code": 200,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"status\": 200,\n  \"results\": [\n    {\n      \"telemetry_id\": 2,\n      \"device_metric_id\": 1,\n      \"device_name\": \"device 1\",\n      \"result\": {\n        \"telemetry_id\": 2,\n        \"results\": [\n          {\n            \"rule_id\": 1,\n            \"triggered\": true\n          },\n          {\n            \"rule_id\": 4,\n            \"triggered\": true\n          }\n        ]\n      }\n    }\n  ]\n}"
+                    },
+                    {
+                      "name": "Invalid request",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"device_id\": 9\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/rules/evaluate/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "rules",
+                            "evaluate",
+                            ""
+                          ]
+                        }
+                      },
+                      "status": "Bad Request",
+                      "code": 400,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"code\": 400,\n  \"message\": \"Telemetry value missing\"\n}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "List rules with pagination and filters",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules/?limit=20&offset=0&is_active=false&webhook=[object Object]&notification=[object Object]",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rules",
+                    ""
+                  ],
+                  "query": [
+                    {
+                      "description": "Maximum number of rules to return",
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "description": "Number of items to skip",
+                      "key": "offset",
+                      "value": "0"
+                    },
+                    {
+                      "description": "Filter by enabled status",
+                      "key": "is_active",
+                      "value": "false"
+                    },
+                    {
+                      "description": "Filter by action type in JSON format",
+                      "key": "webhook",
+                      "value": "[object Object]"
+                    },
+                    {
+                      "description": "Filter by action type in JSON format",
+                      "key": "notification",
+                      "value": "[object Object]"
+                    }
+                  ]
+                },
+                "description": "Returns a paginated list of rules.\nSupports filtering by activation status and action type.\nUsed to browse, search, and manage existing rules.\n"
+              },
+              "response": [
+                {
+                  "name": "List of rules",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "description": "Added as a part of security scheme: bearer",
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/rules/?limit=20&offset=0&is_active=false&webhook=[object Object]&notification=[object Object]",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "rules",
+                        ""
+                      ],
+                      "query": [
+                        {
+                          "description": "Maximum number of rules to return",
+                          "key": "limit",
+                          "value": "20"
+                        },
+                        {
+                          "description": "Number of items to skip",
+                          "key": "offset",
+                          "value": "0"
+                        },
+                        {
+                          "description": "Filter by enabled status",
+                          "key": "is_active",
+                          "value": "false"
+                        },
+                        {
+                          "description": "Filter by action type in JSON format",
+                          "key": "webhook",
+                          "value": "[object Object]"
+                        },
+                        {
+                          "description": "Filter by action type in JSON format",
+                          "key": "notification",
+                          "value": "[object Object]"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"total\": 3,\n  \"limit\": 20,\n  \"offset\": 0,\n  \"items\": [\n    {\n      \"id\": 12,\n      \"name\": \"High Temperature Alert\",\n      \"description\": \"Alert when temperature exceeds 30°C\",\n      \"is_active\": true,\n      \"condition\": {\n        \"type\": \"threshold\",\n        \"operator\": \">\",\n        \"value\": 30\n      },\n      \"action\": {\n        \"webhook\": {\n          \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n          \"enabled\": true\n        },\n        \"notification\": {\n          \"channel\": \"email\",\n          \"enabled\": true,\n          \"message\": \"High temperature in {device_name}: {value}°C\"\n        }\n      },\n      \"device_metric_id\": 1\n    },\n    {\n      \"schema_version\": 1,\n      \"id\": 32,\n      \"name\": \"Low Humidity Alert\",\n      \"description\": \"Alert when humidity drops below 20%\",\n      \"is_active\": true,\n      \"condition\": {\n        \"type\": \"threshold\",\n        \"operator\": \"<\",\n        \"value\": 20\n      },\n      \"action\": {\n        \"webhook\": {\n          \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n          \"enabled\": true\n        },\n        \"notification\": {\n          \"channel\": \"email\",\n          \"enabled\": true,\n          \"message\": \"High temperature in {device_name}: {value}°C\"\n        }\n      },\n      \"device_metric_id\": 1\n    }\n  ]\n}"
+                },
+                {
+                  "name": "Invalid request",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "description": "Added as a part of security scheme: bearer",
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/rules/?limit=20&offset=0&is_active=false&webhook=[object Object]&notification=[object Object]",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "rules",
+                        ""
+                      ],
+                      "query": [
+                        {
+                          "description": "Maximum number of rules to return",
+                          "key": "limit",
+                          "value": "20"
+                        },
+                        {
+                          "description": "Number of items to skip",
+                          "key": "offset",
+                          "value": "0"
+                        },
+                        {
+                          "description": "Filter by enabled status",
+                          "key": "is_active",
+                          "value": "false"
+                        },
+                        {
+                          "description": "Filter by action type in JSON format",
+                          "key": "webhook",
+                          "value": "[object Object]"
+                        },
+                        {
+                          "description": "Filter by action type in JSON format",
+                          "key": "notification",
+                          "value": "[object Object]"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"code\": 400,\n  \"message\": \"Invalid filter parameters\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Create a new rule",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"schema_version\": 1,\n  \"name\": \"High Temperature Alert\",\n  \"description\": \"Alert when temperature exceeds 30°C\",\n  \"is_active\": true,\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \">\",\n    \"value\": 30\n  },\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  },\n  \"device_metric_id\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "headerFamily": "json",
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules/",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rules",
+                    ""
+                  ]
+                },
+                "description": "Creates a new rule and persists it for future evaluation.\n"
+              },
+              "response": [
+                {
+                  "name": "Rule created successfully",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "description": "Added as a part of security scheme: bearer",
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"schema_version\": 1,\n  \"name\": \"High Temperature Alert\",\n  \"description\": \"Alert when temperature exceeds 30°C\",\n  \"is_active\": true,\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \">\",\n    \"value\": 30\n  },\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  },\n  \"device_metric_id\": 1\n}",
+                      "options": {
+                        "raw": {
+                          "headerFamily": "json",
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/rules/",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "rules",
+                        ""
+                      ]
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"schema_version\": 1,\n  \"id\": 22,\n  \"name\": \"High Temperature Alert\",\n  \"description\": \"Alert when temperature exceeds 30°C\",\n  \"is_active\": true,\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \">\",\n    \"value\": 30\n  },\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  },\n  \"device_metric_id\": 1\n}"
+                },
+                {
+                  "name": "Invalid rule definition",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "description": "Added as a part of security scheme: bearer",
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"schema_version\": 1,\n  \"name\": \"High Temperature Alert\",\n  \"description\": \"Alert when temperature exceeds 30°C\",\n  \"is_active\": true,\n  \"condition\": {\n    \"type\": \"threshold\",\n    \"operator\": \">\",\n    \"value\": 30\n  },\n  \"action\": {\n    \"webhook\": {\n      \"url\": \"https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e\",\n      \"enabled\": true\n    },\n    \"notification\": {\n      \"channel\": \"email\",\n      \"enabled\": true,\n      \"message\": \"High temperature in {device_name}: {value}°C\"\n    }\n  },\n  \"device_metric_id\": 1\n}",
+                      "options": {
+                        "raw": {
+                          "headerFamily": "json",
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/rules/",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "rules",
+                        ""
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"code\": 400,\n  \"message\": \"Invalid rule condition: Unsupported operator\"\n}"
                 }
               ]
             }
@@ -2036,7 +3351,7 @@
                           "variable": [
                             {
                               "key": "event_id",
-                              "value": "5246",
+                              "value": "2933",
                               "description": "ID of the event"
                             }
                           ]
@@ -2074,7 +3389,7 @@
                               "variable": [
                                 {
                                   "key": "event_id",
-                                  "value": "5246",
+                                  "value": "2933",
                                   "description": "ID of the event"
                                 }
                               ]
@@ -2090,7 +3405,7 @@
                             }
                           ],
                           "cookie": [],
-                          "body": "{\n  \"example\": null,\n  \"id\": 123,\n  \"timestamp\": \"2026-01-25T09:53:00+00:00\",\n  \"created_at\": \"2026-01-25T09:55:00+00:00\",\n  \"acknowledged\": true,\n  \"rule\": {\n    \"id\": 1,\n    \"name\": \"High Temperature\"\n  },\n  \"trigger_telemetry_id\": 2,\n  \"trigger_device_id\": 1\n}"
+                          "body": "{\n  \"example\": null,\n  \"id\": 123,\n  \"timestamp\": \"2026-01-25T09:53:00+00:00\",\n  \"created_at\": \"2026-01-25T09:55:00+00:00\",\n  \"acknowledged\": true,\n  \"rule\": {\n    \"id\": 1,\n    \"name\": \"High Temperature\"\n  },\n  \"trigger_telemetry\": {\n    \"id\": 1,\n    \"device_id\": 1,\n    \"metric\": {\n      \"temperature\": {\n        \"value\": 60,\n        \"unit\": \"celsius\"\n      }\n    },\n    \"ts\": \"2024-04-13T18:45:37Z\"\n  }\n}"
                         },
                         {
                           "name": "Event not found",
@@ -2122,7 +3437,7 @@
                               "variable": [
                                 {
                                   "key": "event_id",
-                                  "value": "5246",
+                                  "value": "2933",
                                   "description": "ID of the event"
                                 }
                               ]
@@ -2178,7 +3493,7 @@
                       "variable": [
                         {
                           "key": "event_id",
-                          "value": "5246",
+                          "value": "2933",
                           "description": "ID of the event"
                         }
                       ]
@@ -2215,7 +3530,7 @@
                           "variable": [
                             {
                               "key": "event_id",
-                              "value": "5246",
+                              "value": "2933",
                               "description": "ID of the event"
                             }
                           ]
@@ -2231,7 +3546,7 @@
                         }
                       ],
                       "cookie": [],
-                      "body": "{\n  \"id\": 123,\n  \"timestamp\": \"2026-01-25T09:53:00+00:00\",\n  \"created_at\": \"2026-01-25T09:55:00+00:00\",\n  \"acknowledged\": false,\n  \"rule\": {\n    \"id\": 1,\n    \"name\": \"High Temperature\"\n  },\n  \"trigger_telemetry_id\": 2,\n  \"trigger_device_id\": 1\n}"
+                      "body": "{\n  \"id\": 123,\n  \"timestamp\": \"2026-01-25T09:53:00+00:00\",\n  \"created_at\": \"2026-01-25T09:55:00+00:00\",\n  \"acknowledged\": false,\n  \"rule\": {\n    \"id\": 1,\n    \"name\": \"High Temperature\"\n  },\n  \"trigger_telemetry\": {\n    \"id\": 1,\n    \"device_id\": 1,\n    \"metric\": {\n      \"temperature\": {\n        \"value\": 60,\n        \"unit\": \"celsius\"\n      }\n    },\n    \"ts\": \"2024-04-13T18:45:37Z\"\n  }\n}"
                     },
                     {
                       "name": "Event not found",
@@ -2262,7 +3577,7 @@
                           "variable": [
                             {
                               "key": "event_id",
-                              "value": "5246",
+                              "value": "2933",
                               "description": "ID of the event"
                             }
                           ]
@@ -2279,6 +3594,332 @@
                       ],
                       "cookie": [],
                       "body": "{\n  \"detail\": \"Event not found\"\n}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "external",
+              "item": [
+                {
+                  "name": "Receive event from external system",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{bearerToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"event_type\": \"temperature_alert\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"temperature\": 85.2,\n    \"unit\": \"celsius\"\n  }\n}",
+                      "options": {
+                        "raw": {
+                          "headerFamily": "json",
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/events/external/",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "events",
+                        "external",
+                        ""
+                      ]
+                    },
+                    "description": "Accepts events originating from external systems such as webhooks or third-party IoT platforms.\nThe event is validated and mapped to internal actions (for example creating an Event or triggering a Rule).\n\n### Example Use Case\nAn external IoT platform detects high temperature and sends a webhook to this endpoint.\nThe system maps the event to an internal rule and creates an Event record.\n"
+                  },
+                  "response": [
+                    {
+                      "name": "Event accepted for processing",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"event_type\": \"temperature_alert\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"temperature\": 85.2,\n    \"unit\": \"celsius\"\n  }\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/events/external/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "events",
+                            "external",
+                            ""
+                          ]
+                        }
+                      },
+                      "status": "Accepted",
+                      "code": 202,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"status\": \"accepted\",\n  \"event_id\": 345,\n  \"message\": \"Event successfully received and queued for processing\"\n}"
+                    },
+                    {
+                      "name": "Invalid request payload",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"event_type\": \"temperature_alert\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"temperature\": 85.2,\n    \"unit\": \"celsius\"\n  }\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/events/external/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "events",
+                            "external",
+                            ""
+                          ]
+                        }
+                      },
+                      "status": "Bad Request",
+                      "code": 400,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"code\": 400,\n  \"message\": \"Invalid event payload\"\n}"
+                    },
+                    {
+                      "name": "Unauthorized request",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"event_type\": \"temperature_alert\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"temperature\": 85.2,\n    \"unit\": \"celsius\"\n  }\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/events/external/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "events",
+                            "external",
+                            ""
+                          ]
+                        }
+                      },
+                      "status": "Unauthorized",
+                      "code": 401,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"code\": 401,\n  \"message\": \"Authentication credentials were not provided\"\n}"
+                    },
+                    {
+                      "name": "Duplicate external event",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"event_type\": \"temperature_alert\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"temperature\": 85.2,\n    \"unit\": \"celsius\"\n  }\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/events/external/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "events",
+                            "external",
+                            ""
+                          ]
+                        }
+                      },
+                      "status": "Conflict",
+                      "code": 409,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"code\": 409,\n  \"message\": \"Event with this external_event_id already processed\"\n}"
+                    },
+                    {
+                      "name": "Internal processing error",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"event_type\": \"temperature_alert\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"temperature\": 85.2,\n    \"unit\": \"celsius\"\n  }\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/events/external/",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "events",
+                            "external",
+                            ""
+                          ]
+                        }
+                      },
+                      "status": "Internal Server Error",
+                      "code": 500,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"code\": 500,\n  \"message\": \"Unexpected error while processing external event\"\n}"
                     }
                   ]
                 }
@@ -2305,7 +3946,7 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{baseUrl}}/api/events/?rule_id=5246&device_id=5246&acknowledged=false&severity=string&limit=50&offset=0",
+                  "raw": "{{baseUrl}}/api/events/?rule_id=2933&device_id=2933&acknowledged=true&severity=string&limit=50&offset=0",
                   "host": [
                     "{{baseUrl}}"
                   ],
@@ -2318,17 +3959,17 @@
                     {
                       "description": "Filter events by rule ID",
                       "key": "rule_id",
-                      "value": "5246"
+                      "value": "2933"
                     },
                     {
                       "description": "Filter events by trigger device ID",
                       "key": "device_id",
-                      "value": "5246"
+                      "value": "2933"
                     },
                     {
                       "description": "Filter events by acknowledgment status",
                       "key": "acknowledged",
-                      "value": "false"
+                      "value": "true"
                     },
                     {
                       "description": "Filter events by severity (currently reserved, not implemented)",
@@ -2366,7 +4007,7 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{baseUrl}}/api/events/?rule_id=5246&device_id=5246&acknowledged=false&severity=string&limit=50&offset=0",
+                      "raw": "{{baseUrl}}/api/events/?rule_id=2933&device_id=2933&acknowledged=true&severity=string&limit=50&offset=0",
                       "host": [
                         "{{baseUrl}}"
                       ],
@@ -2379,17 +4020,17 @@
                         {
                           "description": "Filter events by rule ID",
                           "key": "rule_id",
-                          "value": "5246"
+                          "value": "2933"
                         },
                         {
                           "description": "Filter events by trigger device ID",
                           "key": "device_id",
-                          "value": "5246"
+                          "value": "2933"
                         },
                         {
                           "description": "Filter events by acknowledgment status",
                           "key": "acknowledged",
-                          "value": "false"
+                          "value": "true"
                         },
                         {
                           "description": "Filter events by severity (currently reserved, not implemented)",
@@ -2419,7 +4060,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"count\": 2,\n  \"limit\": 50,\n  \"offset\": 0,\n  \"results\": [\n    {\n      \"id\": 123,\n      \"timestamp\": \"2026-01-25T09:53:00+00:00\",\n      \"created_at\": \"2026-01-25T09:55:00+00:00\",\n      \"acknowledged\": false,\n      \"rule\": {\n        \"id\": 1,\n        \"name\": \"High Temperature\"\n      },\n      \"trigger_telemetry_id\": 2,\n      \"trigger_device_id\": 1\n    },\n    {\n      \"id\": 124,\n      \"timestamp\": \"2026-01-25T09:52:00+00:00\",\n      \"created_at\": \"2026-01-25T09:53:00+00:00\",\n      \"acknowledged\": true,\n      \"rule\": {\n        \"id\": 2,\n        \"name\": \"Low Battery\"\n      },\n      \"trigger_telemetry_id\": 43,\n      \"trigger_device_id\": 3\n    }\n  ]\n}"
+                  "body": "{\n  \"count\": 2,\n  \"limit\": 50,\n  \"offset\": 0,\n  \"results\": [\n    {\n      \"id\": 123,\n      \"timestamp\": \"2026-01-25T09:53:00+00:00\",\n      \"created_at\": \"2026-01-25T09:55:00+00:00\",\n      \"acknowledged\": false,\n      \"rule\": {\n        \"id\": 1,\n        \"name\": \"High Temperature\"\n      },\n      \"trigger_telemetry\": {\n        \"id\": 1,\n        \"device_id\": 1,\n        \"metric\": {\n          \"temperature\": {\n            \"value\": 60,\n            \"unit\": \"celsius\"\n          }\n        },\n        \"ts\": \"2024-04-13T18:45:37Z\"\n      }\n    },\n    {\n      \"id\": 124,\n      \"timestamp\": \"2026-01-25T09:52:00+00:00\",\n      \"created_at\": \"2026-01-25T09:53:00+00:00\",\n      \"acknowledged\": true,\n      \"rule\": {\n        \"id\": 2,\n        \"name\": \"Low Battery\"\n      },\n      \"trigger_telemetry\": {\n        \"id\": 3,\n        \"device_id\": 43,\n        \"metric\": {\n          \"battery\": {\n            \"value\": 5,\n            \"unit\": \"%\"\n          }\n        },\n        \"ts\": \"2024-04-13T18:45:37Z\"\n      }\n    }\n  ]\n}"
                 },
                 {
                   "name": "Invalid request",
@@ -2437,7 +4078,7 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{baseUrl}}/api/events/?rule_id=5246&device_id=5246&acknowledged=false&severity=string&limit=50&offset=0",
+                      "raw": "{{baseUrl}}/api/events/?rule_id=2933&device_id=2933&acknowledged=true&severity=string&limit=50&offset=0",
                       "host": [
                         "{{baseUrl}}"
                       ],
@@ -2450,17 +4091,17 @@
                         {
                           "description": "Filter events by rule ID",
                           "key": "rule_id",
-                          "value": "5246"
+                          "value": "2933"
                         },
                         {
                           "description": "Filter events by trigger device ID",
                           "key": "device_id",
-                          "value": "5246"
+                          "value": "2933"
                         },
                         {
                           "description": "Filter events by acknowledgment status",
                           "key": "acknowledged",
-                          "value": "false"
+                          "value": "true"
                         },
                         {
                           "description": "Filter events by severity (currently reserved, not implemented)",
