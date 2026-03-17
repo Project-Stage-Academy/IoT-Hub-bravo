@@ -357,7 +357,7 @@ Flaky tests are tests that pass or fail inconsistently without code changes. The
  
 | Cause | Example | Solution |
 |-------|---------|----------|
-| **Time-dependent** | `assert event.timestamp == timezone.now()` | Use `refresh_from_db()` or fixed timestamps |
+| **Time-dependent** | `assert event.rule_triggered_at == timezone.now()` | Use `refresh_from_db()` or fixed timestamps |
 | **Database ordering** | Tests assume query order | Add explicit `.order_by()` |
 | **Shared state** | Tests modify global/class state | Use `pytest` fixtures with proper scope |
 | **Race conditions** | Async operations not awaited | Add proper waits or use `pytest-asyncio` |

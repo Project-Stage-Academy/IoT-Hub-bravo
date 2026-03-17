@@ -15,5 +15,7 @@
   { "model": "devices.devicemetric", "pk": 9, "fields": { "device": 6, "metric": 2 }}, 
   { "model": "devices.devicemetric", "pk": 10, "fields": { "device": 6, "metric": 4 }},
 
-  { "model": "devices.devicemetric", "pk": 11, "fields": { "device": 7, "metric": 9 }} 
+  { "model": "devices.devicemetric", "pk": 11, "fields": { "device": 7, "metric": 9 }},
+
+  { "model": "devices.devicemetric", "pk": 12, "fields": { "device": 7, "metric": 8 }}
 ]

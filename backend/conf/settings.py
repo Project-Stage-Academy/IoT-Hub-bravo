@@ -358,3 +358,7 @@ TELEMETRY_MAX_AGE_SECONDS = config('TELEMETRY_MAX_AGE_SECONDS', default=3600, ca
 
 REDIS_HOST = config('REDIS_HOST', default='redis')
 REDIS_PORT = config('REDIS_PORT', default='6379')
+
+
+# For development/testing, use console email backend to avoid sending real emails
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
