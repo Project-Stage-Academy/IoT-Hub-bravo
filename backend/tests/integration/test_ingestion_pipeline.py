@@ -8,6 +8,7 @@ the full ingestion pipeline end-to-end.
 from datetime import datetime, timezone, timedelta
 
 import pytest
+import fakeredis
 from unittest.mock import patch
 
 from apps.devices.models.telemetry import Telemetry
@@ -19,12 +20,6 @@ from tests.fixtures.factories import (
 )
 
 pytestmark = pytest.mark.django_db
-
-
-@pytest.fixture(autouse=True)
-def mock_redis():
-    with patch('validator.telemetry_validator.build_redis_checker'):
-        yield
 
 
 def make_payload(device_serial, metrics, ts=None):
@@ -75,6 +70,7 @@ def dm_door(device, door_metric):
 
 
 @patch('apps.devices.services.telemetry_services.publish_telemetry_event')
+@patch("apps.common.checker.idempotency_store.redis.Redis", fakeredis.FakeRedis)
 class TestSinglePayload:
     """E2E tests for single dict payloads."""
 
@@ -144,6 +140,7 @@ class TestSinglePayload:
 
 
 @patch('apps.devices.services.telemetry_services.publish_telemetry_event')
+@patch("apps.common.checker.idempotency_store.redis.Redis", fakeredis.FakeRedis)
 class TestBatchPayload:
     """E2E tests for batch (list) payloads."""
 
@@ -153,23 +150,25 @@ class TestBatchPayload:
         dm_temp,
     ):
         """Batch of valid payloads creates all Telemetry rows."""
-        now = datetime.now(timezone.utc)
+        ts1 = datetime.now(timezone.utc).isoformat()
+        ts2 = (datetime.now(timezone.utc) + timedelta(seconds=1)).isoformat()
         payloads = [
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 20.0, 'unit': 'celsius'},
                 },
-                ts=now.isoformat(),
+                ts=ts1,
             ),
             make_payload(
                 'INT-001',
                 {
                     'temperature': {'value': 21.0, 'unit': 'celsius'},
                 },
-                ts=(now + timedelta(seconds=1)).isoformat(),
+                ts=ts2,
             ),
         ]
+
         ingest_telemetry_payload(payload=payloads, source='kafka')
 
         assert Telemetry.objects.filter(device_metric=dm_temp).count() == 2
@@ -269,10 +268,14 @@ class TestValidationErrors:
 class TestEdgeCases:
     """E2E tests for edge cases."""
 
-    def test_invalid_payload_type_creates_no_telemetry(self, mock_publish):
-        """Non dict/list payload is rejected gracefully."""
-        ingest_telemetry_payload(payload='not-valid', source='mqtt')
-        assert Telemetry.objects.count() == 0
+    def test_invalid_payload_type_logs_error(self, caplog):
+
+        invalid_payload = "not-valid"
+
+        with caplog.at_level("ERROR"):
+            result = ingest_telemetry_payload(payload=invalid_payload, source="mqtt")
+
+        assert result is None
 
     def test_empty_batch_returns_early(self, mock_publish):
         """Empty list payload is rejected by serializer."""

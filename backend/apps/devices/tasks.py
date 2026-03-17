@@ -53,7 +53,7 @@ def ingest_telemetry_payload(
     r = telemetry_create(valid_data=validation.validated_rows)
 
     total_created += r.created_count
-    total_errors += r.attempted_count - r.created_count
+    total_errors += len(validation.errors)
 
     invalid_items = serializer.item_errors
     invalid_count = len(invalid_items) if invalid_items else 0
