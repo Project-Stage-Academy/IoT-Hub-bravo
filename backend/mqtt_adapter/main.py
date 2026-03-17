@@ -1,4 +1,3 @@
-import logging
 import signal
 
 from decouple import config
@@ -8,17 +7,10 @@ from producers.config import ProducerConfig
 from mqtt_adapter.config import MqttConfig
 from mqtt_adapter.mqtt_client import get_mqtt_client
 from mqtt_adapter.message_handlers import KafkaProducerMessageHandler
+from utils.logging import setup_logging
 
 TOPIC = config('KAFKA_TOPIC_TELEMETRY_RAW', default='telemetry.raw')
 KEY_FIELD = config('MQTT_PRODUCER_KEY_FIELD', default='device')
-
-
-def setup_logging() -> None:
-    logging.basicConfig(
-        format='[%(asctime)s] %(levelname)s %(name)s %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-    )
-    logging.getLogger().setLevel(logging.INFO)
 
 
 def main() -> None:

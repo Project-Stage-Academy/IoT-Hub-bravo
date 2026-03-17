@@ -13,7 +13,7 @@ from consumers.kafka_consumer import KafkaConsumer  # noqa: E402
 from apps.devices.kafka_handlers.telemetry_clean_handler import (  # noqa: E402
     WebSocketTelemetryCleanHandler,
 )
-from utils.logging.setup_logging import setup_logging  # noqa: E402
+from utils.logging import setup_logging  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

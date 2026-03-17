@@ -30,8 +30,15 @@ The **Rule** model represents a business logic rule for monitoring and alerting.
 
 ```json
 {
-  "type": "notify",
-  "message": "Temperature exceeded threshold"
+  "webhook": {
+    "url": "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e",
+    "enabled": true
+  },
+  "notification": {
+    "channel": "email",
+    "enabled": true,
+    "message": "High temperature in {device_name}: {value}°C"
+  }
 }
 ```
 
@@ -55,7 +62,8 @@ Compares a telemetry value against a static threshold.
 }
 ```
 
-**Supported operators:** `>`, `<`, `>=`, `<=`, `==`, `!=`
+**Supported operators for threshold:** `>`, `<`, `>=`, `<=`, `==`, `!=`
+**Supported operators for composite:** `AND`, `OR`
 
 ---
 
@@ -70,7 +78,7 @@ Counts telemetry events over a sliding time window.
   "type": "rate",
   "operator": ">=",
   "count": 5,
-  "minutes": 1
+  "duration_minutes": 1
 }
 ```
 
@@ -113,7 +121,7 @@ Combines multiple rule conditions using logical operators.
 > * `OR` — at least one sub-condition must evaluate to true
 
 ---
-## 3. CRUD Operations
+## 3.1 CRUD Operations
 
 ### Create Rule
 
@@ -126,8 +134,22 @@ Combines multiple rule conditions using logical operators.
   "name": "High Temperature Alert",
   "description": "Alert when temperature exceeds 30°C",
   "is_active": true,
-  "condition": { "type": "threshold", "operator": ">", "value": 30 },
-  "action": { "type": "notify", "message": "Temperature exceeded threshold" },
+  "condition": {
+    "type": "threshold",
+    "value": 13,
+    "operator": ">"
+  },
+  "action": {
+    "webhook": {
+      "url": "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e",
+      "enabled": true
+    },
+    "notification": {
+      "channel": "email",
+      "enabled": true,
+      "message": "High temperature in {device_name}: {value}°C"
+    }
+  },
   "device_metric": 123
 }
 ```
@@ -139,7 +161,9 @@ Full Rule object including `id` and `created_at`.
 
 ### Update Rule
 
-**PUT /rules/{id}** — update rule fields.
+**PUT /rules/{id}** — full update rule fields.
+
+**PATCH /rules/{id}** — partially update rule fields.
 
 ---
 
@@ -149,21 +173,26 @@ Full Rule object including `id` and `created_at`.
 
 ---
 
-### Enable/Disable Rule
+## 3.2 Constraints and Validation
 
-**PATCH /rules/{id}/enable**
+### Unique Rule Name per Device Metric
 
-```json
-{ "is_active": true }
-```
-
-**PATCH /rules/{id}/disable**
+* Each `(device_metric, name)` pair must be **unique**.
+* Attempting to create a rule with the same `name` for the same `device_metric` returns:
 
 ```json
-{ "is_active": false }
+{
+  "code": 400,
+  "message": "Rule with this name already exists for this device_metric."
+}
 ```
 
----
+* This is enforced both in the database via a **unique constraint** and in the API via validation to prevent `IntegrityError`.
+* This ensures **idempotency**: repeated requests with the same `name` and `device_metric` will not create duplicates and will provide a clear client error instead of a 500.
+
+**Rationale:**
+Preventing duplicate rules avoids conflicting triggers for the same metric, simplifies client logic, and improves system reliability.
+
 
 ## 4. Event Schema
 
@@ -190,3 +219,5 @@ When a rule triggers, an **Event** is generated:
 | `acknowledged` | boolean  | Whether the event was acknowledged                 |
 | `created_at`   | datetime | When the event record was created in the database  |
 | `trigger_telemetry_id`   | int | Which telemtry trigger the event  |
+
+

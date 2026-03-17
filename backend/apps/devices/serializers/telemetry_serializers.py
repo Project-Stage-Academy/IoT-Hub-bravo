@@ -1,36 +1,11 @@
 import datetime
 from typing import Optional, Any
 
-from django.utils import timezone
-from django.utils.dateparse import parse_datetime
+from apps.common.serializers import BaseSerializer, JSONSerializer
+from utils.normalization import parse_iso8601_utc, normalize_str
 
 
-class BaseSerializer:
-    def __init__(self, data: Any):
-        self.initial_data = data
-        self._validated_data: Optional[Any] = None
-        self._errors: dict[str, Any] = {}
-
-    @property
-    def validated_data(self):
-        if self._validated_data is None:
-            raise ValueError("Call is_valid() before accessing validated_data.")
-        return self._validated_data
-
-    @property
-    def errors(self) -> dict[str, Any]:
-        return self._errors
-
-    def is_valid(self) -> bool:
-        self._errors = {}
-        self._validated_data = self._validate(self.initial_data)
-        return not self._errors
-
-    def _validate(self, data: Any):
-        raise NotImplementedError
-
-
-class TelemetryCreateSerializer(BaseSerializer):
+class TelemetryCreateSerializer(JSONSerializer):
     SCHEMA_VERSION = 1
     METRIC_VALUE_TYPES = (bool, int, float, str)
 
@@ -41,48 +16,30 @@ class TelemetryCreateSerializer(BaseSerializer):
         "ts": str,
     }
 
-    def _validate(self, data: Any) -> Optional[dict[str, Any]]:
-        if not isinstance(data, dict):
-            self._errors["non_field_errors"] = "Payload must be a JSON object."
-            return None
-
-        self._validate_required_fields(data)
-        if self._errors:
-            return None
-
-        if data["schema_version"] != self.SCHEMA_VERSION:
-            self._errors["schema_version"] = (
-                f"Unsupported schema_version: {data['schema_version']}. "
-                f"Supported: {self.SCHEMA_VERSION}."
-            )
-            return None
-
-        device = self._validate_device(data["device"])
-        metrics = self._validate_metrics(data["metrics"])
-        ts = self._validate_ts(data["ts"])
-
-        if self._errors:
-            return None
+    def _validate_fields(self, data: dict[str, Any]) -> dict[str, Any]:
+        if not self._schema_version_valid(data["schema_version"]):
+            return {}
 
         return {
-            "device_serial_id": device,
-            "metrics": metrics,
-            "ts": ts,
+            "device_serial_id": self._validate_device(data["device"]),
+            "metrics": self._validate_metrics(data["metrics"]),
+            "ts": self._validate_ts(data["ts"]),
         }
 
-    def _validate_required_fields(self, data: dict):
-        for field, expected_type in self.REQUIRED_FIELDS.items():
-            if field not in data:
-                self._errors[field] = f"{field} field is required."
-            elif not isinstance(data[field], expected_type):
-                self._errors[field] = f"{field} must be of type {expected_type.__name__}."
+    def _schema_version_valid(self, schema_version: int) -> bool:
+        if schema_version != self.SCHEMA_VERSION:
+            self._errors["schema_version"] = (
+                f"Unsupported schema_version: {schema_version}. "
+                f"Supported: {self.SCHEMA_VERSION}."
+            )
+            return False
+        return True
 
-    def _validate_device(self, value: str) -> Optional[str]:
-        value = value.strip()
-        if not value:
+    def _validate_device(self, device_raw: str) -> Optional[str]:
+        device_raw = normalize_str(device_raw)
+        if not device_raw:
             self._errors["device"] = "device must be a non-empty string."
-            return None
-        return value
+        return device_raw
 
     def _validate_metrics(self, metrics_raw: dict) -> Optional[dict[str, Any]]:
         if not metrics_raw:
@@ -127,24 +84,11 @@ class TelemetryCreateSerializer(BaseSerializer):
         return validated
 
     def _validate_ts(self, ts_raw: str) -> Optional[datetime.datetime]:
-        ts_raw = ts_raw.strip()
-        if not ts_raw:
-            self._errors["ts"] = "ts must be a non-empty ISO-8601 datetime string."
-            return None
+        ts = parse_iso8601_utc(ts_raw)
 
-        ts = parse_datetime(ts_raw)
         if ts is None:
-            self._errors["ts"] = (
-                "ts must be a valid ISO-8601 datetime " "(e.g. 2026-02-19T11:52:45Z)."
-            )
+            self._errors["ts"] = "ts must be a valid ISO-8601 datetime."
             return None
-
-        if timezone.is_naive(ts):
-            ts = timezone.make_aware(ts, timezone.get_default_timezone())
-
-        ts = ts.astimezone(datetime.timezone.utc)
-
-        ts = ts.replace(microsecond=0)
 
         return ts
 
@@ -164,6 +108,8 @@ class TelemetryBatchCreateSerializer(BaseSerializer):
         return self._item_errors
 
     def _validate(self, data: Any):
+        self._valid_items = []
+        self._item_errors = {}
         if not isinstance(data, list):
             self._errors["non_field_errors"] = "Payload must be a JSON array."
             return None
@@ -184,3 +130,179 @@ class TelemetryBatchCreateSerializer(BaseSerializer):
             return None
 
         return self._valid_items
+
+    def validate_producer_batch(self):
+        self._valid_items = []
+        self._item_errors = {}
+        self._errors = {}
+
+        if not isinstance(self.initial_data, list):
+            self._errors["non_field_errors"] = "Payload must be a JSON array."
+            return None
+
+        for index, item in enumerate(self.initial_data):
+            serializer = TelemetryProducerMessageSerializer(item)
+
+            if serializer.is_valid():
+                self._valid_items.append(serializer.validated_data)
+            else:
+                self._item_errors[index] = serializer.errors
+
+        if self._item_errors:
+            self._errors["items"] = self._item_errors
+
+        return self._valid_items, self._item_errors
+
+
+# TODO: Refactor this and add a parent class JSONSerializer
+class TelemetryProducerMessageSerializer:
+
+    REQUIRED_FIELDS: dict[str, type] = {
+        "device_serial_id": str,
+        "device_metric_id": int,
+        "ts": str,
+        "value_jsonb": dict,
+    }
+
+    OPTIONAL_FIELDS: dict[str, type] = {}
+
+    STRICT: bool = True
+
+    VALUE_JSONB_REQUIRED_FIELDS = {
+        "t": str,
+        "v": (bool, int, float, str),
+    }
+
+    def __init__(self, data: Any):
+        self.initial_data = data
+        self._errors: dict[str, Any] = {}
+        self.validated_data: Optional[dict[str, Any]] = None
+
+    @property
+    def errors(self):
+        return self._errors
+
+    def is_valid(self) -> bool:
+        validated = self._validate(self.initial_data)
+
+        if self._errors:
+            return False
+
+        self.validated_data = validated
+        return True
+
+    def _validate(self, data: Any) -> Optional[dict[str, Any]]:
+
+        if not isinstance(data, dict):
+            self._errors["non_field_errors"] = "Payload must be a JSON object."
+            return None
+
+        self._validate_field_map(data, self.REQUIRED_FIELDS, required=True)
+        self._validate_field_map(data, self.OPTIONAL_FIELDS, required=False)
+
+        if self.STRICT:
+            self._validate_no_unknown_fields(data)
+
+        if self._errors:
+            return None
+
+        validated = self._validate_fields(data)
+
+        if self._errors:
+            return None
+
+        return validated
+
+    def _validate_field_map(
+        self,
+        data: dict[str, Any],
+        fields: dict[str, type],
+        *,
+        required: bool,
+    ) -> None:
+
+        for field, expected_type in fields.items():
+
+            if field not in data:
+                if required:
+                    self._errors[field] = f"{field} field is required."
+                continue
+
+            value = data[field]
+
+            if value is None and not required:
+                continue
+
+            if not isinstance(value, expected_type):
+                self._errors[field] = f"{field} must be of type {expected_type.__name__}."
+
+    def _validate_no_unknown_fields(self, data: dict[str, Any]) -> None:
+
+        allowed = set(self.REQUIRED_FIELDS) | set(self.OPTIONAL_FIELDS)
+        unknown = set(data) - allowed
+
+        if unknown:
+            self._errors["non_field_errors"] = f"Unknown fields: {sorted(unknown)}"
+
+    def _validate_fields(self, data: dict[str, Any]) -> Optional[dict[str, Any]]:
+
+        ts = self._validate_ts(data["ts"])
+        value_jsonb = self._validate_value_jsonb(data["value_jsonb"])
+
+        if self._errors:
+            return None
+
+        return {
+            "device_serial_id": data["device_serial_id"],
+            "device_metric_id": data["device_metric_id"],
+            "ts": ts,
+            "value_jsonb": value_jsonb,
+        }
+
+    def _validate_ts(self, ts_raw: str) -> Optional[datetime.datetime]:
+        ts_raw = ts_raw.strip()
+
+        if not ts_raw:
+            self._errors["ts"] = "ts must be a non-empty ISO-8601 datetime string."
+            return None
+
+        try:
+            ts = datetime.datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
+        except ValueError:
+            self._errors["ts"] = "Invalid ISO-8601 datetime."
+            return None
+
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=datetime.timezone.utc)
+
+        return ts.replace(microsecond=0)
+
+    def _validate_value_jsonb(self, value_jsonb: dict) -> Optional[dict[str, Any]]:
+
+        errors = {}
+
+        for field, expected_type in self.VALUE_JSONB_REQUIRED_FIELDS.items():
+
+            if field not in value_jsonb:
+                errors[field] = f"{field} is required."
+                continue
+
+            value = value_jsonb[field]
+
+            if not isinstance(value, expected_type):
+
+                if isinstance(expected_type, tuple):
+                    types = ", ".join(t.__name__ for t in expected_type)
+                    errors[field] = f"{field} must be one of ({types})."
+
+                else:
+                    errors[field] = f"{field} must be {expected_type.__name__}."
+
+        if errors:
+            self._errors["value_jsonb"] = errors
+            return None
+
+        return {
+            "t": value_jsonb["t"],
+            "v": value_jsonb["v"],
+        }

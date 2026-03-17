@@ -35,6 +35,7 @@ services:
     container_name: web
     volumes:
       - media_data:/app/media
+      - prometheus_multiproc:/tmp/prometheus_multiproc
     ports:
       - "8000:8000"
 
@@ -80,6 +81,8 @@ services:
     image: iot-hub-worker
     container_name: worker
     command: [ "celery", "-A", "conf.celery_app", "worker", "-l", "INFO", "--concurrency=${CELERY_CONCURRENCY:-2}" ]
+    volumes:
+      - prometheus_multiproc:/tmp/prometheus_multiproc
 
   flower:
     image: mher/flower:2.0
@@ -140,6 +143,7 @@ services:
     container_name: prometheus
     volumes:
       - ./devops/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./devops/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml
     ports:
       - "9090:9090"
     networks:
@@ -257,12 +261,35 @@ services:
       kafka:
         condition: service_healthy
 
+  kafka-telemetry-validator:
+    <<: *django_base
+    image: iot-hub-kafka-telemetry-validator
+    container_name: kafka-telemetry-validator
+    command: [ "python", "-m", "consumers.telemetry_validator" ]
+    environment:
+      KAFKA_GROUP_ID: telemetry-validator
+    depends_on:
+      kafka:
+        condition: service_healthy
+        
+  rule-engine:
+    <<: *django_base
+    image: iot-hub-rule-engine
+    container_name: rule-engine
+    command: [ "python", "-m", "consumers.rule_engine" ]
+    environment:
+      KAFKA_GROUP_ID: rule-engine
+    depends_on:
+      kafka:
+        condition: service_healthy
+
 volumes:
   media_data:
   db_data:
   redis_data:
   flower_data:
   kafka_data:
+  prometheus_multiproc:
 
 networks:
   backend:

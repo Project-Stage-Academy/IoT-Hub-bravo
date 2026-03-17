@@ -1,14 +1,22 @@
 from typing import Any
 from enum import Enum
+import json
 
 from django.core.exceptions import ValidationError
 
 
-class NotificationChannels(str, Enum):
+class NotificationChannels(str, Enum):  ## will be better in common/utils?
     """Enumeration of available notification delivery channels"""
 
     EMAIL = "email"
     SMS = "sms"
+
+
+class ActionTypes(str, Enum):  ## will be better in common/utils?
+    """Enumeration of available action types"""
+
+    WEBHOOK = "webhook"
+    NOTIFICATION = "notification"
 
 
 def validate_condition(condition: dict[str, Any]) -> None:
@@ -21,6 +29,12 @@ def validate_condition(condition: dict[str, Any]) -> None:
         "value": 50
     }
     """
+    if isinstance(condition, str):
+        try:
+            condition = json.loads(condition)
+        except (json.JSONDecodeError, TypeError):
+            raise ValidationError("Condition must be valid JSON.")
+
     if not isinstance(condition, dict):
         raise ValidationError("Condition must be a dictionary")
 
@@ -41,7 +55,9 @@ def validate_condition(condition: dict[str, Any]) -> None:
             raise ValidationError("Invalid threshold operator")
         if "value" not in condition:
             raise ValidationError("Threshold condition requires 'value'")
-        if not isinstance(condition.get("value"), (int, float)):
+        if not isinstance(
+            condition.get("value"), (int, float)
+        ):  ## there will be a problem with str data (new rule type?)
             raise ValidationError("Condition 'value' must be number")
 
     elif condition_type == "rate":
@@ -68,7 +84,7 @@ def validate_condition(condition: dict[str, Any]) -> None:
         if condition.get("operator") not in ["AND", "OR"]:
             raise ValidationError("Composite operator must be AND or OR")
 
-        conds_to_val = condition["conditions"]
+        conds_to_val = condition.get("conditions")
         if not isinstance(conds_to_val, list):
             raise ValidationError("'conditions' must be a list")
         if not conds_to_val:
@@ -110,29 +126,42 @@ def validate_action(action: dict[str, Any]) -> None:
                 }
     }
     """
+    if isinstance(action, str):
+        try:
+            action = json.loads(action)
+        except (json.JSONDecodeError, TypeError):
+            raise ValidationError("Action must be valid JSON.")
+
     if not isinstance(action, dict):
         raise ValidationError("Action must be a dictionary")
 
     if not action:
         raise ValidationError("Action cannot be empty")
 
-    if "webhook" in action:  # maybe better remade to models
-        webhook = action.get("webhook")
+    allowed = {a.value for a in ActionTypes}
 
+    if not action.keys() & allowed:
+        raise ValidationError(f"Action must contain at least one of: {', '.join(allowed)}")
+
+    unknown = action.keys() - allowed
+    if unknown:
+        raise ValidationError(
+            f"Unknown action type(s): {', '.join(unknown)}. " f"Allowed: {', '.join(allowed)}"
+        )
+
+    if ActionTypes.WEBHOOK.value in action:
+        webhook = action.get(ActionTypes.WEBHOOK.value)
         if not isinstance(webhook, dict):
             raise ValidationError("Webhook must be object")
-
         if "url" not in webhook:
             raise ValidationError("Webhook requires 'url'")
 
         validate_action_enabled(webhook)
 
-    if "notification" in action:
-        notification = action.get("notification")
-
+    if ActionTypes.NOTIFICATION.value in action:
+        notification = action.get(ActionTypes.NOTIFICATION.value)
         if not isinstance(notification, dict):
             raise ValidationError("Notification must be object")
-
         if "channel" not in notification:
             raise ValidationError("Notification requires 'channel'")
 
