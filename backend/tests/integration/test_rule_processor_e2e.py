@@ -17,8 +17,17 @@ from tests.fixtures.factories import (
 )
 from producers.kafka_producer import ProduceResult
 
-
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def disable_audit_publish():
+    """Disable audit side-effects for E2E tests."""
+    with (
+        patch("apps.rules.consumers.event_db_handler.publish_audit_event"),
+        patch("apps.rules.consumers.event_notification_handler.publish_audit_event"),
+    ):
+        yield
 
 
 @pytest.fixture(autouse=True)
