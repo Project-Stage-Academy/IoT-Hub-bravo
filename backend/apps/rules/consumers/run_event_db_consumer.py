@@ -12,7 +12,8 @@ from consumers.kafka_consumer import KafkaConsumer  # noqa: E402
 from consumers.config import ConsumerConfig  # noqa: E402
 from apps.rules.consumers.event_db_handler import EventDBHandler  # noqa: E402
 
-TOPIC = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
+INTERNAL_EVENTS = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
+EXTERNAL_EVENTS = config('KAFKA_TOPIC_RULE_EXTERNAL_EVENTS', default='rules.events.triggered')
 GROUP_ID = config('KAFKA_GROUP_EVENT_DB_WRITER', default='event-db-writer-group')
 
 
@@ -31,11 +32,11 @@ def main():
 
     consumer_config = ConsumerConfig(group_id=GROUP_ID, enable_auto_commit=False)
 
-    logger.info(f"Starting Event DB Consumer... Group: {GROUP_ID}, Topic: {TOPIC}")
+    logger.info(f"Starting Event DB Consumer... Group: {GROUP_ID}, Topic: {INTERNAL_EVENTS}, {EXTERNAL_EVENTS}")
 
     consumer = KafkaConsumer(
         config=consumer_config,
-        topics=[TOPIC],
+        topics=[INTERNAL_EVENTS, EXTERNAL_EVENTS],
         handler=EventDBHandler(),
         decode_json=True,
         consume_batch=True,

@@ -15,6 +15,7 @@ class EventListQuery:
     rule_id: Optional[int] = None
     device_serial_id: Optional[str] = None
     severity: Optional[str] = None  # reserved for future
+    is_external: Optional[bool] = None
     acknowledged: Optional[bool] = None
     limit: int = 50
     offset: int = 0
@@ -56,6 +57,11 @@ class EventListQuerySerializer(BaseSerializer):
             field="acknowledged",
         )
 
+        is_external = self._parse_optional_bool(
+            data.get("is_external"),
+            field="is_external",
+        )
+
         limit = self._parse_optional_positive_int(data.get("limit"), field="limit")
         offset = self._parse_optional_non_negative_int(data.get("offset"), field="offset")
 
@@ -77,6 +83,7 @@ class EventListQuerySerializer(BaseSerializer):
             device_serial_id=device_serial_id,
             severity=severity,
             acknowledged=acknowledged,
+            is_external=is_external,
             limit=limit,
             offset=offset,
         )
@@ -162,6 +169,7 @@ class EventListItemSerializer:
         return {
             "event_uuid": str(event.event_uuid),
             "rule_triggered_at": event.rule_triggered_at.isoformat(),
+            "is_external": event.is_external,
             "created_at": event.created_at.isoformat(),
             "acknowledged": event.acknowledged,
             "rule": {
@@ -183,6 +191,7 @@ class EventDetailSerializer:
         return {
             "event_uuid": str(event.event_uuid),
             "rule_triggered_at": event.rule_triggered_at.isoformat(),
+            "is_external": event.is_external,
             "created_at": event.created_at.isoformat(),
             "acknowledged": event.acknowledged,
             "rule": {
@@ -299,6 +308,7 @@ def map_external_to_internal(validated: ExternalEventRequest) -> dict:
         "event_uuid": str(uuid.uuid4()),
         "rule_triggered_at": validated.timestamp.isoformat(),
         "rule_id": payload.get("rule_id"),
+        "is_external": True,
         "trigger_device_serial_id": validated.device_external_id,
         "trigger_context": {
             "metric_type": payload.get("metric"),
