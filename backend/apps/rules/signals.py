@@ -24,7 +24,7 @@ def invalidate_rule_cache(sender, instance, **kwargs):
 
             cache_rule.delete(cache_key)
             logger.debug(f"!!! CACHE DELETED: {cache_key} !!!")
-            logger.info(f"Cache invalidated for key: {cache_key}")
+            logger.debug(f"Cache invalidated for key: {cache_key}")
 
     except Exception as e:
         logger.exception(f"!!! ERROR IN SIGNAL: {e} !!!")
