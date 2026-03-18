@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Optional, Dict
+import hashlib
 
 
 from apps.common.serializers import BaseSerializer
@@ -304,11 +305,22 @@ class ExternalEventRequestSerializer(BaseSerializer):
 
 
 def map_external_to_internal(validated: ExternalEventRequest) -> dict:
-    payload = validated.payload
-    notification = payload.get("notification", {})
+    payload = validated.payload or {}
+    notification = payload.get("notification") or {}
+
+    key_string = f"{validated.source}:{validated.external_event_id}:{validated.device_external_id}"
+    event_uuid = str(uuid.UUID(hashlib.md5(key_string.encode()).hexdigest()))
+
+    telemetry_ts_raw = payload.get("telemetry_ts")
+    telemetry_ts: datetime | None = None
+    if telemetry_ts_raw:
+        try:
+            telemetry_ts = datetime.fromisoformat(telemetry_ts_raw.replace("Z", "+00:00"))
+        except ValueError:
+            telemetry_ts = None
 
     return {
-        "event_uuid": str(uuid.uuid4()),
+        "event_uuid": event_uuid,
         "rule_triggered_at": validated.timestamp.isoformat(),
         "rule_id": payload.get("rule_id"),
         "is_external": True,
@@ -316,7 +328,7 @@ def map_external_to_internal(validated: ExternalEventRequest) -> dict:
         "trigger_context": {
             "metric_type": payload.get("metric"),
             "value": payload.get("value"),
-            "telemetry_timestamp": payload.get("telemetry_ts"),
+            "telemetry_timestamp": telemetry_ts.isoformat() if telemetry_ts else None,
         },
         "action": {
             "webhook": {
@@ -325,7 +337,7 @@ def map_external_to_internal(validated: ExternalEventRequest) -> dict:
             },
             "notification": {
                 "channel": notification.get("channel"),
-                "enabled": bool(notification),
+                "enabled": bool(notification.get("message") or notification.get("channel")),
                 "message": notification.get("message"),
             },
         },

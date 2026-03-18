@@ -16,6 +16,7 @@ from apps.rules.serializers.event_serializer import (
     ExternalEventRequestSerializer,
     map_external_to_internal,
 )
+from apps.common.checker.redis_checker import build_redis_checker
 from producers.kafka_producer import KafkaProducer, ProduceResult
 from apps.rules.services.event_service import (
     event_list,
@@ -137,6 +138,9 @@ def receive_external_event(request):
     return _produce_data(payload=mapped_event, producer=None)
 
 
+CHECKER = build_redis_checker()
+
+
 def _produce_data(
     *,
     payload: dict,
@@ -172,6 +176,23 @@ def _produce_data(
             results['skipped'] += 1
             continue
 
+        event_uuid = record.get("event_uuid")
+        rule_triggered_at = record.get("rule_triggered_at")
+        if not event_uuid:
+            results['skipped'] += 1
+            results['errors'][index] = "Missing event UUID"
+            continue
+
+        if not rule_triggered_at:
+            results['skipped'] += 1
+            results['errors'][index] = "Missing event timestamp of triggered rule"
+            continue
+
+        if not CHECKER.process(f"{event_uuid}:{rule_triggered_at}"):
+            results['skipped'] += 1
+            results['errors'][index] = "Duplicate event skipped"
+            continue
+
         key = record.get("source", None)
         result = producer.produce(payload=record, key=key)
         if result == ProduceResult.ENQUEUED:
@@ -182,12 +203,9 @@ def _produce_data(
     body = {'status': 'accepted', **results}
     status_code = 202
 
-    # no valid records provided (all skipped / empty list)
     if results['accepted'] == 0 and results['skipped'] > 0:
         body['status'] = 'rejected'
         status_code = 422
-
-    # no records accepted (kafka issues)
     elif results['accepted'] == 0 and results['errors']:
         body['status'] = 'unavailable'
         status_code = 503
