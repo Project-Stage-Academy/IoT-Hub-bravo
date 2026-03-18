@@ -46,13 +46,13 @@ class RuleEvalHandler:
     def _handle_single(self, item):
         try:
             serializer = RuleEngineSerializer(data=item)
-            
+
             if not serializer.is_valid():
                 logger.warning("Invalid telemetry payload", extra={"errors": serializer.errors})
                 rule_eval_errors_total.inc()
                 return
             validated = serializer.validated_data
-            
+
             device_serial_id = validated.get("device_serial_id")
             value = validated.get("value")
             value_type = validated.get("value_type")
@@ -81,7 +81,7 @@ class RuleEvalHandler:
 def main():
     """Starts the Kafka rule evaluation consumer"""
     logger.error("Kafka consumer starting on topics: %s", [CLEAN_TOPIC, EXPIRED_TOPIC])
-    
+
     consumer = KafkaConsumer(
         config=ConsumerConfig(),
         topics=[CLEAN_TOPIC, EXPIRED_TOPIC],

@@ -1,5 +1,4 @@
 from typing import Any
-
 import json
 from django.core.exceptions import ValidationError
 
@@ -15,13 +14,13 @@ def validate_condition(condition: dict[str, Any]) -> None:
             raise ValidationError("Condition must be valid JSON.")
     if not isinstance(condition, dict):
         raise ValidationError("Condition must be a dictionary")
-    
+
     condition_type = condition.get("type")
     if condition_type not in CONDITION_SCHEMAS:
         raise ValidationError(f"Unsupported condition type: {condition_type}")
 
     schema = CONDITION_SCHEMAS[condition_type]
-    
+
     for field, typ in schema.get("required", {}).items():
         if field not in condition:
             raise ValidationError(f"{condition_type} requires field '{field}'")

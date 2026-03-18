@@ -49,20 +49,19 @@ class RuleProcessor:
         elif isinstance(telemetry, TelemetryEvent):
             mapped_telemetry = telemetry
         else:
-            raise TypeError(f"Unsupported telemetry type: {type(telemetry)}")    
+            raise TypeError(f"Unsupported telemetry type: {type(telemetry)}")
 
         cache_key = f"{mapped_telemetry.device_serial_id}:{mapped_telemetry.device_metric_id}"
 
-        rules = cache_rule.get_or_set(
-            cache_key,
-            lambda: list(
+        rules = cache_rule.get(cache_key)
+        if rules is None:
+            rules = list(
                 Rule.objects.filter(
                     is_active=True,
                     device_metric_id=mapped_telemetry.device_metric_id,
                 )
-            ),
-            timeout=settings.RULES_CACHE_TTL
-        )
+            )
+            cache_rule.set(cache_key, rules, timeout=settings.RULES_CACHE_TTL)
 
         for rule in rules:
             condition = rule.condition
@@ -79,9 +78,7 @@ class RuleProcessor:
 
             cached_window = window_cache[duration_minutes]
 
-            if ConditionEvaluator.evaluate(
-                condition, mapped_telemetry, cached_window
-            ):
+            if ConditionEvaluator.evaluate(condition, mapped_telemetry, cached_window):
                 rules_triggered_total.labels(rule_type=rule_type).inc()
                 Action.dispatch_action(rule, mapped_telemetry)
                 results.append({"rule_id": rule.id, "triggered": True})

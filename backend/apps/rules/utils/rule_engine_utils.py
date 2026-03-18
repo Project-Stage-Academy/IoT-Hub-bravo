@@ -40,14 +40,14 @@ def _get_value_field(telemetry: Telemetry) -> str:
     raise ValueError("Telemetry has no value set")
 
 
-class NotificationChannels(str, Enum):  ## will be better in common/utils?
+class NotificationChannels(str, Enum):
     """Enumeration of available notification delivery channels"""
 
     EMAIL = "email"
     SMS = "sms"
 
 
-class ActionTypes(str, Enum):  ## will be better in common/utils?
+class ActionTypes(str, Enum):
     """Enumeration of available action types"""
 
     WEBHOOK = "webhook"
@@ -83,7 +83,7 @@ CONDITION_SCHEMAS = {
 ###===========
 
 
-def map_telemetry_model_to_event(telemetry: Telemetry) -> TelemetryEvent: # what to do with it
+def map_telemetry_model_to_event(telemetry: Telemetry) -> TelemetryEvent:
     """
     Map Telemetry model instance to TelemetryEvent dataclass.
     Chooses the correct value field based on _get_value_field.
@@ -95,7 +95,7 @@ def map_telemetry_model_to_event(telemetry: Telemetry) -> TelemetryEvent: # what
         device_serial_id=telemetry.device_metric.device.serial_id,
         value=value,
         timestamp=telemetry.ts,
-        device_metric_id=telemetry.device_metric.metric.metric_type, # probably remove this mapping  
+        device_metric_id=telemetry.device_metric.id,
     )
 
 

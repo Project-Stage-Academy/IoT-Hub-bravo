@@ -4,6 +4,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db import IntegrityError
+from django.core.exceptions import ValidationError
 
 from apps.rules.serializers.rule_serializers import RuleCreateSerializer, RulePatchSerializer
 from apps.rules.services.rule_service import rule_create, rule_put, rule_patch, rule_delete
@@ -123,11 +124,26 @@ class RuleView(View):
                 return JsonResponse(
                     {
                         "code": 400,
-                        "message": "Rule with this name already exists for this device_metric.",
+                        "message": "Rule with this name already exists for this device_metric",
                     },
                     status=400,
                 )
-            raise
+            else:
+                return JsonResponse(
+                    {
+                        "code": 400,
+                        "message": str(e),
+                    },
+                    status=400,
+                )
+        except ValidationError as e:
+            return JsonResponse(
+                {
+                    "code": 400,
+                    "message": str(e),
+                },
+                status=400,
+            )
 
         data = {
             "id": rule.id,
@@ -162,7 +178,17 @@ class RuleView(View):
         if not serializer.is_valid():
             return JsonResponse({"code": 400, "message": serializer.errors}, status=400)
 
-        rule = rule_put(rule_id=rule_id, rule_data=serializer.validated_data)
+        try:
+            rule = rule_put(rule_id=rule_id, rule_data=serializer.validated_data)
+        except ValidationError as e:
+            return JsonResponse(
+                {
+                    "code": 400,
+                    "message": str(e),
+                },
+                status=400,
+            )
+
         data = {
             "id": rule.id,
             "name": rule.name,
@@ -196,7 +222,17 @@ class RuleView(View):
         if not serializer.is_valid():
             return JsonResponse({"code": 400, "message": serializer.errors}, status=400)
 
-        rule = rule_patch(rule_id=rule_id, rule_data=serializer.validated_data)
+        try:
+            rule = rule_patch(rule_id=rule_id, rule_data=serializer.validated_data)
+        except ValidationError as e:
+            return JsonResponse(
+                {
+                    "code": 400,
+                    "message": str(e),
+                },
+                status=400,
+            )
+
         return JsonResponse({"status": 200, "rule_id": rule.id}, status=200)
 
     def delete(self, request, rule_id):

@@ -90,9 +90,7 @@ class RateEvaluator:
 
         event_count = len(telemetries_in_window)
 
-        logger.info(
-            f"Rate rule check: {event_count} events, need {count_required}"
-        )
+        logger.info(f"Rate rule check: {event_count} events, need {count_required}")
 
         return event_count >= count_required
 
@@ -116,9 +114,7 @@ class CompositeEvaluator:
 
         results = []
         for i, subcondition in enumerate(subconditions):
-            result = ConditionEvaluator.evaluate(
-                subcondition, telemetry, telemetries_in_window
-            )
+            result = ConditionEvaluator.evaluate(subcondition, telemetry, telemetries_in_window)
             logger.info(f"Subcondition {i} (type={subcondition.get('type')}): {result}")
             results.append(result)
 

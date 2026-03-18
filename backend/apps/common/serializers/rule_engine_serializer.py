@@ -6,6 +6,7 @@ from apps.common.serializers.json_serializer import JSONSerializer
 
 class RuleEngineSerializer(JSONSerializer):
     """"""
+
     REQUIRED_FIELDS = {
         'value_jsonb': dict,
         'ts': str,
