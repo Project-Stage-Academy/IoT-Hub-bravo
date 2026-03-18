@@ -250,7 +250,7 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-  
+
   kafka-event-db-writer:
     <<: *django_base
     image: iot-hub-kafka-event-db-writer
@@ -264,7 +264,7 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
-  
+
   kafka-event-notification-consumer:
     <<: *django_base
     image: iot-hub-kafka-event-notification-consumer
@@ -291,14 +291,25 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-        
-  rule-engine:
+
+  kafka-rule-engine:
     <<: *django_base
     image: iot-hub-rule-engine
-    container_name: rule-engine
+    container_name: kafka-rule-engine
     command: [ "python", "-m", "consumers.rule_engine" ]
     environment:
       KAFKA_GROUP_ID: rule-engine
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  kafka-audit-writer:
+    <<: *django_base
+    image: iot-hub-audit-writer
+    container_name: kafka-audit-writer
+    command: [ "python", "-m", "consumers.audit_writer" ]
+    environment:
+      KAFKA_GROUP_ID: audit-writer
     depends_on:
       kafka:
         condition: service_healthy
