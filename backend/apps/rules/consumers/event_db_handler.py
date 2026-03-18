@@ -29,7 +29,7 @@ class EventDBHandler:
                 event_uuid=event_uuid,
                 defaults={
                     'rule_triggered_at': data['rule_triggered_at'],
-                    'rule_id': data['rule_id'],
+                    'rule': data['rule_id'],
                     'is_external': data.get('is_external', False),
                     'acknowledged': False,
                     'trigger_device_serial_id': data['trigger_device_serial_id'],

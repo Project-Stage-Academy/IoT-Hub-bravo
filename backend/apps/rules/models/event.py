@@ -7,7 +7,7 @@ import uuid
 class Event(models.Model):
     event_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     rule_triggered_at = models.DateTimeField(default=timezone.now, null=False)
-    rule = models.ForeignKey('rules.Rule', on_delete=models.CASCADE, null=False)
+    rule = models.IntegerField(null=False)
     acknowledged = models.BooleanField(default=False)
     is_external = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=False)
@@ -31,4 +31,4 @@ class Event(models.Model):
         ]
 
     def __str__(self):
-        return f"Event {self.event_uuid} - {self.rule.name}"
+        return f"Event {self.event_uuid} - Rule {self.rule}"
