@@ -8,6 +8,7 @@ from apps.audit.audit_record import (
     AuditRecord,
 )
 from apps.rules.models import Event
+from utils.normalization import to_iso8601_utc
 
 EVENT_AUDIT_ENTITY = 'events.Event'
 
@@ -47,9 +48,9 @@ def _event_entity(event_id: Any) -> AuditEntity:
 def _event_snapshot(event: Event) -> dict[str, Any]:
     return {
         'event_uuid': str(event.event_uuid),
-        'rule_triggered_at': event.rule_triggered_at.isoformat(),
+        'rule_triggered_at': to_iso8601_utc(event.rule_triggered_at),
         'rule_id': str(event.rule.pk),
         'acknowledged': event.acknowledged,
-        'created_at': event.created_at.isoformat(),
+        'created_at': to_iso8601_utc(event.created_at),
         'trigger_device_serial_id': str(event.trigger_device_serial_id),
     }

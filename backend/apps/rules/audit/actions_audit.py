@@ -9,6 +9,7 @@ from apps.audit.audit_record import (
     AuditRecord,
 )
 from apps.rules.models import EventDelivery
+from utils.normalization import to_iso8601_utc
 
 ACTION_AUDIT_ENTITY = 'actions.Action'
 
@@ -58,10 +59,6 @@ def _action_audit_base(event_delivery_id: Any) -> dict[str, Any]:
 
 
 def _action_snapshot(event_delivery: EventDelivery) -> dict[str, Any]:
-    last_attempt = event_delivery.last_attempt_at
-    if isinstance(last_attempt, datetime.datetime):
-        last_attempt = last_attempt.isoformat()
-
     return {
         'event_uuid': str(event_delivery.event_uuid),
         'rule_id': str(event_delivery.rule_id),
@@ -70,9 +67,9 @@ def _action_snapshot(event_delivery: EventDelivery) -> dict[str, Any]:
         'status': event_delivery.status,
         'attempts': event_delivery.attempts,
         'max_attempts': event_delivery.max_attempts,
-        'last_attempt_at': last_attempt,
+        'last_attempt_at': to_iso8601_utc(event_delivery.last_attempt_at),
         'response_status': event_delivery.response_status,
         'error_message': event_delivery.error_message,
-        'created_at': event_delivery.created_at.isoformat(),
-        'updated_at': event_delivery.updated_at.isoformat(),
+        'created_at': to_iso8601_utc(event_delivery.created_at),
+        'updated_at': to_iso8601_utc(event_delivery.updated_at),
     }
