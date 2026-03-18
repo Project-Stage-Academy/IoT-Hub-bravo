@@ -8,12 +8,14 @@ from django.db import IntegrityError
 from apps.rules.serializers.rule_serializers import RuleCreateSerializer, RulePatchSerializer
 from apps.rules.services.rule_service import rule_create, rule_put, rule_patch, rule_delete
 from apps.rules.models.rule import Rule
+from apps.rules.audit.rules_audit import rule_created, rule_updated, rule_deleted
 from apps.devices.models.telemetry import Telemetry
 from apps.devices.models.device import Device
 from apps.devices.models.device_metric import DeviceMetric
 from apps.users.decorators import jwt_required, role_required
 from apps.rules.services.rule_processor import RuleProcessor
 from apps.common.utils.views_utils import parse_json_body
+from apps.audit.publisher import publish_audit_event
 
 logger = logging.getLogger("rules")
 
@@ -129,6 +131,7 @@ class RuleView(View):
                 )
             raise
 
+        publish_audit_event(event=rule_created(user.pk, rule))
         data = {
             "id": rule.id,
             "name": rule.name,
@@ -150,7 +153,7 @@ class RuleView(View):
         is_admin = user.role == "admin"
 
         try:
-            rule = (
+            rule_old = (
                 Rule.objects.get(id=rule_id)
                 if is_admin
                 else Rule.objects.get(id=rule_id, device_metric__device__user=user)
@@ -162,15 +165,17 @@ class RuleView(View):
         if not serializer.is_valid():
             return JsonResponse({"code": 400, "message": serializer.errors}, status=400)
 
-        rule = rule_put(rule_id=rule_id, rule_data=serializer.validated_data)
+        rule_new = rule_put(rule_id=rule_id, rule_data=serializer.validated_data)
+
+        publish_audit_event(event=rule_updated(user.pk, rule_old, rule_new))
         data = {
-            "id": rule.id,
-            "name": rule.name,
-            "device_metric_id": rule.device_metric.id,
-            "description": rule.description,
-            "condition": rule.condition,
-            "action": rule.action,
-            "is_active": rule.is_active,
+            "id": rule_new.id,
+            "name": rule_new.name,
+            "device_metric_id": rule_new.device_metric.id,
+            "description": rule_new.description,
+            "condition": rule_new.condition,
+            "action": rule_new.action,
+            "is_active": rule_new.is_active,
         }
         return JsonResponse(data, status=200)
 
@@ -184,7 +189,7 @@ class RuleView(View):
         is_admin = user.role == "admin"
 
         try:
-            rule = (
+            rule_old = (
                 Rule.objects.get(id=rule_id)
                 if is_admin
                 else Rule.objects.get(id=rule_id, device_metric__device__user=user)
@@ -196,8 +201,10 @@ class RuleView(View):
         if not serializer.is_valid():
             return JsonResponse({"code": 400, "message": serializer.errors}, status=400)
 
-        rule = rule_patch(rule_id=rule_id, rule_data=serializer.validated_data)
-        return JsonResponse({"status": 200, "rule_id": rule.id}, status=200)
+        rule_new = rule_patch(rule_id=rule_id, rule_data=serializer.validated_data)
+        publish_audit_event(event=rule_updated(user.pk, rule_old, rule_new))
+
+        return JsonResponse({"status": 200, "rule_id": rule_new.id}, status=200)
 
     def delete(self, request, rule_id):
         """Delete rule"""
@@ -205,15 +212,16 @@ class RuleView(View):
         is_admin = user.role == "admin"
 
         try:
-            (
-                Rule.objects.get(id=rule_id)
-                if is_admin
-                else Rule.objects.get(id=rule_id, device_metric__device__user=user)
-            )
+            if is_admin:
+                rule = Rule.objects.get(id=rule_id)
+            else:
+                rule = Rule.objects.get(id=rule_id, device_metric__device__user=user)
         except Rule.DoesNotExist:
             return JsonResponse({"code": 404, "message": "Rule not found"}, status=404)
 
+        publish_audit_event(event=rule_deleted(user.pk, rule))
         rule_delete(rule_id=rule_id)
+
         return JsonResponse({}, status=204)
 
 

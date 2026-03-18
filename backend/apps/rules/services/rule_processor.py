@@ -97,7 +97,7 @@ class RuleProcessor:
             "telemetry": {
                 "device_serial_id": mapped_telemetry.device_serial_id,
                 "value": mapped_telemetry.value,
-                "timestamp": mapped_telemetry.timestamp,
+                "timestamp": mapped_telemetry.timestamp.isoformat(),
             },
             "results": results,
         }
