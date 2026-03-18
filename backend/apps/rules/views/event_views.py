@@ -4,7 +4,6 @@ import json
 from typing import Any, Optional
 from uuid import UUID
 
-from django.db import IntegrityError
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -15,7 +14,7 @@ from apps.rules.serializers.event_serializer import (
     EventListItemSerializer,
     EventDetailSerializer,
     ExternalEventRequestSerializer,
-    map_external_to_internal
+    map_external_to_internal,
 )
 from producers.kafka_producer import KafkaProducer, ProduceResult
 from apps.rules.services.event_service import (
@@ -127,11 +126,10 @@ def receive_external_event(request):
 
     serializer = ExternalEventRequestSerializer(body)
     if not serializer.is_valid():
-        return JsonResponse({
-            "code": 400,
-            "message": "Invalid event payload",
-            "errors": serializer.errors
-        }, status=400)
+        return JsonResponse(
+            {"code": 400, "message": "Invalid event payload", "errors": serializer.errors},
+            status=400,
+        )
 
     validated_data = serializer.validated_data
     mapped_event = map_external_to_internal(validated_data)

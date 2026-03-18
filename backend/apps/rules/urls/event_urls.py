@@ -4,7 +4,7 @@ from apps.rules.views.event_views import (
     list_events,
     event_detail,
     ack_event,
-    receive_external_event
+    receive_external_event,
 )
 
 urlpatterns = [

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Dict
+
 
 from apps.common.serializers import BaseSerializer
 import uuid
@@ -202,12 +203,6 @@ class EventDetailSerializer:
             "trigger_context": event.trigger_context,
         }
 
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
-from datetime import datetime
-
-from apps.common.serializers import BaseSerializer
-
 
 @dataclass(slots=True)
 class ExternalEventRequest:
@@ -221,7 +216,7 @@ class ExternalEventRequest:
 class ExternalEventRequestSerializer(BaseSerializer):
     """
     Validates payload for POST /api/events/external/
-    
+
     Expected JSON format:
 
     {
@@ -255,8 +250,12 @@ class ExternalEventRequestSerializer(BaseSerializer):
 
         # required top-level fields
         source = self._parse_required_string(data.get("source"), "source")
-        external_event_id = self._parse_required_string(data.get("external_event_id"), "external_event_id")
-        device_external_id = self._parse_required_string(data.get("device_external_id"), "device_external_id")
+        external_event_id = self._parse_required_string(
+            data.get("external_event_id"), "external_event_id"
+        )
+        device_external_id = self._parse_required_string(
+            data.get("device_external_id"), "device_external_id"
+        )
         timestamp_str = data.get("timestamp")
         timestamp = None
         if timestamp_str:
@@ -275,12 +274,16 @@ class ExternalEventRequestSerializer(BaseSerializer):
             # rule_id is required inside payload
             rule_id = payload.get("rule_id")
             if not isinstance(rule_id, int) or rule_id <= 0:
-                self._errors["payload.rule_id"] = "rule_id is required and must be a positive integer."
+                self._errors["payload.rule_id"] = (
+                    "rule_id is required and must be a positive integer."
+                )
 
             # optional notification
             notification = payload.get("notification")
             if notification is not None and not isinstance(notification, dict):
-                self._errors["payload.notification"] = "notification must be an object if provided."
+                self._errors["payload.notification"] = (
+                    "notification must be an object if provided."
+                )
 
         if self._errors:
             return None
@@ -290,7 +293,7 @@ class ExternalEventRequestSerializer(BaseSerializer):
             external_event_id=external_event_id,
             device_external_id=device_external_id,
             timestamp=timestamp,
-            payload=payload
+            payload=payload,
         )
 
     def _parse_required_string(self, value: Any, field: str) -> Optional[str]:
@@ -298,7 +301,7 @@ class ExternalEventRequestSerializer(BaseSerializer):
             self._errors[field] = f"{field} is required and must be a string."
             return None
         return value.strip()
-    import uuid
+
 
 def map_external_to_internal(validated: ExternalEventRequest) -> dict:
     payload = validated.payload
