@@ -12,9 +12,15 @@
         "duration_minutes": 10
       },
       "action": {
-        "type": "notify",
-        "channel": "email",
-        "message": "High temperature in {device_name}: {value}°C"
+        "webhook": {
+          "url": "https://webhook.site/a1b2c3d4-0001-4a5b-8c9d-living-room-temp",
+          "enabled": true
+        },
+        "notification": {
+          "channel": "email",
+          "enabled": true,
+          "message": "High temperature in {device_name}: {value}°C"
+        }
       },
       "is_active": true,
       "device_metric": 1
@@ -33,9 +39,15 @@
         "duration_minutes": 15
       },
       "action": {
-        "type": "notify",
-        "channel": "telegram",
-        "message": "High humidity in {device_name}: {value}%"
+        "webhook": {
+          "url": "https://webhook.site/a1b2c3d4-0002-4a5b-8c9d-living-room-hum",
+          "enabled": false
+        },
+        "notification": {
+          "channel": "telegram",
+          "enabled": true,
+          "message": "High humidity in {device_name}: {value}%"
+        }
       },
       "is_active": true,
       "device_metric": 2
@@ -54,9 +66,15 @@
         "duration_minutes": 10
       },
       "action": {
-        "type": "notify",
-        "channel": "email",
-        "message": "High humidity in basement ({device_name}): {value}% - risk of mold"
+        "webhook": {
+          "url": "https://webhook.site/a1b2c3d4-0003-4a5b-8c9d-basement-hum",
+          "enabled": false
+        },
+        "notification": {
+          "channel": "email",
+          "enabled": true,
+          "message": "High humidity in basement ({device_name}): {value}% — risk of mold"
+        }
       },
       "is_active": true,
       "device_metric": 3
@@ -75,9 +93,15 @@
         "duration_minutes": 0
       },
       "action": {
-        "type": "notify",
-        "channel": "push",
-        "message": "Low atmospheric pressure detected: {value} hPa - possible bad weather"
+        "webhook": {
+          "url": "https://webhook.site/a1b2c3d4-0004-4a5b-8c9d-outdoor-press",
+          "enabled": true
+        },
+        "notification": {
+          "channel": "push",
+          "enabled": true,
+          "message": "Low atmospheric pressure on {device_name}: {value} hPa — possible bad weather"
+        }
       },
       "is_active": true,
       "device_metric": 4
@@ -96,29 +120,15 @@
         "time_restriction": "22:00-06:00"
       },
       "action": {
-        "type": "notify",
-        "channel": "telegram,push",
-        "message": "Motion detected in garage at {timestamp}! Check security."
-      },
-      "is_active": true,
-      "device_metric": 5
-    }
-  },
-  {
-    "model": "rules.rule",
-    "pk": 6,
-    "fields": {
-      "name": "Gateway Status Abnormal",
-      "description": "Trigger when gateway status is not 'OK' or 'online'",
-      "condition": {
-        "type": "string_match",
-        "value": "OK",
-        "operator": "!="
-      },
-      "action": {
-        "type": "notify",
-        "channel": "email",
-        "message": "Gateway status abnormal: {value} on {device_name}"
+        "webhook": {
+          "url": "https://webhook.site/a1b2c3d4-0005-4a5b-8c9d-garage-motion",
+          "enabled": true
+        },
+        "notification": {
+          "channel": "telegram,push",
+          "enabled": true,
+          "message": "⚠️ Motion detected in garage ({device_name}) at {timestamp}! Check security."
+        }
       },
       "is_active": true,
       "device_metric": 6
@@ -126,20 +136,52 @@
   },
   {
     "model": "rules.rule",
+    "pk": 6,
+    "fields": {
+      "name": "Gateway Status Abnormal",
+      "description": "Trigger when gateway status is not 'OK'",
+      "condition": {
+        "type": "string_match",
+        "value": "OK",
+        "operator": "!="
+      },
+      "action": {
+        "webhook": {
+          "url": "https://webhook.site/a1b2c3d4-0006-4a5b-8c9d-gw-status",
+          "enabled": true
+        },
+        "notification": {
+          "channel": "email",
+          "enabled": true,
+          "message": "Gateway status abnormal on {device_name}: current value is '{value}'"
+        }
+      },
+      "is_active": true,
+      "device_metric": 8
+    }
+  },
+  {
+    "model": "rules.rule",
     "pk": 7,
     "fields": {
       "name": "Gateway Offline Critical",
-      "description": "Trigger when gateway is offline for more than 4 minutes",
+      "description": "Trigger when gateway connectivity is offline for more than 4 minutes",
       "condition": {
-        "type": "threshold",
+        "type": "boolean",
         "value": false,
         "operator": "==",
         "duration_minutes": 4
       },
       "action": {
-        "type": "notify",
-        "channel": "email,telegram",
-        "message": "MAIN GATEWAY OFFLINE! Device: {device_name}"
+        "webhook": {
+          "url": "https://webhook.site/a1b2c3d4-0007-4a5b-8c9d-gw-offline",
+          "enabled": true
+        },
+        "notification": {
+          "channel": "email,telegram",
+          "enabled": true,
+          "message": "🔴 CRITICAL: {device_name} has been offline for over {duration_minutes} minutes!"
+        }
       },
       "is_active": true,
       "device_metric": 7
@@ -150,20 +192,26 @@
     "pk": 8,
     "fields": {
       "name": "Office High Temperature Alert",
-      "description": "Trigger when temperature exceeds 28°C for more than 8 minutes",
+      "description": "Trigger when temperature exceeds 82.4°F (≈28°C) for more than 8 minutes",
       "condition": {
         "type": "threshold",
-        "value": 28,
+        "value": 82.4,
         "operator": ">",
         "duration_minutes": 8
       },
       "action": {
-        "type": "notify",
-        "channel": "email",
-        "message": "High temperature in office ({device_name}): {value}°C"
+        "webhook": {
+          "url": "https://webhook.site/a1b2c3d4-0008-4a5b-8c9d-office-temp",
+          "enabled": false
+        },
+        "notification": {
+          "channel": "email",
+          "enabled": true,
+          "message": "High temperature in office ({device_name}): {value}°F"
+        }
       },
       "is_active": true,
-      "device_metric": 8
+      "device_metric": 9
     }
   },
   {
@@ -179,29 +227,15 @@
         "duration_minutes": 10
       },
       "action": {
-        "type": "notify",
-        "channel": "telegram",
-        "message": "High humidity in office: {value}% - possible discomfort"
-      },
-      "is_active": true,
-      "device_metric": 9
-    }
-  },
-  {
-    "model": "rules.rule",
-    "pk": 10,
-    "fields": {
-      "name": "Firmware Version Outdated",
-      "description": "Trigger when firmware version status is not 'current'",
-      "condition": {
-        "type": "string_match",
-        "value": "current",
-        "operator": "!="
-      },
-      "action": {
-        "type": "notify",
-        "channel": "email",
-        "message": "Outdated firmware detected on {device_name}: {value}"
+        "webhook": {
+          "url": "https://webhook.site/a1b2c3d4-0009-4a5b-8c9d-office-hum",
+          "enabled": false
+        },
+        "notification": {
+          "channel": "telegram",
+          "enabled": true,
+          "message": "High humidity in office ({device_name}): {value}% — possible discomfort"
+        }
       },
       "is_active": true,
       "device_metric": 10
@@ -209,22 +243,54 @@
   },
   {
     "model": "rules.rule",
+    "pk": 10,
+    "fields": {
+      "name": "Firmware Version Outdated",
+      "description": "Trigger when firmware version is not marked as 'current'",
+      "condition": {
+        "type": "string_match",
+        "value": "current",
+        "operator": "!="
+      },
+      "action": {
+        "webhook": {
+          "url": "https://webhook.site/a1b2c3d4-0010-4a5b-8c9d-fw-version",
+          "enabled": true
+        },
+        "notification": {
+          "channel": "email",
+          "enabled": true,
+          "message": "Outdated firmware detected on {device_name}: running {value}, update required"
+        }
+      },
+      "is_active": true,
+      "device_metric": 11
+    }
+  },
+  {
+    "model": "rules.rule",
     "pk": 11,
     "fields": {
       "name": "Firmware Device Status Error",
-      "description": "Trigger when device status is not 'OK'",
+      "description": "Trigger when firmware monitor device status is not 'OK'",
       "condition": {
         "type": "string_match",
         "value": "OK",
         "operator": "!="
       },
       "action": {
-        "type": "notify",
-        "channel": "email,telegram",
-        "message": "Device status error on {device_name}: {value}"
+        "webhook": {
+          "url": "https://webhook.site/a1b2c3d4-0011-4a5b-8c9d-fw-status",
+          "enabled": true
+        },
+        "notification": {
+          "channel": "email,telegram",
+          "enabled": true,
+          "message": "Device status error on {device_name}: status is '{value}', expected 'OK'"
+        }
       },
       "is_active": true,
-      "device_metric": 11
+      "device_metric": 12
     }
   }
 ]

@@ -29,8 +29,15 @@ The **Rule** model represents a business logic rule for monitoring and alerting.
  
 ```json
 {
-  "type": "notify",
-  "message": "Temperature exceeded threshold"
+  "webhook": {
+    "url": "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e",
+    "enabled": true
+  },
+  "notification": {
+    "channel": "email",
+    "enabled": true,
+    "message": "High temperature in {device_name}: {value}°C"
+  }
 }
 ```
  
@@ -45,7 +52,8 @@ If a rule condition is invalid or unsupported, the rule does not trigger and eva
 ### 2.1 Threshold Rule
  
 Compares a telemetry value against a static threshold.
- 
+
+**Example:**
 ```json
 {
   "type": "threshold",
@@ -59,38 +67,56 @@ Compares a telemetry value against a static threshold.
 ### 2.2 Rate Rule
  
 Counts telemetry events over a sliding time window.
- 
+
+**Example:**
+
 ```json
 {
   "type": "rate",
   "operator": ">=",
   "count": 5,
-  "minutes": 1
+  "duration_minutes": 1
 }
 ```
- 
-The rule triggers if at least `count` telemetry events occurred within the last `minutes` minutes.
- 
+
+**Description:**
+The rule triggers if at least 5 telemetry events occurred within the last 1 minute.
+
+---
+
 ### 2.3 Composite Rule
  
 Combines multiple rule conditions using logical operators.
- 
+
+**Example:**
+
 ```json
 {
   "type": "composite",
   "operator": "AND",
   "conditions": [
-    { "type": "threshold", "operator": ">", "value": 70 },
-    { "type": "rate", "operator": ">=", "count": 3, "minutes": 2 }
+    {
+      "type": "threshold",
+      "operator": ">",
+      "value": 70
+    },
+    {
+      "type": "rate",
+      "operator": ">=",
+      "count": 3,
+      "minutes": 2
+    }
   ]
 }
 ```
  
 **Supported operators:** `AND`, `OR`
- 
-- `AND` — all sub-conditions must evaluate to true
-- `OR` — at least one sub-condition must evaluate to true
- 
+
+> The rule triggers depending on the logical operator:
+>
+> * `AND` — all sub-conditions must evaluate to true
+> * `OR` — at least one sub-condition must evaluate to true
+
 ---
  
 ## 3. Rules API
@@ -175,31 +201,25 @@ Content-Type: application/json
 {
   "schema_version": 1,
   "name": "High Temperature Alert",
-  "description": "Alert when temperature exceeds 30",
-  "condition": { "type": "threshold", "operator": ">", "value": 30 },
-  "action": { "type": "notify", "message": "Temperature exceeded" },
+  "description": "Alert when temperature exceeds 30°C",
   "is_active": true,
-  "device_metric_id": 5
-}
-```
- 
-> `schema_version: 1` is required in all create/update/patch requests.
- 
-**Required fields:** `schema_version`, `name`, `condition`, `action`, `is_active`, `device_metric_id`
- 
-**Optional fields:** `description`
- 
-**Response 201:**
- 
-```json
-{
-  "id": 1,
-  "name": "High Temperature Alert",
-  "device_metric_id": 5,
-  "description": "Alert when temperature exceeds 30",
-  "condition": { "type": "threshold", "operator": ">", "value": 30 },
-  "action": { "type": "notify", "message": "Temperature exceeded" },
-  "is_active": true
+  "condition": {
+    "type": "threshold",
+    "value": 13,
+    "operator": ">"
+  },
+  "action": {
+    "webhook": {
+      "url": "https://webhook.site/a6bf3275-595d-42fd-b759-c42d74ce8c9e",
+      "enabled": true
+    },
+    "notification": {
+      "channel": "email",
+      "enabled": true,
+      "message": "High temperature in {device_name}: {value}°C"
+    }
+  },
+  "device_metric": 123
 }
 ```
  
@@ -318,21 +338,13 @@ Authorization: Bearer <token>
  
 ```json
 {
-  "count": 15,
-  "limit": 50,
-  "offset": 0,
-  "results": [
-    {
-      "id": 1,
-      "timestamp": "2026-03-10T12:05:0000:00",
-      "created_at": "2026-03-10T12:05:0100:00",
-      "acknowledged": false,
-      "rule": {
-        "id": 3,
-        "name": "High Temperature Alert"
-      }
-    }
-  ]
+  "event_uuid": "550e8400-e29b-41d4-a716-446655440000",
+  "rule_id": 456,
+  "rule_triggered_at": "2026-02-09T10:05:00Z",
+  "acknowledged": false,
+  "created_at": "2026-02-09T10:05:10Z",
+  "trigger_device_serial_id": "SN-00042",
+  "trigger_context": {"telemetry_id": 123, "device_id": 7, "value": {"t": "numeric", "v": "35.5"}}
 }
 ```
  
@@ -496,6 +508,20 @@ curl -s -X POST http://localhost:8000/api/rules/ \
     "device_metric_id": 5
   }'
 ```
+
+**Field explanations:**
+
+| Field          | Type     | Description                                        |
+| -------------- | -------- | -------------------------------------------------- |
+| `event_uuid`   | UUID     | Unique identifier of the event                     |
+| `rule_id`      | integer  | Reference to the rule that triggered the event     |
+| `rule_triggered_at` | datetime | When the rule was triggered (evaluated telemetry time) |
+| `acknowledged` | boolean  | Whether the event was acknowledged                 |
+| `created_at`   | datetime | When the event record was created in the database  |
+| `trigger_telemetry_id`   | int | Which telemtry trigger the event  |
+
+
+
  
 ### 7.4 List and Acknowledge Events
  
