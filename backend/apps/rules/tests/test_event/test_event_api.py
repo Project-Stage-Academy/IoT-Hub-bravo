@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 import jwt
 
@@ -413,12 +415,14 @@ def test_event_detail_response_fields(client, client_token, event):
 # ============================================================================
 
 
-def test_ack_event_returns_200(client, client_token, event):
+@patch('apps.rules.views.event_views.publish_audit_event')
+def test_ack_event_returns_200(mock_publish, client, client_token, event):
     response = client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
     assert response.status_code == 200
 
 
-def test_ack_event_sets_acknowledged_true(client, client_token, event):
+@patch('apps.rules.views.event_views.publish_audit_event')
+def test_ack_event_sets_acknowledged_true(mock_publish, client, client_token, event):
     assert event.acknowledged is False
 
     client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
@@ -427,7 +431,8 @@ def test_ack_event_sets_acknowledged_true(client, client_token, event):
     assert event.acknowledged is True
 
 
-def test_ack_event_response_contains_acknowledged_true(client, client_token, event):
+@patch('apps.rules.views.event_views.publish_audit_event')
+def test_ack_event_response_contains_acknowledged_true(mock_publish, client, client_token, event):
     response = client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
     data = response.json()
     assert data["acknowledged"] is True
@@ -445,7 +450,8 @@ def test_ack_event_returns_401_without_token(client, event):
     assert response.status_code == 401
 
 
-def test_ack_event_is_idempotent(client, client_token, event):
+@patch('apps.rules.views.event_views.publish_audit_event')
+def test_ack_event_is_idempotent(mock_publish, client, client_token, event):
     """Calling ack twice should keep acknowledged=True and not error"""
     client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
     response = client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
@@ -458,25 +464,31 @@ def test_ack_event_is_idempotent(client, client_token, event):
     assert event.acknowledged is True
 
 
-def test_ack_event_already_acknowledged_remains_200(client, client_token, event_acked):
+@patch('apps.rules.views.event_views.publish_audit_event')
+def test_ack_event_already_acknowledged_remains_200(
+    mock_publish, client, client_token, event_acked
+):
     response = client.post(f"/api/events/{event_acked.event_uuid}/ack/", **auth(client_token))
     assert response.status_code == 200
     assert response.json()["acknowledged"] is True
 
 
-def test_ack_event_by_admin_returns_200(client, admin_token, event):
+@patch('apps.rules.views.event_views.publish_audit_event')
+def test_ack_event_by_admin_returns_200(mock_publish, client, admin_token, event):
     response = client.post(f"/api/events/{event.event_uuid}/ack/", **auth(admin_token))
     assert response.status_code == 200
 
 
-def test_ack_event_response_contains_rule_info(client, client_token, event, rule):
+@patch('apps.rules.views.event_views.publish_audit_event')
+def test_ack_event_response_contains_rule_info(mock_publish, client, client_token, event, rule):
     response = client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
     data = response.json()
     assert data["rule"]["id"] == rule.id
     assert data["rule"]["name"] == rule.name
 
 
-def test_ack_event_does_not_change_other_events(client, client_token, rule):
+@patch('apps.rules.views.event_views.publish_audit_event')
+def test_ack_event_does_not_change_other_events(mock_publish, client, client_token, rule):
     e1 = Event.objects.create(rule=rule)
     e2 = Event.objects.create(rule=rule)
 
