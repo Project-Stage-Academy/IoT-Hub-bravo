@@ -9,6 +9,7 @@ class Event(models.Model):
     rule_triggered_at = models.DateTimeField(default=timezone.now, null=False)
     rule = models.ForeignKey('rules.Rule', on_delete=models.CASCADE, null=False)
     acknowledged = models.BooleanField(default=False)
+    is_external = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=False)
     trigger_device_serial_id = models.CharField(max_length=255, null=False)
 

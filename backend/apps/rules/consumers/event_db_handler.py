@@ -25,7 +25,7 @@ class EventDBHandler:
 
         try:
             event_uuid = data['event_uuid']
-
+            raise Exception(f"{data}")
             event, created = Event.objects.get_or_create(
                 event_uuid=event_uuid,
                 defaults={
