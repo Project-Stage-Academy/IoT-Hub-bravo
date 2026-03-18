@@ -199,7 +199,7 @@ Models with `default=models.functions.Now()` store SQL function, not Python date
 ```python
 def test_timestamp(self):
     event = EventFactory()
-    assert event.timestamp >= timezone.now()  # TypeError!
+    assert event.rule_triggered_at >= timezone.now()  # TypeError!
 ```
  
 **Correct:**
@@ -207,15 +207,15 @@ def test_timestamp(self):
 def test_timestamp(self):
     event = EventFactory()
     event.refresh_from_db()
-    assert event.timestamp is not None
+    assert event.rule_triggered_at is not None
 ```
  
 Or pass explicit timestamp:
 ```python
 def test_timestamp(self):
     now = timezone.now()
-    event = EventFactory(timestamp=now)
-    assert event.timestamp == now
+    event = EventFactory(rule_triggered_at=now)
+    assert event.rule_triggered_at == now
 ```
  
 ### Database Connection Error

@@ -151,15 +151,22 @@ Stores events generated when rules are triggered or other system events occur.
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| id | BIGSERIAL | PRIMARY KEY, AUTO INCREMENT | Unique event identifier |
-| timestamp | TIMESTAMP | NOT NULL | Event occurrence time |
-| rule_id | INTEGER | NULL, FOREIGN KEY | Rule that triggered this event (references rules.id) |
+| id | BIGINT | PRIMARY KEY, auto-increment | Auto-incrementing primary key |
+| event_uuid | UUID | UNIQUE, NOT NULL, default uuid4 | Unique event identifier |
+| rule_triggered_at | TIMESTAMP | NOT NULL | When the rule was triggered |
+| rule_id | INTEGER | NOT NULL, FOREIGN KEY | Rule that triggered this event (references rules.id) |
+| acknowledged | BOOLEAN | NOT NULL, DEFAULT FALSE | Whether the event has been acknowledged |
+| trigger_device_serial_id | VARCHAR(255) | NOT NULL | Serial ID of the device that triggered this event |
+| trigger_context | JSONB | NULLABLE | Flexible context about what triggered the event (e.g., telemetry values, thresholds) |
 | created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
 
 **Indexes:**
-- Primary key on `id`
-- Index on `timestamp` (idx_events_timestamp)
+- Primary key on `id` (auto-increment)
+- Unique constraint on `event_uuid`
+- Index on `rule_triggered_at` (idx_events_rule_triggered_at)
 - Index on `rule_id` (idx_events_rule)
+- Index on `acknowledged` (idx_events_ack)
+- Index on `trigger_device_serial_id` (idx_events_device_serial_id)
 
 **Relationships:**
 - `rule_id` → `rules.id` (ON DELETE CASCADE)

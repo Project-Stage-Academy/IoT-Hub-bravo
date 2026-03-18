@@ -22,6 +22,8 @@ tags:
     description: Business logic rules and event management
   - name: Events
     description: Events triggered by rules
+  - name: External Integrations
+    description: APIs for receiving events from external systems
 
 
 paths:
@@ -691,163 +693,6 @@ paths:
                     code: 400
                     message: "Invalid telemetry payload."
 
-  # Note: The following endpoints for /api/telemetry/{id} are defined but commented out to focus on the more critical paths for testing. They can be uncommented and implemented later as needed.
-  # /api/telemetry/{id}:
-  #   get:
-  #     tags:
-  #       - Telemetry
-  #     summary: Get telemetry by id
-  #     description: Returns a telemetry record by its unique ID.
-  #     operationId: getTelemetryById
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: integer
-  #           example: 1
-  #     responses:
-  #       '200':
-  #         description: Telemetry found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Telemetry'
-  #             examples:
-  #               example_telemetry:
-  #                 value:
-  #                   id: 1
-  #                   device_id: 1
-  #                   value: 23.5
-  #                   timestamp: "2026-02-09T12:00:00Z"
-  #       '404':
-  #         description: Telemetry not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #             examples:
-  #               not_found:
-  #                 value:
-  #                   code: 404
-  #                   message: "Telemetry record not found."
-  #   put:
-  #     tags:
-  #       - Telemetry
-  #     summary: Replace telemetry
-  #     description: Fully replaces an existing telemetry record.
-  #     operationId: replaceTelemetry
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: integer
-  #           example: 1
-  #     requestBody:
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: '#/components/schemas/VersionedTelemetryCreate'
-  #           examples:
-  #             replace_telemetry:
-  #               value:
-  #                 schema_version: "v1"
-  #                 telemetry:
-  #                   device_id: 1
-  #                   value: 24.0
-  #     responses:
-  #       '200':
-  #         description: Telemetry updated
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Telemetry'
-  #       '400':
-  #         description: Invalid request
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #       '404':
-  #         description: Telemetry not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #   patch:
-  #     tags:
-  #       - Telemetry
-  #     summary: Partially update telemetry
-  #     operationId: patchTelemetry
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: integer
-  #     requestBody:
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: '#/components/schemas/VersionedTelemetryPatch'
-  #     responses:
-  #       '200':
-  #         description: Telemetry updated
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Telemetry'
-  #       '400':
-  #         description: Invalid patch
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #       '404':
-  #         description: Telemetry not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #   delete:
-  #     tags:
-  #       - Telemetry
-  #     summary: Delete telemetry
-  #     description: Deletes a telemetry record by ID.
-  #     operationId: deleteTelemetry
-  #     security:
-  #       - BearerAuth: []
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: integer
-  #           example: 1 
-  #     responses:
-  #       '204':
-  #         description: Telemetry deleted successfully
-  #       '404':
-  #         description: Telemetry not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #             examples:
-  #               not_found:
-  #                 value:
-  #                   code: 404
-  #                   message: "Telemetry record not found."
-
   /api/rules/:
     get:
       tags:
@@ -1505,15 +1350,21 @@ paths:
                 limit: 50
                 offset: 0
                 results:
-                  - id: 123
-                    timestamp: "2026-01-25T09:53:00+00:00"
+                  - event_uuid: "550e8400-e29b-41d4-a716-446655440000"
+                    rule_triggered_at: "2026-01-25T09:53:00+00:00"
                     created_at: "2026-01-25T09:55:00+00:00"
                     acknowledged: false
                     rule:
                       id: 1
                       name: "High Temperature"
-                    trigger_telemetry_id: 2
-                    trigger_device_id: 1
+                    trigger_telemetry:
+                      id: 1
+                      device_id: 1
+                      metric:
+                        temperature:
+                          value: 60
+                          unit: "celsius"
+                      ts: "2024-04-13T18:45:37Z"
                   - id: 124
                     timestamp: "2026-01-25T09:52:00+00:00"
                     created_at: "2026-01-25T09:53:00+00:00"
@@ -1521,8 +1372,14 @@ paths:
                     rule:
                       id: 2
                       name: "Low Battery"
-                    trigger_telemetry_id: 43
-                    trigger_device_id: 3
+                    trigger_telemetry:
+                      id: 3
+                      device_id: 43
+                      metric:
+                        battery:
+                          value: 5
+                          unit: "%"
+                      ts: "2024-04-13T18:45:37Z"
         '400':
           description: Invalid request
           content:
@@ -1541,17 +1398,17 @@ paths:
         - Events
       operationId: getEventById
       summary: Retrieve event details
-      description: Get detailed information about a single event by ID, including optional trigger telemetry info.
+      description: Get detailed information about a single event by ID, including optional trigger context.
       security:
         - BearerAuth: []
       parameters:
         - name: event_id
           in: path
           required: true
-          description: ID of the event
+          description: UUID of the event
           schema:
-            type: integer
-            minimum: 1
+            type: string
+            format: uuid
       responses:
         '200':
           description: Event details
@@ -1560,15 +1417,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/Event'
               example:
-                id: 123
-                timestamp: "2026-01-25T09:53:00+00:00"
+                event_uuid: "550e8400-e29b-41d4-a716-446655440000"
+                rule_triggered_at: "2026-01-25T09:53:00+00:00"
                 created_at: "2026-01-25T09:55:00+00:00"
                 acknowledged: false
                 rule:
                   id: 1
                   name: "High Temperature"
-                trigger_telemetry_id: 2
-                trigger_device_id: 1
+                trigger_telemetry:
+                  id: 1
+                  device_id: 1
+                  metric:
+                    temperature:
+                      value: 60
+                      unit: "celsius"
+                  ts: "2024-04-13T18:45:37Z"
 
         '404':
           description: Event not found
@@ -1595,10 +1458,10 @@ paths:
         - name: event_id
           in: path
           required: true
-          description: ID of the event
+          description: UUID of the event
           schema:
-            type: integer
-            minimum: 1
+            type: string
+            format: uuid
       requestBody:
         description: No body required
         required: false
@@ -1614,20 +1477,27 @@ paths:
                   status:
                     type: string
                   event_id:
-                    type: integer
+                    type: string
+                    format: uuid
                   acknowledged:
                     type: boolean
               example:
                 example:
-                id: 123
-                timestamp: "2026-01-25T09:53:00+00:00"
+                event_uuid: "550e8400-e29b-41d4-a716-446655440000"
+                rule_triggered_at: "2026-01-25T09:53:00+00:00"
                 created_at: "2026-01-25T09:55:00+00:00"
                 acknowledged: true
                 rule:
                   id: 1
                   name: "High Temperature"
-                trigger_telemetry_id: 2
-                trigger_device_id: 1
+                trigger_telemetry:
+                  id: 1
+                  device_id: 1
+                  metric:
+                    temperature:
+                      value: 60
+                      unit: "celsius"
+                  ts: "2024-04-13T18:45:37Z"
 
         '404':
           description: Event not found
@@ -1641,6 +1511,90 @@ paths:
               example:
                 detail: "Event not found"
 
+  /api/events/external/:
+    post:
+      tags:
+        - External Integrations
+      operationId: receiveExternalEvent
+      summary: Receive event from external system
+      description: |
+        Accepts events originating from external systems such as webhooks or third-party IoT platforms.
+        The event is validated and mapped to internal actions (for example creating an Event or triggering a Rule).
+
+        ### Example Use Case
+        An external IoT platform detects high temperature and sends a webhook to this endpoint.
+        The system maps the event to an internal rule and creates an Event record.
+
+      security:
+        - BearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalEventRequest"
+            example:
+              source: "external_iot_platform"
+              external_event_id: "evt-884422"
+              device_external_id: "device-77"
+              event_type: "temperature_alert"
+              timestamp: "2026-03-12T10:15:00Z"
+              payload:
+                temperature: 85.2
+                unit: "celsius"
+
+      responses:
+        "202":
+          description: Event accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalEventAccepted"
+              example:
+                status: accepted
+                event_id: 345
+                message: Event successfully received and queued for processing
+
+        "400":
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: 400
+                message: Invalid event payload
+
+        "401":
+          description: Unauthorized request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: 401
+                message: Authentication credentials were not provided
+
+        "409":
+          description: Duplicate external event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: 409
+                message: Event with this external_event_id already processed
+
+        "500":
+          description: Internal processing error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: 500
+                message: Unexpected error while processing external event
 
 components:
   securitySchemes:
@@ -2007,54 +1961,6 @@ components:
         - status
       example:
         status: "accepted"
-
-    # TelemetryPatch:
-    #   type: object
-    #   properties:
-    #     key:
-    #       type: string
-    #       example: "temperature"
-    #     value:
-    #       type: number
-    #       example: 24.3
-    #   example:
-    #     key: "temperature"
-    #     value: 24.3
-
-    # VersionedTelemetryCreate:
-    #   type: object
-    #   properties:
-    #     schema_version:
-    #       type: string
-    #       example: "v1"
-    #     telemetry:
-    #       $ref: '#/components/schemas/TelemetryCreate'
-    #   required:
-    #     - schema_version
-    #     - telemetry
-    #   example:
-    #     schema_version: "v2"
-    #     telemetry:
-    #       device_id: 1
-    #       key: "humidity"
-    #       value: 25.43
-
-    # VersionedTelemetryPatch:
-    #   type: object
-    #   properties:
-    #     schema_version:
-    #       type: string
-    #       example: "v1.0"
-    #     telemetry:
-    #       $ref: '#/components/schemas/TelemetryPatch'
-    #   required:
-    #     - schema_version
-    #     - telemetry
-    #   example:
-    #     schema_version: "v1.2"
-    #     telemetry:
-    #       key: "temperature"
-    #       value: 24.3
 
     AuthLoginRequest:
       type: object
@@ -2610,90 +2516,13 @@ components:
         rule_id: 1
         triggered: true    
     
-    # NOTE: for future usage
-    # Event:
-    #   type: object
-    #   description: Rule evaluation event (rule firing)
-    #   properties:
-    #     id:
-    #       type: integer
-    #       example: 11
-    #     rule_id:
-    #       type: integer
-    #       example: 66
-    #     acknowledged:
-    #       type: boolean
-    #       example: false
-    #     timestamp:
-    #       type: string
-    #       format: date-time
-    #       example: "2026-01-22T16:30:00Z"
-    #     created_at:
-    #       type: string
-    #       format: date-time
-    #       example: "2026-01-22T16:31:00Z"
-    #     trigger_telemetry_id:
-    #       type: integer
-    #       nullable: true
-    #       example: 11
-    #   required:
-    #     - id
-    #     - rule_id
-    #     - timestamp
-    #     - created_at
-    #   example:
-    #     id: 1
-    #     rule_id: 1
-    #     acknowledged: false
-    #     timestamp: "2026-01-22T16:30:00Z"
-    #     created_at: "2026-01-22T16:31:00Z"
-    #     trigger_telemetry_id: 1
-
-
-    # PaginatedEvents:
-    #   type: object
-    #   properties:
-    #     total:
-    #       type: integer
-    #       example: 50
-    #     limit:
-    #       type: integer
-    #       example: 20
-    #     offset:
-    #       type: integer
-    #       example: 0
-    #     items:
-    #       type: array
-    #       items:
-    #         $ref: '#/components/schemas/Event'
-    #   required:
-    #     - total
-    #     - limit
-    #     - offset
-    #     - items
-    #   example:
-    #     total: 50
-    #     limit: 20
-    #     offset: 0
-    #     items:
-    #       - id: "550e8400-e29b-41d4-a716-446655440000"
-    #         name: "High Temperature Alert"
-    #         description: "Alert when temperature exceeds 30°C"
-    #         is_active: true
-    #         condition:
-    #           type: "threshold"
-    #           operator: ">"
-    #           value: 30
-    #         action:
-    #           type: "notify"
-    #           message: "User_1 temperature is overwhelming"
-    #         device_metric: "123e4567-e89b-12d3-a456-426614174000"
     Event:
       type: object
       properties:
-        id:
-          type: integer
-        timestamp:
+        event_uuid:
+          type: string
+          format: uuid
+        rule_triggered_at:
           type: string
           format: date-time
         created_at:
@@ -2708,25 +2537,91 @@ components:
               type: integer
             name:
               type: string
-        trigger_telemetry_id:
-          type: integer
-          nullable: true
-        trigger_device_id:
-          type: integer
-          nullable: true
+        trigger_telemetry:
+          allOf:
+            - $ref: "#/components/schemas/Telemetry"
+            - type: object
+              nullable: true
+          description: Snapshot of telemetry payload that triggered this event
       example:
-        id: 123
-        timestamp: "2026-01-25T09:20:00+00:00"
+        event_uuid: "550e8400-e29b-41d4-a716-446655440000"
+        rule_triggered_at: "2026-01-25T09:20:00+00:00"
         created_at: "2026-01-25T09:55:00+00:00"
         acknowledged: false
         rule:
           id: 2
           name: "High Temperature Alert"
-        trigger_telemetry_id: 2
-        trigger_device_id: 1
-    #       - id: 1
-    #         rule_id: 1
-    #         acknowledged: false
-    #         timestamp: "2026-01-22T16:30:00Z"
-    #         created_at: "2026-01-22T16:31:00Z"
-    #         trigger_telemetry_id: 1        
+        trigger_telemetry:
+          id: 1
+          device_id: 1
+          metric:
+            temperature:
+              value: 60
+              unit: "celsius"
+          ts: "2024-04-13T18:45:37Z"
+
+    ExternalEventRequest:
+      type: object
+      required:
+        - source
+        - external_event_id
+        - event_type
+        - timestamp
+      properties:
+
+        source:
+          type: string
+          description: Name of the external system sending the event
+          example: external_iot_platform
+
+        external_event_id:
+          type: string
+          description: Unique identifier of the event in the external system used for idempotency
+          example: evt-884422
+
+        device_external_id:
+          type: string
+          description: Device identifier used by the external system
+
+        event_type:
+          type: string
+          description: Type of the external event
+          example: temperature_alert
+
+        timestamp:
+          type: string
+          format: date-time
+
+        payload:
+          type: object
+          description: Raw payload received from the external system
+          additionalProperties: true
+      example:
+        source: external_iot_platform
+        external_event_id: evt-884422
+        device_external_id: thermostat-77
+        event_type: temperature_alert
+        timestamp: "2026-03-12T10:15:00Z"
+        payload:
+          temperature: 85.2
+          unit: celsius
+
+
+    ExternalEventAccepted:
+      type: object
+      properties:
+
+        status:
+          type: string
+          example: accepted
+
+        event_id:
+          type: integer
+          description: Internal event ID created by the system
+
+        message:
+          type: string
+      example:
+        status: accepted
+        event_id: 345
+        message: Event successfully received and queued for processing
