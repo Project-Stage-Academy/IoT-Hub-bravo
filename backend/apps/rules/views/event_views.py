@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
+import json
+from typing import Any, Optional
 from uuid import UUID
 
+from django.db import IntegrityError
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -12,13 +14,17 @@ from apps.rules.serializers.event_serializer import (
     EventListQuerySerializer,
     EventListItemSerializer,
     EventDetailSerializer,
+    ExternalEventRequestSerializer,
+    map_external_to_internal
 )
+from producers.kafka_producer import KafkaProducer, ProduceResult
 from apps.rules.services.event_service import (
     event_list,
     event_get,
     event_ack,
 )
 from apps.users.decorators import jwt_required, role_required
+from apps.rules.producers import get_external_events_producer
 
 
 @csrf_exempt
@@ -102,3 +108,90 @@ def _list_response_json(
         "offset": offset,
         "results": [EventListItemSerializer.to_dict(e) for e in events],
     }
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+# @jwt_required
+# @role_required({"POST": ["client", "admin"]})
+def receive_external_event(request):
+    """
+    POST /api/events/external/
+    Receives events from external systems (webhooks/IoT platforms).
+    Maps external data to internal actions and triggers rules.
+    """
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"code": 400, "message": "Invalid JSON"}, status=400)
+
+    serializer = ExternalEventRequestSerializer(body)
+    if not serializer.is_valid():
+        return JsonResponse({
+            "code": 400,
+            "message": "Invalid event payload",
+            "errors": serializer.errors
+        }, status=400)
+
+    validated_data = serializer.validated_data
+    mapped_event = map_external_to_internal(validated_data)
+
+    return _produce_data(payload=mapped_event, producer=None)
+
+
+def _produce_data(
+    *,
+    payload: dict,
+    producer: Optional[KafkaProducer] = None,
+):
+    if not isinstance(payload, (dict, list)):
+        return JsonResponse(
+            {'errors': {'json': 'Payload must be a JSON object or a JSON array.'}},
+            status=400,
+        )
+
+    if isinstance(payload, dict):
+        payload = [payload]
+
+    if len(payload) == 0:
+        return JsonResponse(
+            {'status': 'rejected', 'errors': {'payload': 'Payload array is empty.'}},
+            status=422,
+        )
+
+    if producer is None:
+        producer = get_external_events_producer()
+
+    results = {
+        'accepted': 0,
+        'skipped': 0,
+        'errors': {},
+    }
+
+    for index, record in enumerate(payload):
+        if not isinstance(record, dict):
+            results['errors'][index] = 'Payload items must be JSON objects.'
+            results['skipped'] += 1
+            continue
+
+        key = record.get("source", None)
+        result = producer.produce(payload=record, key=key)
+        if result == ProduceResult.ENQUEUED:
+            results['accepted'] += 1
+        else:
+            results['errors'][index] = result.value
+
+    body = {'status': 'accepted', **results}
+    status_code = 202
+
+    # no valid records provided (all skipped / empty list)
+    if results['accepted'] == 0 and results['skipped'] > 0:
+        body['status'] = 'rejected'
+        status_code = 422
+
+    # no records accepted (kafka issues)
+    elif results['accepted'] == 0 and results['errors']:
+        body['status'] = 'unavailable'
+        status_code = 503
+
+    return JsonResponse(body, status=status_code)
