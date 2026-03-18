@@ -37,7 +37,6 @@ class RuleEvalHandler:
         self.rule_runner = rule_runner
 
     def handle(self, payload):
-        logger.warning("EMU OTORI  11111")
         if isinstance(payload, list):
             for item in payload:
                 self._handle_single(item)

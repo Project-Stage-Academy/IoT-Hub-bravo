@@ -2,11 +2,9 @@ import logging
 import time
 from django.core.cache import caches
 from django.conf import settings
-from django.db.models.signals import post_save, post_delete
 
 from apps.rules.models.rule import Rule
 from apps.devices.models.telemetry import Telemetry
-from apps.devices.models.device_metric import DeviceMetric
 from apps.rules.services.action import Action
 from apps.rules.services.condition_evaluator import ConditionEvaluator
 from apps.rules.utils.rule_engine_utils import (
@@ -53,24 +51,21 @@ class RuleProcessor:
         else:
             raise TypeError(f"Unsupported telemetry type: {type(telemetry)}")    
 
-        cache_key = f"{mapped_telemetry.device_serial_id}:{mapped_telemetry.metric_type}"
+        cache_key = f"{mapped_telemetry.device_serial_id}:{mapped_telemetry.device_metric_id}"
 
         rules = cache_rule.get_or_set(
             cache_key,
             lambda: list(
                 Rule.objects.filter(
-                    is_active=True, device_metric__in=DeviceMetric.objects.filter(
-                        device__serial_id=mapped_telemetry.device_serial_id,
-                        metric__metric_type=mapped_telemetry.metric_type,
-                    )
-                ).select_related('device_metric__metric')
+                    is_active=True,
+                    device_metric_id=mapped_telemetry.device_metric_id,
+                )
             ),
             timeout=settings.RULES_CACHE_TTL
         )
 
         for rule in rules:
             condition = rule.condition
-            device_metric = rule.device_metric
             rule_type = condition.get('type', 'unknown')
 
             rules_evaluated_total.labels(rule_type=rule_type).inc()
@@ -85,7 +80,7 @@ class RuleProcessor:
             cached_window = window_cache[duration_minutes]
 
             if ConditionEvaluator.evaluate(
-                condition, device_metric, mapped_telemetry, cached_window
+                condition, mapped_telemetry, cached_window
             ):
                 rules_triggered_total.labels(rule_type=rule_type).inc()
                 Action.dispatch_action(rule, mapped_telemetry)

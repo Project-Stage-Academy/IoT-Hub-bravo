@@ -1,48 +1,44 @@
 from celery import shared_task
 from celery.utils.log import get_task_logger
-
-from apps.devices.models.telemetry import Telemetry
-from apps.rules.services.rule_processor import RuleProcessor
+import time
 from django.conf import settings
 import requests
 from requests.exceptions import RequestException
+
+from apps.devices.models.telemetry import Telemetry
+from apps.rules.services.rule_processor import RuleProcessor
 from apps.rules.models.event import Event
 
 logger_celery = get_task_logger(__name__)
 
 
-@shared_task(name="check_system_status")
-def check_system_status():
-    """Test example"""
-    logger_celery.info("--- CELERY BEAT IS WORKING: System status checked! ---")
-    return "Success"
+# @shared_task(name="run_rule_processor")
+# def run_rule_processor(telemetry_id: int):
+#     """
+#     Celery task to run RuleProcessor asynchronously on the given telemetry
+#     """
+#     try:
+#         telemetry = Telemetry.objects.get(id=telemetry_id)
+#     except Telemetry.DoesNotExist:
+#         logger_celery.warning("Telemetry not found", extra={"telemetry_id": telemetry_id})
 
-
-@shared_task(name="run_rule_processor")
-def run_rule_processor(telemetry_id: int):
-    """
-    Celery task to run RuleProcessor asynchronously on the given telemetry
-    """
-    try:
-        telemetry = Telemetry.objects.get(id=telemetry_id)
-    except Telemetry.DoesNotExist:
-        logger_celery.warning("Telemetry not found", extra={"telemetry_id": telemetry_id})
-
-    RuleProcessor.run(telemetry)
+#     RuleProcessor.run(telemetry)
 
 
 @shared_task
 def evaluate_rule(telemetry: dict):
-    import time
+    """
+    Celery task to run RuleProcessor asynchronously on the given telemetry
+    """
 
     t = time.perf_counter()
-    logger_celery.warning(
-        f"[TASK START] {telemetry['device_serial_id']} {telemetry['metric_type']}"
+    logger_celery.debug(
+        f"[TASK START] {telemetry['device_serial_id']} {telemetry['device_metric_id']}"
     )
 
     RuleProcessor.run(telemetry)
 
-    logger_celery.warning(f"[TASK DONE] runtime={time.perf_counter() - t:.4f}s")
+    logger_celery.debug(f"[TASK DONE] runtime={time.perf_counter() - t:.4f}s")
 
 
 @shared_task(

@@ -2,7 +2,6 @@ import logging
 from typing import Any, Callable
 import operator
 
-from apps.devices.models.device_metric import DeviceMetric
 from apps.rules.utils.rule_engine_utils import TelemetryEvent
 
 
@@ -35,23 +34,6 @@ def _get_value(condition: dict, key: str = 'value') -> Any:
         logger.error(f"Missing required field '{key}' in condition")
         raise ValueError(f"Missing required field '{key}' in condition")
     return value
-
-
-def _validate_metric(device_metric, telemetry: TelemetryEvent) -> None:
-    """Checks that the rule has a metric and it matches the telemetry metric"""
-    condition_metric = device_metric.metric.metric_type
-    if condition_metric is None:
-        logger.error("Rule must contain a 'metric' field")
-        raise ValueError("Rule must contain a 'metric' field")
-    if condition_metric != telemetry.metric_type:
-        logger.debug(
-            "Rule metric does not match telemetry metric",
-            extra={
-                "condition_metric": condition_metric,
-                "telemetry_metric": telemetry.metric_type,
-            },
-        )
-        raise ValueError("Rule metric must match a telemetry metric field")
 
 
 def _validate_count(value: Any) -> int:
@@ -97,7 +79,7 @@ class RateEvaluator:
     def evaluate(condition: dict, telemetries_in_window: list, **kwargs) -> bool:
         """
         Rate evaluator:
-        Checks if the count of Telemetry events for the same device_metric
+        Checks if the count of Telemetry events
         in the past `duration_minutes` meets or exceeds `count`.
         """
         count_required = _validate_count(condition.get("count"))
@@ -119,7 +101,6 @@ class CompositeEvaluator:
     @staticmethod
     def evaluate(
         condition: dict,
-        device_metric: DeviceMetric,
         telemetry: TelemetryEvent,
         telemetries_in_window: list,
     ) -> bool:
@@ -136,7 +117,7 @@ class CompositeEvaluator:
         results = []
         for i, subcondition in enumerate(subconditions):
             result = ConditionEvaluator.evaluate(
-                subcondition, device_metric, telemetry, telemetries_in_window
+                subcondition, telemetry, telemetries_in_window
             )
             logger.info(f"Subcondition {i} (type={subcondition.get('type')}): {result}")
             results.append(result)
@@ -169,23 +150,10 @@ class ConditionEvaluator:
     @staticmethod
     def evaluate(
         condition: dict,
-        device_metric: DeviceMetric,
         telemetry: TelemetryEvent,
         telemetries_in_window: list,
     ) -> bool:
         """Evaluate rule"""
-        try:
-            _validate_metric(device_metric, telemetry)
-        except ValueError as e:
-            logger.warning(
-                str(e),
-                extra={
-                    "rule_metric": device_metric.metric.metric_type,
-                    "telemetry_metric": telemetry.metric_type,
-                    "error": str(e),
-                },
-            )
-            return False
 
         rule_type = condition.get("type")
         if not rule_type:
@@ -198,7 +166,6 @@ class ConditionEvaluator:
 
         return evaluator(
             condition=condition,
-            device_metric=device_metric,
             telemetry=telemetry,
             telemetries_in_window=telemetries_in_window,
         )

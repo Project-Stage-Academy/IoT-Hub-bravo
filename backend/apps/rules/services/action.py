@@ -55,7 +55,7 @@ class Action:
             timestamp=timezone.now(),
             trigger_telemetry={
                 "device_serial_id": f"{telemetry.device_serial_id}",
-                "metric_type": f"{telemetry.metric_type}",
+                # "metric_type": f"{telemetry.metric_type}", #
                 "value": f"{telemetry.value}",
                 "timestamp": f"{telemetry.timestamp}",
             },
@@ -72,7 +72,7 @@ class Action:
                     "rule_name": rule.name,
                     "trigger_telemetry": {
                         "device_serial_id": f"{telemetry.device_serial_id}",
-                        "metric_type": f"{telemetry.metric_type}",
+                        # "metric_type": f"{telemetry.metric_type}",
                         "value": f"{telemetry.value}",
                         "timestamp": f"{telemetry.timestamp}",
                     },
