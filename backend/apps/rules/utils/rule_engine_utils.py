@@ -3,6 +3,7 @@ from datetime import timedelta, datetime
 from abc import ABC, abstractmethod
 from typing import Tuple, List
 import logging
+from enum import Enum
 
 from apps.devices.models.telemetry import Telemetry
 from apps.devices.models.device_metric import DeviceMetric
@@ -37,6 +38,44 @@ def _get_value_field(telemetry: Telemetry) -> str:
         return "value_str"
 
     raise ValueError("Telemetry has no value set")
+
+
+class NotificationChannels(str, Enum):  ## will be better in common/utils?
+    """Enumeration of available notification delivery channels"""
+
+    EMAIL = "email"
+    SMS = "sms"
+
+
+class ActionTypes(str, Enum):  ## will be better in common/utils?
+    """Enumeration of available action types"""
+
+    WEBHOOK = "webhook"
+    NOTIFICATION = "notification"
+
+
+###=====================
+### Condition schemas
+###=====================
+
+
+CONDITION_SCHEMAS = {
+    "threshold": {
+        "required": {"operator": str, "value": (int, float)},
+        "operators": [">", "<", ">=", "<=", "==", "!="],
+    },
+    "rate": {
+        "required": {"duration_minutes": int, "count": int},
+        "validators": {
+            "duration_minutes": lambda x: x > 0,
+            "count": lambda x: x > 0,
+        },
+    },
+    "composite": {
+        "required": {"conditions": list, "operator": str},
+        "operators": ["AND", "OR"],
+    },
+}
 
 
 ###===========

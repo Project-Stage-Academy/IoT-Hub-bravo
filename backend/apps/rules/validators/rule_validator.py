@@ -1,101 +1,44 @@
 from typing import Any
-from enum import Enum
-import json
 
+import json
 from django.core.exceptions import ValidationError
 
-
-class NotificationChannels(str, Enum):  ## will be better in common/utils?
-    """Enumeration of available notification delivery channels"""
-
-    EMAIL = "email"
-    SMS = "sms"
-
-
-class ActionTypes(str, Enum):  ## will be better in common/utils?
-    """Enumeration of available action types"""
-
-    WEBHOOK = "webhook"
-    NOTIFICATION = "notification"
+from apps.rules.utils.rule_engine_utils import CONDITION_SCHEMAS
+from apps.rules.utils.rule_engine_utils import NotificationChannels, ActionTypes
 
 
 def validate_condition(condition: dict[str, Any]) -> None:
-    """
-    Validate condition JSON.
-    Example:
-    {
-        "type": "threshold",
-        "operator": ">",
-        "value": 50
-    }
-    """
     if isinstance(condition, str):
         try:
             condition = json.loads(condition)
         except (json.JSONDecodeError, TypeError):
             raise ValidationError("Condition must be valid JSON.")
-
     if not isinstance(condition, dict):
         raise ValidationError("Condition must be a dictionary")
-
-    required_fields = ["type"]
-
-    for field in required_fields:
-        if field not in condition:
-            raise ValidationError(f"Condition field '{field}' is required")
-
+    
     condition_type = condition.get("type")
-    if not isinstance(condition_type, str):
-        raise ValidationError("Condition 'type' must be string")
-
-    if condition_type == "threshold":
-        if "operator" not in condition:
-            raise ValidationError("Threshold condition requires 'operator'")
-        if condition.get("operator") not in [">", "<", ">=", "<=", "==", "!="]:  # change?
-            raise ValidationError("Invalid threshold operator")
-        if "value" not in condition:
-            raise ValidationError("Threshold condition requires 'value'")
-        if not isinstance(
-            condition.get("value"), (int, float)
-        ):  ## there will be a problem with str data (new rule type?)
-            raise ValidationError("Condition 'value' must be number")
-
-    elif condition_type == "rate":
-        if "duration_minutes" not in condition:
-            raise ValidationError("Rate condition requires 'duration_minutes'")
-        if "count" not in condition:
-            raise ValidationError("Rate condition requires 'count'")
-
-        if condition.get("duration_minutes") <= 0:
-            raise ValidationError("duration_minutes must be positive")
-        if condition.get("count") <= 0:
-            raise ValidationError("count must be positive")
-
-        if not isinstance(condition.get("duration_minutes"), int):
-            raise ValidationError("duration_minutes must be int")
-        if not isinstance(condition.get("count"), int):
-            raise ValidationError("count must be int")
-
-    elif condition_type == "composite":
-        if "conditions" not in condition:
-            raise ValidationError("Composite condition requires 'conditions'")
-        if "operator" not in condition:
-            raise ValidationError("Composite condition requires 'operator'")
-        if condition.get("operator") not in ["AND", "OR"]:
-            raise ValidationError("Composite operator must be AND or OR")
-
-        conds_to_val = condition.get("conditions")
-        if not isinstance(conds_to_val, list):
-            raise ValidationError("'conditions' must be a list")
-        if not conds_to_val:
-            raise ValidationError("'conditions' must not be empty")
-        for cond_to_val in conds_to_val:
-            if not isinstance(cond_to_val, dict):
-                raise ValidationError("Each composite condition must be a dictionary")
-            validate_condition(cond_to_val)
-
-    else:
+    if condition_type not in CONDITION_SCHEMAS:
         raise ValidationError(f"Unsupported condition type: {condition_type}")
+
+    schema = CONDITION_SCHEMAS[condition_type]
+    
+    for field, typ in schema.get("required", {}).items():
+        if field not in condition:
+            raise ValidationError(f"{condition_type} requires field '{field}'")
+        if not isinstance(condition[field], typ):
+            raise ValidationError(f"'{field}' must be {typ}")
+
+    if "operators" in schema:
+        if condition.get("operator") not in schema["operators"]:
+            raise ValidationError(f"Invalid operator for {condition_type}")
+
+    for field, validator in schema.get("validators", {}).items():
+        if not validator(condition[field]):
+            raise ValidationError(f"Invalid value for {field}")
+
+    if condition_type == "composite":
+        for sub in condition["conditions"]:
+            validate_condition(sub)
 
 
 def validate_action_enabled(action_type: dict) -> None:

@@ -71,14 +71,6 @@ class Action:
         result = producer.produce(payload=payload, key=str(rule.id))
 
         if result == ProduceResult.ENQUEUED:
-            unsent_messages = producer.flush(timeout=10.0)
-
-            if unsent_messages > 0:
-                logger.error(
-                    f"Flush timed out! {unsent_messages} messages failed to reach Kafka "
-                    f"for Rule {rule.id}."
-                )
-            else:
-                logger.info(f"Event for Rule {rule.id} successfully delivered to Kafka.")
+            logger.info(f"Event for Rule {rule.id} successfully delivered to Kafka.")
         else:
             logger.error(f"Failed to enqueue event for Rule {rule.id}. Reason: {result.name}")
