@@ -112,8 +112,8 @@ def _list_response_json(
 
 @csrf_exempt
 @require_http_methods(["POST"])
-# @jwt_required
-# @role_required({"POST": ["client", "admin"]})
+@jwt_required
+@role_required({"POST": ["client", "admin"]})
 def receive_external_event(request):
     """
     POST /api/events/external/
