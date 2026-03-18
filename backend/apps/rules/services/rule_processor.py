@@ -68,19 +68,6 @@ class RuleProcessor:
             timeout=settings.RULES_CACHE_TTL
         )
 
-        if rules is None:
-            device_metrics = DeviceMetric.objects.filter(
-                device__serial_id=mapped_telemetry.device_serial_id,
-                metric__metric_type=mapped_telemetry.metric_type,
-            )
-            rules = list(
-                Rule.objects.filter(
-                    is_active=True, device_metric__in=device_metrics
-                ).select_related('device_metric__metric')
-            )
-
-            cache_rule.set(cache_key, rules, timeout=settings.RULES_CACHE_TTL)
-
         for rule in rules:
             condition = rule.condition
             device_metric = rule.device_metric

@@ -3,10 +3,9 @@ import os
 import signal
 from decouple import config
 from prometheus_client import Counter
-from django.utils.dateparse import parse_datetime
-from django.utils import timezone
 import django
 
+from apps.common.serializers.rule_engine_serializer import RuleEngineSerializer
 from consumers.kafka_consumer import KafkaConsumer
 from consumers.config import ConsumerConfig
 
@@ -23,7 +22,8 @@ rule_eval_errors_total = Counter(
 )
 
 # kafka conf
-TOPIC = config('KAFKA_TOPIC_TELEMETRY_RAW', default='telemetry.raw')  # change to telemetry.clean
+CLEAN_TOPIC = config('KAFKA_TOPIC_TELEMETRY_CLEAN', default='telemetry.clean')
+EXPIRED_TOPIC = config('KAFKA_TOPIC_TELEMETRY_EXPIRED', default='telemetry.expired')
 CONSUME_TIMEOUT = config('KAFKA_CONSUMER_CONSUME_TIMEOUT', default=1.0, cast=float)
 DECODE_JSON = config('KAFKA_CONSUMER_DECODE_JSON', default=True, cast=bool)
 CONSUME_BATCH = config('KAFKA_CONSUMER_CONSUME_BATCH', default=True, cast=bool)
@@ -37,6 +37,7 @@ class RuleEvalHandler:
         self.rule_runner = rule_runner
 
     def handle(self, payload):
+        logger.warning("EMU OTORI  11111")
         if isinstance(payload, list):
             for item in payload:
                 self._handle_single(item)
@@ -45,37 +46,33 @@ class RuleEvalHandler:
 
     def _handle_single(self, item):
         try:
-            ts_raw = item.get("ts")
-            ts = parse_datetime(ts_raw)
-            if ts is None:
-                logger.warning("Invalid timestamp received", extra={"timestamp": ts_raw})
+            serializer = RuleEngineSerializer(data=item)
+            
+            if not serializer.is_valid():
+                logger.warning("Invalid telemetry payload", extra={"errors": serializer.errors})
                 rule_eval_errors_total.inc()
                 return
+            validated = serializer.validated_data
+            
+            device_serial_id = validated.get("device_serial_id")
+            value = validated.get("value")
+            value_type = validated.get("value_type")
+            ts = validated.get("ts")  # datetime obj
+            device_metric_id = validated.get("device_metric_id")
 
-            if timezone.is_naive(ts):
-                ts = timezone.make_aware(ts)
+            key = f"telemetry:{device_serial_id}:{device_metric_id}"
+            member = f"{ts.timestamp()}:{value}"
+            redis_client.zadd(key, {member: ts.timestamp()})
 
-            device_serial_id = item.get("device")
+            telemetry = {
+                "device_serial_id": device_serial_id,
+                "device_metric_id": device_metric_id,
+                "value": value,
+                "value_type": value_type,
+                "ts": ts.isoformat(),
+            }
 
-            for metric_type, value in item.get("metrics", {}).items():
-                key = f"telemetry:{device_serial_id}:{metric_type}"
-
-                if isinstance(value, dict) and "value" in value:
-                    value_num = value.get("value")
-                else:
-                    value_num = value
-
-                member = f"{ts.timestamp()}:{value_num}"
-                redis_client.zadd(key, {member: ts.timestamp()})
-
-                telemetry = {
-                    "device_serial_id": device_serial_id,
-                    "metric_type": metric_type,
-                    "value": value_num,
-                    "ts": ts_raw,
-                }
-
-                self.rule_runner.delay(telemetry)
+            self.rule_runner.delay(telemetry)
 
         except Exception:
             logger.exception("Failed to process telemetry payload: %s", item)
@@ -84,9 +81,11 @@ class RuleEvalHandler:
 
 def main():
     """Starts the Kafka rule evaluation consumer"""
+    logger.error("Kafka consumer starting on topics: %s", [CLEAN_TOPIC, EXPIRED_TOPIC])
+    
     consumer = KafkaConsumer(
         config=ConsumerConfig(),
-        topics=[TOPIC],
+        topics=[CLEAN_TOPIC, EXPIRED_TOPIC],
         handler=RuleEvalHandler(evaluate_rule),
         consume_timeout=CONSUME_TIMEOUT,
         decode_json=DECODE_JSON,
