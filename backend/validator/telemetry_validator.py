@@ -65,7 +65,7 @@ class TelemetryBatchValidator(BaseValidator):
             len(self._validated_rows),
             len(self._invalid_rows),
         )
-        
+
         logger.info("Starting expired data check")
 
         self._split_expired()
@@ -85,7 +85,6 @@ class TelemetryBatchValidator(BaseValidator):
             len(self._validated_rows),
             len(self._invalid_rows),
         )
-
 
     def _collect_devices(self) -> None:
         """Fetch all devices from payload and populate _validated_devices"""
