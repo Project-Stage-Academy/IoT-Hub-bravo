@@ -136,7 +136,7 @@ def test_event_db_handler_sets_correct_fields(valid_db_payload):
     handler.handle(valid_db_payload)
 
     event = Event.objects.get(event_uuid=valid_db_payload["event_uuid"])
-    assert event.rule_id == valid_db_payload["rule_id"]
+    assert event.rule == valid_db_payload["rule_id"]
     assert event.trigger_device_serial_id == valid_db_payload["trigger_device_serial_id"]
     assert event.trigger_context == valid_db_payload["trigger_context"]
     assert event.acknowledged is False

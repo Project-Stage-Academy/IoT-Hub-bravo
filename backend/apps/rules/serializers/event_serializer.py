@@ -269,9 +269,7 @@ class ExternalEventRequestSerializer(BaseSerializer):
             # rule is required inside payload
             rule_id = payload.get("rule")
             if not isinstance(rule_id, int) or rule_id <= 0:
-                self._errors["payload.rule"] = (
-                    "rule is required and must be a positive integer."
-                )
+                self._errors["payload.rule"] = "rule is required and must be a positive integer."
 
             # optional notification
             notification = payload.get("notification")

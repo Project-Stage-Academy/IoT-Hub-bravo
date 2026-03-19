@@ -110,7 +110,6 @@ def test_event_can_be_created_with_explicit_timestamp(rule):
     assert abs((event.rule_triggered_at - ts).total_seconds()) < 1
 
 
-
 # ============================================================================
 # __str__
 # ============================================================================

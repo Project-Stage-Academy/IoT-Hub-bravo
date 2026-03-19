@@ -349,9 +349,7 @@ def test_combined_filter_rule_and_acknowledged(client, client_token, rule, rule2
     Event.objects.create(rule=rule.pk, acknowledged=False)
     Event.objects.create(rule=rule2.pk, acknowledged=True)
 
-    response = client.get(
-        f"/api/events/?rule={rule.id}&acknowledged=true", **auth(client_token)
-    )
+    response = client.get(f"/api/events/?rule={rule.id}&acknowledged=true", **auth(client_token))
     data = response.json()
 
     assert data["count"] == 1
@@ -374,7 +372,7 @@ def test_event_detail_returns_correct_event(client, client_token, event, rule):
     data = response.json()
 
     assert data["event_uuid"] == str(event.event_uuid)
-    assert data["rule"]["id"] == rule.id
+    assert data["rule"] == rule.id
 
 
 def test_event_detail_returns_404_for_unknown_id(client, client_token):

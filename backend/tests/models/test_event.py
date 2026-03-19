@@ -57,20 +57,9 @@ class TestEventRelationships:
     def test_event_belongs_to_rule(self):
         """Test that event is associated with a rule."""
         rule = RuleFactory()
-        event = EventFactory(rule=rule)
+        event = EventFactory(rule=rule.pk)
 
-        assert event.rule == rule
-        assert event.rule.id == rule.id
-
-    def test_cascade_delete_on_rule(self):
-        """Test that deleting rule cascades to events."""
-        event = EventFactory()
-        rule = event.rule
-        event_id = event.id
-
-        rule.delete()
-
-        assert not Event.objects.filter(id=event_id).exists()
+        assert event.rule == rule.id
 
     def test_multiple_events_per_rule(self):
         """Test that a rule can have multiple events."""
@@ -78,11 +67,11 @@ class TestEventRelationships:
         time1 = timezone.now()
         time2 = time1 + timedelta(seconds=1)
 
-        event1 = EventFactory(rule=rule, rule_triggered_at=time1)
-        event2 = EventFactory(rule=rule, rule_triggered_at=time2)
+        event1 = EventFactory(rule=rule.pk, rule_triggered_at=time1)
+        event2 = EventFactory(rule=rule.pk, rule_triggered_at=time2)
 
         assert event1.rule == event2.rule
-        assert Event.objects.filter(rule=rule).count() == 2
+        assert Event.objects.filter(rule=rule.pk).count() == 2
 
 
 class TestEventAcknowledgement:
@@ -115,9 +104,9 @@ class TestEventStringRepresentation:
     def test_str_returns_formatted_string(self):
         """Test that __str__ returns formatted event info."""
         rule = RuleFactory(name="High Temp Alert")
-        event = EventFactory(rule=rule)
+        event = EventFactory(rule=rule.pk)
 
         result = str(event)
 
         assert f"Event {event.event_uuid}" in result
-        assert "High Temp Alert" in result
+        assert str(rule.id) in result
