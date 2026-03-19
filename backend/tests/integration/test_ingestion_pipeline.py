@@ -22,6 +22,12 @@ from tests.fixtures.factories import (
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def patch_redis_globally(monkeypatch):
+    """Use FakeRedis for all tests automatically."""
+    monkeypatch.setattr("apps.common.checker.idempotency_store.redis.Redis", fakeredis.FakeRedis)
+
+
 def make_payload(device_serial, metrics, ts=None):
     """Build a valid telemetry payload dict."""
     if ts is None:
@@ -70,7 +76,6 @@ def dm_door(device, door_metric):
 
 
 @patch('apps.devices.services.telemetry_services.publish_telemetry_event')
-@patch("apps.common.checker.idempotency_store.redis.Redis", fakeredis.FakeRedis)
 class TestSinglePayload:
     """E2E tests for single dict payloads."""
 
@@ -140,7 +145,6 @@ class TestSinglePayload:
 
 
 @patch('apps.devices.services.telemetry_services.publish_telemetry_event')
-@patch("apps.common.checker.idempotency_store.redis.Redis", fakeredis.FakeRedis)
 class TestBatchPayload:
     """E2E tests for batch (list) payloads."""
 
