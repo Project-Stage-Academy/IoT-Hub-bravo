@@ -8,7 +8,6 @@ redis_host = settings.REDIS_HOST
 redis_port = settings.REDIS_PORT
 
 
-@lru_cache(maxsize=1)
 def build_redis_checker() -> DuplicateChecker:
     redis_config = RedisConfig(host=redis_host, port=redis_port)
     redis_client = redis_config.create_client()
