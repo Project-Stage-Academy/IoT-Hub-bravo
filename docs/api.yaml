@@ -1594,7 +1594,7 @@ paths:
                 accepted: 0
                 skipped: 1
                 errors:
-                  0: Duplicate event skipped
+                  "0": Duplicate event skipped
 
         "503":
           description: Kafka producer unavailable
@@ -1607,7 +1607,7 @@ paths:
                 accepted: 0
                 skipped: 0
                 errors:
-                  0: producer_error
+                  "0": producer_error
 
 components:
   securitySchemes:
