@@ -98,12 +98,12 @@ def rule2(device_metric2):
 
 @pytest.fixture
 def event(rule):
-    return Event.objects.create(rule=rule)
+    return Event.objects.create(rule=rule.pk)
 
 
 @pytest.fixture
 def event_acked(rule):
-    return Event.objects.create(rule=rule, acknowledged=True)
+    return Event.objects.create(rule=rule.pk, acknowledged=True)
 
 
 # ============================================================================
@@ -147,9 +147,9 @@ def test_list_events_response_shape(client, client_token, event):
 
 
 def test_list_events_count_reflects_db(client, client_token, rule):
-    Event.objects.create(rule=rule)
-    Event.objects.create(rule=rule)
-    Event.objects.create(rule=rule)
+    Event.objects.create(rule=rule.pk)
+    Event.objects.create(rule=rule.pk)
+    Event.objects.create(rule=rule.pk)
 
     response = client.get("/api/events/", **auth(client_token))
     data = response.json()
@@ -166,8 +166,6 @@ def test_list_events_result_item_fields(client, client_token, event):
     assert "created_at" in item
     assert "acknowledged" in item
     assert "rule" in item
-    assert "id" in item["rule"]
-    assert "name" in item["rule"]
     assert "trigger_device_serial_id" in item
     assert "trigger_context" in item
 
@@ -183,8 +181,8 @@ def test_list_events_empty(client, client_token):
 def test_list_events_ordered_newest_first(client, client_token, rule):
     t1 = timezone.now()
     t2 = t1 + __import__("datetime").timedelta(seconds=10)
-    e1 = Event.objects.create(rule=rule, rule_triggered_at=t1)
-    e2 = Event.objects.create(rule=rule, rule_triggered_at=t2)
+    e1 = Event.objects.create(rule=rule.pk, rule_triggered_at=t1)
+    e2 = Event.objects.create(rule=rule.pk, rule_triggered_at=t2)
 
     response = client.get("/api/events/", **auth(client_token))
     ids = [r["event_uuid"] for r in response.json()["results"]]
@@ -198,7 +196,7 @@ def test_list_events_ordered_newest_first(client, client_token, rule):
 
 def test_list_events_limit_respected(client, client_token, rule):
     for _ in range(5):
-        Event.objects.create(rule=rule)
+        Event.objects.create(rule=rule.pk)
 
     response = client.get("/api/events/?limit=2", **auth(client_token))
     data = response.json()
@@ -210,7 +208,7 @@ def test_list_events_limit_respected(client, client_token, rule):
 
 def test_list_events_offset_respected(client, client_token, rule):
     for _ in range(5):
-        Event.objects.create(rule=rule)
+        Event.objects.create(rule=rule.pk)
 
     response = client.get("/api/events/?limit=10&offset=3", **auth(client_token))
     data = response.json()
@@ -243,33 +241,33 @@ def test_list_events_returns_400_for_non_integer_limit(client, client_token):
 
 
 # ============================================================================
-# GET /api/events/ — filter by rule_id
+# GET /api/events/ — filter by rule
 # ============================================================================
 
 
-def test_filter_by_rule_id_returns_matching_events(client, client_token, rule, rule2):
-    e1 = Event.objects.create(rule=rule)
-    Event.objects.create(rule=rule2)
+def test_filter_by_rule_returns_matching_events(client, client_token, rule, rule2):
+    e1 = Event.objects.create(rule=rule.pk)
+    Event.objects.create(rule=rule2.pk)
 
-    response = client.get(f"/api/events/?rule_id={rule.id}", **auth(client_token))
+    response = client.get(f"/api/events/?rule={rule.pk}", **auth(client_token))
     data = response.json()
 
     assert data["count"] == 1
     assert data["results"][0]["event_uuid"] == str(e1.event_uuid)
 
 
-def test_filter_by_nonexistent_rule_id_returns_empty(client, client_token):
-    response = client.get("/api/events/?rule_id=99999", **auth(client_token))
+def test_filter_by_nonexistent_rule_returns_empty(client, client_token):
+    response = client.get("/api/events/?rule=99999", **auth(client_token))
     data = response.json()
 
     assert data["count"] == 0
     assert data["results"] == []
 
 
-def test_filter_by_rule_id_returns_400_for_invalid_value(client, client_token):
-    response = client.get("/api/events/?rule_id=abc", **auth(client_token))
+def test_filter_by_rule_returns_400_for_invalid_value(client, client_token):
+    response = client.get("/api/events/?rule=abc", **auth(client_token))
     assert response.status_code == 400
-    assert "rule_id" in response.json()["errors"]
+    assert "rule" in response.json()["errors"]
 
 
 # ============================================================================
@@ -278,8 +276,8 @@ def test_filter_by_rule_id_returns_400_for_invalid_value(client, client_token):
 
 
 def test_filter_acknowledged_true(client, client_token, rule):
-    Event.objects.create(rule=rule, acknowledged=False)
-    Event.objects.create(rule=rule, acknowledged=True)
+    Event.objects.create(rule=rule.pk, acknowledged=False)
+    Event.objects.create(rule=rule.pk, acknowledged=True)
 
     response = client.get("/api/events/?acknowledged=true", **auth(client_token))
     data = response.json()
@@ -289,8 +287,8 @@ def test_filter_acknowledged_true(client, client_token, rule):
 
 
 def test_filter_acknowledged_false(client, client_token, rule):
-    Event.objects.create(rule=rule, acknowledged=False)
-    Event.objects.create(rule=rule, acknowledged=True)
+    Event.objects.create(rule=rule.pk, acknowledged=False)
+    Event.objects.create(rule=rule.pk, acknowledged=True)
 
     response = client.get("/api/events/?acknowledged=false", **auth(client_token))
     data = response.json()
@@ -300,8 +298,8 @@ def test_filter_acknowledged_false(client, client_token, rule):
 
 
 def test_filter_acknowledged_accepts_1_and_0(client, client_token, rule):
-    Event.objects.create(rule=rule, acknowledged=True)
-    Event.objects.create(rule=rule, acknowledged=False)
+    Event.objects.create(rule=rule.pk, acknowledged=True)
+    Event.objects.create(rule=rule.pk, acknowledged=False)
 
     r1 = client.get("/api/events/?acknowledged=1", **auth(client_token))
     assert r1.json()["count"] == 1
@@ -323,8 +321,8 @@ def test_filter_acknowledged_returns_400_for_invalid_value(client, client_token)
 
 
 def test_filter_by_device_serial_id(client, client_token, rule, device, device2, rule2):
-    e1 = Event.objects.create(rule=rule, trigger_device_serial_id=device.serial_id)
-    Event.objects.create(rule=rule2, trigger_device_serial_id=device2.serial_id)
+    e1 = Event.objects.create(rule=rule.pk, trigger_device_serial_id=device.serial_id)
+    Event.objects.create(rule=rule2.pk, trigger_device_serial_id=device2.serial_id)
 
     response = client.get(
         f"/api/events/?device_serial_id={device.serial_id}", **auth(client_token)
@@ -346,18 +344,18 @@ def test_filter_by_device_serial_id_returns_empty_for_unknown_device(client, cli
 # ============================================================================
 
 
-def test_combined_filter_rule_id_and_acknowledged(client, client_token, rule, rule2):
-    Event.objects.create(rule=rule, acknowledged=True)
-    Event.objects.create(rule=rule, acknowledged=False)
-    Event.objects.create(rule=rule2, acknowledged=True)
+def test_combined_filter_rule_and_acknowledged(client, client_token, rule, rule2):
+    Event.objects.create(rule=rule.pk, acknowledged=True)
+    Event.objects.create(rule=rule.pk, acknowledged=False)
+    Event.objects.create(rule=rule2.pk, acknowledged=True)
 
     response = client.get(
-        f"/api/events/?rule_id={rule.id}&acknowledged=true", **auth(client_token)
+        f"/api/events/?rule={rule.id}&acknowledged=true", **auth(client_token)
     )
     data = response.json()
 
     assert data["count"] == 1
-    assert data["results"][0]["rule"]["id"] == rule.id
+    assert data["results"][0]["rule"] == rule.id
     assert data["results"][0]["acknowledged"] is True
 
 
@@ -377,7 +375,6 @@ def test_event_detail_returns_correct_event(client, client_token, event, rule):
 
     assert data["event_uuid"] == str(event.event_uuid)
     assert data["rule"]["id"] == rule.id
-    assert data["rule"]["name"] == rule.name
 
 
 def test_event_detail_returns_404_for_unknown_id(client, client_token):
@@ -472,13 +469,12 @@ def test_ack_event_by_admin_returns_200(client, admin_token, event):
 def test_ack_event_response_contains_rule_info(client, client_token, event, rule):
     response = client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
     data = response.json()
-    assert data["rule"]["id"] == rule.id
-    assert data["rule"]["name"] == rule.name
+    assert data["rule"] == rule.id
 
 
 def test_ack_event_does_not_change_other_events(client, client_token, rule):
-    e1 = Event.objects.create(rule=rule)
-    e2 = Event.objects.create(rule=rule)
+    e1 = Event.objects.create(rule=rule.pk)
+    e2 = Event.objects.create(rule=rule.pk)
 
     client.post(f"/api/events/{e1.event_uuid}/ack/", **auth(client_token))
 

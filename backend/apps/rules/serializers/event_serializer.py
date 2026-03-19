@@ -28,7 +28,7 @@ class EventListQuerySerializer(BaseSerializer):
     Validates query params for GET /api/events/
 
     Query params (all optional):
-    - rule_id: int
+    - rule: int
     - device_serial_id: str  (filter by trigger device serial ID)
     - severity: str   (not supported by model yet, reserved)
     - acknowledged: bool
@@ -48,7 +48,7 @@ class EventListQuerySerializer(BaseSerializer):
             self._errors["query"] = "Query params must be an object."
             return None
 
-        rule_id = self._parse_optional_positive_int(data.get("rule_id"), field="rule_id")
+        rule_id = self._parse_optional_positive_int(data.get("rule"), field="rule")
         device_serial_id = self._parse_optional_string(
             data.get("device_serial_id"),
             field="device_serial_id",
@@ -174,10 +174,7 @@ class EventListItemSerializer:
             "is_external": event.is_external,
             "created_at": event.created_at.isoformat(),
             "acknowledged": event.acknowledged,
-            "rule": {
-                "id": event.rule_id,
-                "name": event.rule.name if event.rule else None,
-            },
+            "rule": event.rule,
             "trigger_device_serial_id": event.trigger_device_serial_id,
             "trigger_context": event.trigger_context,
         }
@@ -196,10 +193,7 @@ class EventDetailSerializer:
             "is_external": event.is_external,
             "created_at": event.created_at.isoformat(),
             "acknowledged": event.acknowledged,
-            "rule": {
-                "id": event.rule_id,
-                "name": event.rule.name if event.rule else None,
-            },
+            "rule": event.rule,
             "trigger_device_serial_id": event.trigger_device_serial_id,
             "trigger_context": event.trigger_context,
         }
@@ -226,7 +220,7 @@ class ExternalEventRequestSerializer(BaseSerializer):
       "device_external_id": "SERIAL-123",
       "timestamp": "2026-03-16T15:06:59Z",
       "payload": {
-        "rule_id": 12,
+        "rule": 12,
         "metric": "humidity",
         "value": 150,
         "threshold": 50,
@@ -272,11 +266,11 @@ class ExternalEventRequestSerializer(BaseSerializer):
         if not isinstance(payload, dict):
             self._errors["payload"] = "payload must be a JSON object."
         else:
-            # rule_id is required inside payload
-            rule_id = payload.get("rule_id")
+            # rule is required inside payload
+            rule_id = payload.get("rule")
             if not isinstance(rule_id, int) or rule_id <= 0:
-                self._errors["payload.rule_id"] = (
-                    "rule_id is required and must be a positive integer."
+                self._errors["payload.rule"] = (
+                    "rule is required and must be a positive integer."
                 )
 
             # optional notification
@@ -322,7 +316,7 @@ def map_external_to_internal(validated: ExternalEventRequest) -> dict:
     return {
         "event_uuid": event_uuid,
         "rule_triggered_at": validated.timestamp.isoformat(),
-        "rule_id": payload.get("rule_id"),
+        "rule": payload.get("rule"),
         "is_external": True,
         "trigger_device_serial_id": validated.device_external_id,
         "trigger_context": {
