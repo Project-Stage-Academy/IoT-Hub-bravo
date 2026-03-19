@@ -250,6 +250,7 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+<<<<<<< US-3-2-1-WebSocket-migration-to-Kafka
   kafka-telemetry-clean-ws:
     <<: *django_base
     image: iot-hub-kafka-telemetry-clean-ws
@@ -260,6 +261,38 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+=======
+  
+  kafka-event-db-writer:
+    <<: *django_base
+    image: iot-hub-kafka-event-db-writer
+    container_name: kafka-event-db-writer
+    command: [ "python", "-m", "apps.rules.consumers.run_event_db_consumer" ]
+    environment:
+      KAFKA_GROUP_EVENT_DB_WRITER: event-db-writer
+      KAFKA_TOPIC_RULE_EVENTS: rules.events.triggered
+    depends_on:
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+  
+  kafka-event-notification-consumer:
+    <<: *django_base
+    image: iot-hub-kafka-event-notification-consumer
+    container_name: kafka-event-notification-consumer
+    command: [ "python", "-m", "apps.rules.consumers.run_event_notification_consumer" ]
+    environment:
+      KAFKA_GROUP_EVENT_NOTIFICATION: event-notification-group
+      KAFKA_TOPIC_RULE_EVENTS: rules.events.triggered
+    depends_on:
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+>>>>>>> main
 
   kafka-telemetry-validator:
     <<: *django_base

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from uuid import UUID
 
 from django.db.models import QuerySet
 
@@ -19,7 +20,7 @@ def event_list(*, query: EventListQuery) -> EventListResult:
     Filters supported:
     - rule_id
     - acknowledged
-    - device_id (derived via trigger telemetry)
+    - device_serial_id (filter by trigger device serial ID)
     - severity (reserved, ignored for now)
 
     Pagination:
@@ -27,7 +28,7 @@ def event_list(*, query: EventListQuery) -> EventListResult:
     - offset
 
     Ordering:
-    - newest first (timestamp desc)
+    - newest first (rule_triggered_at desc)
     """
     qs = Event.objects.select_related("rule").all()
 
@@ -35,7 +36,7 @@ def event_list(*, query: EventListQuery) -> EventListResult:
 
     total = qs.count()
 
-    qs = qs.order_by("-timestamp", "-id")[query.offset : query.offset + query.limit]
+    qs = qs.order_by("-rule_triggered_at", "-id")[query.offset : query.offset + query.limit]
 
     return EventListResult(
         count=total,
@@ -43,14 +44,14 @@ def event_list(*, query: EventListQuery) -> EventListResult:
     )
 
 
-def event_get(*, event_id: int) -> Event:
+def event_get(*, event_uuid: UUID | str) -> Event:
     """
-    Get a single event by id.
+    Get a single event by event_uuid.
     """
-    return Event.objects.select_related("rule").get(id=event_id)
+    return Event.objects.select_related("rule").get(event_uuid=event_uuid)
 
 
-def event_ack(*, event_id: int) -> Event:
+def event_ack(*, event_uuid: UUID | str) -> Event:
     """
     Acknowledge an event.
 
@@ -58,7 +59,7 @@ def event_ack(*, event_id: int) -> Event:
     - if already acknowledged: keep it true
     - return updated event
     """
-    event = Event.objects.select_related("rule").get(id=event_id)
+    event = Event.objects.select_related("rule").get(event_uuid=event_uuid)
 
     if not event.acknowledged:
         event.acknowledged = True
@@ -80,7 +81,7 @@ def _apply_filters(qs: QuerySet[Event], *, query: EventListQuery) -> QuerySet[Ev
     # if query.severity is not None:
     #     ...
 
-    if query.device_id is not None:
-        qs = qs.filter(trigger_device_id=query.device_id)
+    if query.device_serial_id is not None:
+        qs = qs.filter(trigger_device_serial_id=query.device_serial_id)
 
     return qs

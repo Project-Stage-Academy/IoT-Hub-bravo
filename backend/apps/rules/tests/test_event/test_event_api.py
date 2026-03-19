@@ -1,6 +1,8 @@
 import pytest
 import jwt
 
+import uuid
+
 from django.conf import settings
 from django.utils import timezone
 
@@ -159,20 +161,21 @@ def test_list_events_result_item_fields(client, client_token, event):
     response = client.get("/api/events/", **auth(client_token))
     item = response.json()["results"][0]
 
-    assert "id" in item
-    assert "timestamp" in item
+    assert "event_uuid" in item
+    assert "rule_triggered_at" in item
     assert "created_at" in item
     assert "acknowledged" in item
     assert "rule" in item
     assert "id" in item["rule"]
     assert "name" in item["rule"]
-    # assert "trigger_telemetry_id" in item
-    # assert "trigger_device_id" in item
+    assert "trigger_device_serial_id" in item
+    assert "trigger_context" in item
 
 
-def test_list_events_empty_when_no_events(client, client_token):
+def test_list_events_empty(client, client_token):
     response = client.get("/api/events/", **auth(client_token))
     data = response.json()
+
     assert data["count"] == 0
     assert data["results"] == []
 
@@ -180,12 +183,12 @@ def test_list_events_empty_when_no_events(client, client_token):
 def test_list_events_ordered_newest_first(client, client_token, rule):
     t1 = timezone.now()
     t2 = t1 + __import__("datetime").timedelta(seconds=10)
-    e1 = Event.objects.create(rule=rule, timestamp=t1)
-    e2 = Event.objects.create(rule=rule, timestamp=t2)
+    e1 = Event.objects.create(rule=rule, rule_triggered_at=t1)
+    e2 = Event.objects.create(rule=rule, rule_triggered_at=t2)
 
     response = client.get("/api/events/", **auth(client_token))
-    ids = [r["id"] for r in response.json()["results"]]
-    assert ids.index(e2.id) < ids.index(e1.id)
+    ids = [r["event_uuid"] for r in response.json()["results"]]
+    assert ids.index(str(e2.event_uuid)) < ids.index(str(e1.event_uuid))
 
 
 # ============================================================================
@@ -252,12 +255,13 @@ def test_filter_by_rule_id_returns_matching_events(client, client_token, rule, r
     data = response.json()
 
     assert data["count"] == 1
-    assert data["results"][0]["id"] == e1.id
+    assert data["results"][0]["event_uuid"] == str(e1.event_uuid)
 
 
-def test_filter_by_rule_id_returns_empty_for_unknown_rule(client, client_token):
+def test_filter_by_nonexistent_rule_id_returns_empty(client, client_token):
     response = client.get("/api/events/?rule_id=99999", **auth(client_token))
     data = response.json()
+
     assert data["count"] == 0
     assert data["results"] == []
 
@@ -314,26 +318,28 @@ def test_filter_acknowledged_returns_400_for_invalid_value(client, client_token)
 
 ### TEMPORARY
 # ============================================================================
-# GET /api/events/ — filter by device_id
+# GET /api/events/ — filter by device_serial_id
 # ============================================================================
 
 
-# def test_filter_by_device_id(client, client_token, rule, device, device2, rule2):
-#     e1 = Event.objects.create(rule=rule, trigger_device_id=device.id)
-#     Event.objects.create(rule=rule2, trigger_device_id=device2.id)
+def test_filter_by_device_serial_id(client, client_token, rule, device, device2, rule2):
+    e1 = Event.objects.create(rule=rule, trigger_device_serial_id=device.serial_id)
+    Event.objects.create(rule=rule2, trigger_device_serial_id=device2.serial_id)
 
-#     response = client.get(f"/api/events/?device_id={device.id}", **auth(client_token))
-#     data = response.json()
+    response = client.get(
+        f"/api/events/?device_serial_id={device.serial_id}", **auth(client_token)
+    )
+    data = response.json()
 
-#     assert data["count"] == 1
-#     assert data["results"][0]["id"] == e1.id
+    assert data["count"] == 1
+    assert data["results"][0]["event_uuid"] == str(e1.event_uuid)
 
 
-# def test_filter_by_device_id_returns_empty_for_unknown_device(client, client_token):
-#     response = client.get("/api/events/?device_id=99999", **auth(client_token))
-#     data = response.json()
-#     assert data["count"] == 0
-### TEMPORARY
+def test_filter_by_device_serial_id_returns_empty_for_unknown_device(client, client_token):
+    response = client.get("/api/events/?device_serial_id=UNKNOWN-999", **auth(client_token))
+    data = response.json()
+    assert data["count"] == 0
+
 
 # ============================================================================
 # GET /api/events/ — combined filters
@@ -361,89 +367,88 @@ def test_combined_filter_rule_id_and_acknowledged(client, client_token, rule, ru
 
 
 def test_event_detail_returns_200(client, client_token, event):
-    response = client.get(f"/api/events/{event.id}/", **auth(client_token))
+    response = client.get(f"/api/events/{event.event_uuid}/", **auth(client_token))
     assert response.status_code == 200
 
 
 def test_event_detail_returns_correct_event(client, client_token, event, rule):
-    response = client.get(f"/api/events/{event.id}/", **auth(client_token))
+    response = client.get(f"/api/events/{event.event_uuid}/", **auth(client_token))
     data = response.json()
 
-    assert data["id"] == event.id
-    assert data["acknowledged"] == event.acknowledged
+    assert data["event_uuid"] == str(event.event_uuid)
     assert data["rule"]["id"] == rule.id
     assert data["rule"]["name"] == rule.name
 
 
 def test_event_detail_returns_404_for_unknown_id(client, client_token):
-    response = client.get("/api/events/99999/", **auth(client_token))
+    fake_uuid = uuid.uuid4()
+    response = client.get(f"/api/events/{fake_uuid}/", **auth(client_token))
     assert response.status_code == 404
     assert "detail" in response.json()
 
 
 def test_event_detail_returns_401_without_token(client, event):
-    response = client.get(f"/api/events/{event.id}/")
+    response = client.get(f"/api/events/{event.event_uuid}/")
     assert response.status_code == 401
 
 
 def test_event_detail_returns_200_for_admin(client, admin_token, event):
-    response = client.get(f"/api/events/{event.id}/", **auth(admin_token))
+    response = client.get(f"/api/events/{event.event_uuid}/", **auth(admin_token))
     assert response.status_code == 200
 
 
 def test_event_detail_response_fields(client, client_token, event):
-    response = client.get(f"/api/events/{event.id}/", **auth(client_token))
+    response = client.get(f"/api/events/{event.event_uuid}/", **auth(client_token))
     data = response.json()
 
-    assert "id" in data
-    assert "timestamp" in data
+    assert "event_uuid" in data
+    assert "rule_triggered_at" in data
     assert "created_at" in data
     assert "acknowledged" in data
     assert "rule" in data
-    # assert "trigger_telemetry_id" in data  ### TEMPORARY
-    # assert "trigger_device_id" in data  ### TEMPORARY
+    assert "trigger_device_serial_id" in data
+    assert "trigger_context" in data
 
 
-# ============================================================================
-# POST /api/events/{id}/ack/ — acknowledge
 # ============================================================================
 
 
 def test_ack_event_returns_200(client, client_token, event):
-    response = client.post(f"/api/events/{event.id}/ack/", **auth(client_token))
+    response = client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
     assert response.status_code == 200
 
 
 def test_ack_event_sets_acknowledged_true(client, client_token, event):
     assert event.acknowledged is False
 
-    client.post(f"/api/events/{event.id}/ack/", **auth(client_token))
+    client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
 
     event.refresh_from_db()
     assert event.acknowledged is True
 
 
 def test_ack_event_response_contains_acknowledged_true(client, client_token, event):
-    response = client.post(f"/api/events/{event.id}/ack/", **auth(client_token))
+    response = client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
     data = response.json()
     assert data["acknowledged"] is True
 
 
 def test_ack_event_returns_404_for_unknown_id(client, client_token):
-    response = client.post("/api/events/99999/ack/", **auth(client_token))
+    fake_uuid = uuid.uuid4()
+    response = client.post(f"/api/events/{fake_uuid}/ack/", **auth(client_token))
     assert response.status_code == 404
     assert "detail" in response.json()
 
 
 def test_ack_event_returns_401_without_token(client, event):
-    response = client.post(f"/api/events/{event.id}/ack/")
+    response = client.post(f"/api/events/{event.event_uuid}/ack/")
     assert response.status_code == 401
 
 
 def test_ack_event_is_idempotent(client, client_token, event):
     """Calling ack twice should keep acknowledged=True and not error"""
-    client.post(f"/api/events/{event.id}/ack/", **auth(client_token))
-    response = client.post(f"/api/events/{event.id}/ack/", **auth(client_token))
+    client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
+    response = client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
 
     assert response.status_code == 200
     data = response.json()
@@ -454,18 +459,18 @@ def test_ack_event_is_idempotent(client, client_token, event):
 
 
 def test_ack_event_already_acknowledged_remains_200(client, client_token, event_acked):
-    response = client.post(f"/api/events/{event_acked.id}/ack/", **auth(client_token))
+    response = client.post(f"/api/events/{event_acked.event_uuid}/ack/", **auth(client_token))
     assert response.status_code == 200
     assert response.json()["acknowledged"] is True
 
 
 def test_ack_event_by_admin_returns_200(client, admin_token, event):
-    response = client.post(f"/api/events/{event.id}/ack/", **auth(admin_token))
+    response = client.post(f"/api/events/{event.event_uuid}/ack/", **auth(admin_token))
     assert response.status_code == 200
 
 
 def test_ack_event_response_contains_rule_info(client, client_token, event, rule):
-    response = client.post(f"/api/events/{event.id}/ack/", **auth(client_token))
+    response = client.post(f"/api/events/{event.event_uuid}/ack/", **auth(client_token))
     data = response.json()
     assert data["rule"]["id"] == rule.id
     assert data["rule"]["name"] == rule.name
@@ -475,7 +480,7 @@ def test_ack_event_does_not_change_other_events(client, client_token, rule):
     e1 = Event.objects.create(rule=rule)
     e2 = Event.objects.create(rule=rule)
 
-    client.post(f"/api/events/{e1.id}/ack/", **auth(client_token))
+    client.post(f"/api/events/{e1.event_uuid}/ack/", **auth(client_token))
 
     e2.refresh_from_db()
     assert e2.acknowledged is False

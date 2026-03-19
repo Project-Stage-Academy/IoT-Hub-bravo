@@ -106,12 +106,21 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 | `/api/telemetry/{id}/` | PATCH  | `telemetry:write`  | admin          |
 | `/api/telemetry/{id}/` | DELETE | `telemetry:delete` | admin          |
 
+**Rules API**
+| Endpoint                  | Method              | Required Scope    | Required Role      |
+| ------------------------- | ------------------- | ----------------- | ------------------ |
+| `/api/rules/`             | GET                 | `rules:read`      | client, admin      |
+| `/api/rules/`             | POST                | `rules:write`     | client, admin      |
+| `/api/rules/{id}/`        | GET                 | `rules:read`      | client, admin      |
+| `/api/rules/{id}/`        | PUT, PATCH, DELETE   | `rules:write`     | client, admin      |
+| `/api/rules/evaluate/`    | POST                | `rules:write`     | client, admin      |
+
 **Events API**
 | Endpoint                  | Method | Required Scope    | Required Role      |
 | ------------------------- | ------ | ----------------- | ------------------ |
 | `/api/events/`            | GET    | `events:read`     | client, admin      |
-| `/api/events/{id}/`       | GET    | `events:read`     | client, admin      |
-| `/api/events/{id}/ack/`   | POST   | `events:write`    | client, admin      |
+| `/api/events/{event_uuid}/`       | GET    | `events:read`     | client, admin      |
+| `/api/events/{event_uuid}/ack/`   | POST   | `events:write`    | client, admin      |
 
 ## 2. API Style Guide
 ### 2.1 Naming Conventions
