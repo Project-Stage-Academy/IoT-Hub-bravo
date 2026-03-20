@@ -205,10 +205,12 @@ class EventFactory(DjangoModelFactory):
     class Meta:
         model = Event
 
-    rule = factory.SubFactory(RuleFactory)
+    rule = factory.LazyFunction(lambda: RuleFactory().id)
+
     acknowledged = False
+
     trigger_device_serial_id = factory.LazyAttribute(
-        lambda o: o.rule.device_metric.device.serial_id
+        lambda o: Rule.objects.get(pk=o.rule).device_metric.device.serial_id
     )
     trigger_context = factory.LazyFunction(
         lambda: {"telemetry_id": 1, "value": {"t": "numeric", "v": "25.5"}}

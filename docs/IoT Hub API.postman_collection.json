@@ -1,11 +1,11 @@
 {
   "info": {
-    "_postman_id": "d219726d-8961-446f-856f-1ee74698a651",
+    "_postman_id": "2c3d612e-4fa2-420e-8264-d2cce6edcdb5",
     "name": "IoT Hub API",
     "description": "API for managing devices, telemetry, and rules with full CRUD support, JWT authentication,\npagination, schema versioning, and example payloads for testing.\n",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "51641265",
-    "_collection_link": "https://go.postman.co/collection/51641265-d219726d-8961-446f-856f-1ee74698a651?source=collection_link"
+    "_collection_link": "https://go.postman.co/collection/51641265-2c3d612e-4fa2-420e-8264-d2cce6edcdb5?source=collection_link"
   },
   "item": [
     {
@@ -2032,7 +2032,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "3400"
+                          "value": "2065"
                         }
                       ]
                     },
@@ -2068,7 +2068,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "3400"
+                              "value": "2065"
                             }
                           ]
                         }
@@ -2114,7 +2114,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "3400"
+                              "value": "2065"
                             }
                           ]
                         }
@@ -2160,7 +2160,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "3400"
+                              "value": "2065"
                             }
                           ]
                         }
@@ -2227,7 +2227,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "3400"
+                          "value": "2065"
                         }
                       ]
                     },
@@ -2277,7 +2277,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "3400"
+                              "value": "2065"
                             }
                           ]
                         }
@@ -2337,7 +2337,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "3400"
+                              "value": "2065"
                             }
                           ]
                         }
@@ -2397,7 +2397,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "3400"
+                              "value": "2065"
                             }
                           ]
                         }
@@ -2464,7 +2464,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "3400"
+                          "value": "2065"
                         }
                       ]
                     },
@@ -2514,7 +2514,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "3400"
+                              "value": "2065"
                             }
                           ]
                         }
@@ -2574,7 +2574,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "3400"
+                              "value": "2065"
                             }
                           ]
                         }
@@ -2634,7 +2634,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "3400"
+                              "value": "2065"
                             }
                           ]
                         }
@@ -2687,7 +2687,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "3400"
+                          "value": "2065"
                         }
                       ]
                     },
@@ -2723,7 +2723,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "3400"
+                              "value": "2065"
                             }
                           ]
                         }
@@ -2769,7 +2769,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "3400"
+                              "value": "2065"
                             }
                           ]
                         }
@@ -3351,8 +3351,8 @@
                           "variable": [
                             {
                               "key": "event_id",
-                              "value": "2933",
-                              "description": "ID of the event"
+                              "value": "5d5b9c3e-d398-5674-1dc6-a316d49ab618",
+                              "description": "UUID of the event"
                             }
                           ]
                         },
@@ -3389,8 +3389,8 @@
                               "variable": [
                                 {
                                   "key": "event_id",
-                                  "value": "2933",
-                                  "description": "ID of the event"
+                                  "value": "5d5b9c3e-d398-5674-1dc6-a316d49ab618",
+                                  "description": "UUID of the event"
                                 }
                               ]
                             }
@@ -3405,7 +3405,7 @@
                             }
                           ],
                           "cookie": [],
-                          "body": "{\n  \"example\": null,\n  \"id\": 123,\n  \"timestamp\": \"2026-01-25T09:53:00+00:00\",\n  \"created_at\": \"2026-01-25T09:55:00+00:00\",\n  \"acknowledged\": true,\n  \"rule\": {\n    \"id\": 1,\n    \"name\": \"High Temperature\"\n  },\n  \"trigger_telemetry\": {\n    \"id\": 1,\n    \"device_id\": 1,\n    \"metric\": {\n      \"temperature\": {\n        \"value\": 60,\n        \"unit\": \"celsius\"\n      }\n    },\n    \"ts\": \"2024-04-13T18:45:37Z\"\n  }\n}"
+                          "body": "{\n  \"example\": null,\n  \"event_uuid\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"rule_triggered_at\": \"2026-01-25T09:53:00+00:00\",\n  \"created_at\": \"2026-01-25T09:55:00+00:00\",\n  \"acknowledged\": true,\n  \"rule\": {\n    \"id\": 1,\n    \"name\": \"High Temperature\"\n  },\n  \"trigger_telemetry\": {\n    \"id\": 1,\n    \"device_id\": 1,\n    \"metric\": {\n      \"temperature\": {\n        \"value\": 60,\n        \"unit\": \"celsius\"\n      }\n    },\n    \"ts\": \"2024-04-13T18:45:37Z\"\n  }\n}"
                         },
                         {
                           "name": "Event not found",
@@ -3437,8 +3437,8 @@
                               "variable": [
                                 {
                                   "key": "event_id",
-                                  "value": "2933",
-                                  "description": "ID of the event"
+                                  "value": "5d5b9c3e-d398-5674-1dc6-a316d49ab618",
+                                  "description": "UUID of the event"
                                 }
                               ]
                             }
@@ -3493,12 +3493,12 @@
                       "variable": [
                         {
                           "key": "event_id",
-                          "value": "2933",
-                          "description": "ID of the event"
+                          "value": "5d5b9c3e-d398-5674-1dc6-a316d49ab618",
+                          "description": "UUID of the event"
                         }
                       ]
                     },
-                    "description": "Get detailed information about a single event by ID, including optional trigger telemetry info."
+                    "description": "Get detailed information about a single event by ID, including optional trigger context."
                   },
                   "response": [
                     {
@@ -3530,8 +3530,8 @@
                           "variable": [
                             {
                               "key": "event_id",
-                              "value": "2933",
-                              "description": "ID of the event"
+                              "value": "5d5b9c3e-d398-5674-1dc6-a316d49ab618",
+                              "description": "UUID of the event"
                             }
                           ]
                         }
@@ -3546,7 +3546,7 @@
                         }
                       ],
                       "cookie": [],
-                      "body": "{\n  \"id\": 123,\n  \"timestamp\": \"2026-01-25T09:53:00+00:00\",\n  \"created_at\": \"2026-01-25T09:55:00+00:00\",\n  \"acknowledged\": false,\n  \"rule\": {\n    \"id\": 1,\n    \"name\": \"High Temperature\"\n  },\n  \"trigger_telemetry\": {\n    \"id\": 1,\n    \"device_id\": 1,\n    \"metric\": {\n      \"temperature\": {\n        \"value\": 60,\n        \"unit\": \"celsius\"\n      }\n    },\n    \"ts\": \"2024-04-13T18:45:37Z\"\n  }\n}"
+                      "body": "{\n  \"event_uuid\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"rule_triggered_at\": \"2026-01-25T09:53:00+00:00\",\n  \"created_at\": \"2026-01-25T09:55:00+00:00\",\n  \"acknowledged\": false,\n  \"rule\": {\n    \"id\": 1,\n    \"name\": \"High Temperature\"\n  },\n  \"trigger_telemetry\": {\n    \"id\": 1,\n    \"device_id\": 1,\n    \"metric\": {\n      \"temperature\": {\n        \"value\": 60,\n        \"unit\": \"celsius\"\n      }\n    },\n    \"ts\": \"2024-04-13T18:45:37Z\"\n  }\n}"
                     },
                     {
                       "name": "Event not found",
@@ -3577,8 +3577,8 @@
                           "variable": [
                             {
                               "key": "event_id",
-                              "value": "2933",
-                              "description": "ID of the event"
+                              "value": "5d5b9c3e-d398-5674-1dc6-a316d49ab618",
+                              "description": "UUID of the event"
                             }
                           ]
                         }
@@ -3628,7 +3628,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"event_type\": \"temperature_alert\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"temperature\": 85.2,\n    \"unit\": \"celsius\"\n  }\n}",
+                      "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"rule_id\": 12,\n    \"metric\": \"temperature\",\n    \"value\": 85.2,\n    \"threshold\": 50,\n    \"telemetry_ts\": \"2026-03-12T10:14:00Z\",\n    \"notification\": {\n      \"channel\": \"telegram\",\n      \"message\": \"Temperature exceeded threshold\",\n      \"webhook\": \"https://webhook.site/XXXX\"\n    }\n  }\n}",
                       "options": {
                         "raw": {
                           "headerFamily": "json",
@@ -3652,7 +3652,7 @@
                   },
                   "response": [
                     {
-                      "name": "Event accepted for processing",
+                      "name": "Event accepted for asynchronous processing",
                       "originalRequest": {
                         "method": "POST",
                         "header": [
@@ -3672,7 +3672,7 @@
                         ],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"event_type\": \"temperature_alert\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"temperature\": 85.2,\n    \"unit\": \"celsius\"\n  }\n}",
+                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"rule_id\": 12,\n    \"metric\": \"temperature\",\n    \"value\": 85.2,\n    \"threshold\": 50,\n    \"telemetry_ts\": \"2026-03-12T10:14:00Z\",\n    \"notification\": {\n      \"channel\": \"telegram\",\n      \"message\": \"Temperature exceeded threshold\",\n      \"webhook\": \"https://webhook.site/XXXX\"\n    }\n  }\n}",
                           "options": {
                             "raw": {
                               "headerFamily": "json",
@@ -3703,10 +3703,10 @@
                         }
                       ],
                       "cookie": [],
-                      "body": "{\n  \"status\": \"accepted\",\n  \"event_id\": 345,\n  \"message\": \"Event successfully received and queued for processing\"\n}"
+                      "body": "{\n  \"status\": \"accepted\",\n  \"accepted\": 1,\n  \"skipped\": 0,\n  \"errors\": {}\n}"
                     },
                     {
-                      "name": "Invalid request payload",
+                      "name": "Invalid request payload or malformed JSON",
                       "originalRequest": {
                         "method": "POST",
                         "header": [
@@ -3726,7 +3726,7 @@
                         ],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"event_type\": \"temperature_alert\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"temperature\": 85.2,\n    \"unit\": \"celsius\"\n  }\n}",
+                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"rule_id\": 12,\n    \"metric\": \"temperature\",\n    \"value\": 85.2,\n    \"threshold\": 50,\n    \"telemetry_ts\": \"2026-03-12T10:14:00Z\",\n    \"notification\": {\n      \"channel\": \"telegram\",\n      \"message\": \"Temperature exceeded threshold\",\n      \"webhook\": \"https://webhook.site/XXXX\"\n    }\n  }\n}",
                           "options": {
                             "raw": {
                               "headerFamily": "json",
@@ -3780,7 +3780,7 @@
                         ],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"event_type\": \"temperature_alert\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"temperature\": 85.2,\n    \"unit\": \"celsius\"\n  }\n}",
+                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"rule_id\": 12,\n    \"metric\": \"temperature\",\n    \"value\": 85.2,\n    \"threshold\": 50,\n    \"telemetry_ts\": \"2026-03-12T10:14:00Z\",\n    \"notification\": {\n      \"channel\": \"telegram\",\n      \"message\": \"Temperature exceeded threshold\",\n      \"webhook\": \"https://webhook.site/XXXX\"\n    }\n  }\n}",
                           "options": {
                             "raw": {
                               "headerFamily": "json",
@@ -3814,7 +3814,7 @@
                       "body": "{\n  \"code\": 401,\n  \"message\": \"Authentication credentials were not provided\"\n}"
                     },
                     {
-                      "name": "Duplicate external event",
+                      "name": "Event rejected (duplicate or validation failure)",
                       "originalRequest": {
                         "method": "POST",
                         "header": [
@@ -3834,7 +3834,7 @@
                         ],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"event_type\": \"temperature_alert\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"temperature\": 85.2,\n    \"unit\": \"celsius\"\n  }\n}",
+                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"rule_id\": 12,\n    \"metric\": \"temperature\",\n    \"value\": 85.2,\n    \"threshold\": 50,\n    \"telemetry_ts\": \"2026-03-12T10:14:00Z\",\n    \"notification\": {\n      \"channel\": \"telegram\",\n      \"message\": \"Temperature exceeded threshold\",\n      \"webhook\": \"https://webhook.site/XXXX\"\n    }\n  }\n}",
                           "options": {
                             "raw": {
                               "headerFamily": "json",
@@ -3855,8 +3855,8 @@
                           ]
                         }
                       },
-                      "status": "Conflict",
-                      "code": 409,
+                      "status": "Unprocessable Entity (WebDAV) (RFC 4918)",
+                      "code": 422,
                       "_postman_previewlanguage": "json",
                       "header": [
                         {
@@ -3865,10 +3865,10 @@
                         }
                       ],
                       "cookie": [],
-                      "body": "{\n  \"code\": 409,\n  \"message\": \"Event with this external_event_id already processed\"\n}"
+                      "body": "{\n  \"status\": \"rejected\",\n  \"accepted\": 0,\n  \"skipped\": 1,\n  \"errors\": {\n    \"0\": \"Duplicate event skipped\"\n  }\n}"
                     },
                     {
-                      "name": "Internal processing error",
+                      "name": "Kafka producer unavailable",
                       "originalRequest": {
                         "method": "POST",
                         "header": [
@@ -3888,7 +3888,7 @@
                         ],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"event_type\": \"temperature_alert\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"temperature\": 85.2,\n    \"unit\": \"celsius\"\n  }\n}",
+                          "raw": "{\n  \"source\": \"external_iot_platform\",\n  \"external_event_id\": \"evt-884422\",\n  \"device_external_id\": \"device-77\",\n  \"timestamp\": \"2026-03-12T10:15:00Z\",\n  \"payload\": {\n    \"rule_id\": 12,\n    \"metric\": \"temperature\",\n    \"value\": 85.2,\n    \"threshold\": 50,\n    \"telemetry_ts\": \"2026-03-12T10:14:00Z\",\n    \"notification\": {\n      \"channel\": \"telegram\",\n      \"message\": \"Temperature exceeded threshold\",\n      \"webhook\": \"https://webhook.site/XXXX\"\n    }\n  }\n}",
                           "options": {
                             "raw": {
                               "headerFamily": "json",
@@ -3909,8 +3909,8 @@
                           ]
                         }
                       },
-                      "status": "Internal Server Error",
-                      "code": 500,
+                      "status": "Service Unavailable",
+                      "code": 503,
                       "_postman_previewlanguage": "json",
                       "header": [
                         {
@@ -3919,7 +3919,7 @@
                         }
                       ],
                       "cookie": [],
-                      "body": "{\n  \"code\": 500,\n  \"message\": \"Unexpected error while processing external event\"\n}"
+                      "body": "{\n  \"status\": \"unavailable\",\n  \"accepted\": 0,\n  \"skipped\": 0,\n  \"errors\": {\n    \"0\": \"producer_error\"\n  }\n}"
                     }
                   ]
                 }
@@ -3946,7 +3946,7 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{baseUrl}}/api/events/?rule_id=2933&device_id=2933&acknowledged=true&severity=string&limit=50&offset=0",
+                  "raw": "{{baseUrl}}/api/events/?rule_id=8431&device_id=8431&acknowledged=false&severity=string&limit=50&offset=0",
                   "host": [
                     "{{baseUrl}}"
                   ],
@@ -3959,17 +3959,17 @@
                     {
                       "description": "Filter events by rule ID",
                       "key": "rule_id",
-                      "value": "2933"
+                      "value": "8431"
                     },
                     {
                       "description": "Filter events by trigger device ID",
                       "key": "device_id",
-                      "value": "2933"
+                      "value": "8431"
                     },
                     {
                       "description": "Filter events by acknowledgment status",
                       "key": "acknowledged",
-                      "value": "true"
+                      "value": "false"
                     },
                     {
                       "description": "Filter events by severity (currently reserved, not implemented)",
@@ -4007,7 +4007,7 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{baseUrl}}/api/events/?rule_id=2933&device_id=2933&acknowledged=true&severity=string&limit=50&offset=0",
+                      "raw": "{{baseUrl}}/api/events/?rule_id=8431&device_id=8431&acknowledged=false&severity=string&limit=50&offset=0",
                       "host": [
                         "{{baseUrl}}"
                       ],
@@ -4020,17 +4020,17 @@
                         {
                           "description": "Filter events by rule ID",
                           "key": "rule_id",
-                          "value": "2933"
+                          "value": "8431"
                         },
                         {
                           "description": "Filter events by trigger device ID",
                           "key": "device_id",
-                          "value": "2933"
+                          "value": "8431"
                         },
                         {
                           "description": "Filter events by acknowledgment status",
                           "key": "acknowledged",
-                          "value": "true"
+                          "value": "false"
                         },
                         {
                           "description": "Filter events by severity (currently reserved, not implemented)",
@@ -4060,7 +4060,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"count\": 2,\n  \"limit\": 50,\n  \"offset\": 0,\n  \"results\": [\n    {\n      \"id\": 123,\n      \"timestamp\": \"2026-01-25T09:53:00+00:00\",\n      \"created_at\": \"2026-01-25T09:55:00+00:00\",\n      \"acknowledged\": false,\n      \"rule\": {\n        \"id\": 1,\n        \"name\": \"High Temperature\"\n      },\n      \"trigger_telemetry\": {\n        \"id\": 1,\n        \"device_id\": 1,\n        \"metric\": {\n          \"temperature\": {\n            \"value\": 60,\n            \"unit\": \"celsius\"\n          }\n        },\n        \"ts\": \"2024-04-13T18:45:37Z\"\n      }\n    },\n    {\n      \"id\": 124,\n      \"timestamp\": \"2026-01-25T09:52:00+00:00\",\n      \"created_at\": \"2026-01-25T09:53:00+00:00\",\n      \"acknowledged\": true,\n      \"rule\": {\n        \"id\": 2,\n        \"name\": \"Low Battery\"\n      },\n      \"trigger_telemetry\": {\n        \"id\": 3,\n        \"device_id\": 43,\n        \"metric\": {\n          \"battery\": {\n            \"value\": 5,\n            \"unit\": \"%\"\n          }\n        },\n        \"ts\": \"2024-04-13T18:45:37Z\"\n      }\n    }\n  ]\n}"
+                  "body": "{\n  \"count\": 2,\n  \"limit\": 50,\n  \"offset\": 0,\n  \"results\": [\n    {\n      \"event_uuid\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"rule_triggered_at\": \"2026-01-25T09:53:00+00:00\",\n      \"created_at\": \"2026-01-25T09:55:00+00:00\",\n      \"acknowledged\": false,\n      \"rule\": {\n        \"id\": 1,\n        \"name\": \"High Temperature\"\n      },\n      \"trigger_telemetry\": {\n        \"id\": 1,\n        \"device_id\": 1,\n        \"metric\": {\n          \"temperature\": {\n            \"value\": 60,\n            \"unit\": \"celsius\"\n          }\n        },\n        \"ts\": \"2024-04-13T18:45:37Z\"\n      }\n    },\n    {\n      \"id\": 124,\n      \"timestamp\": \"2026-01-25T09:52:00+00:00\",\n      \"created_at\": \"2026-01-25T09:53:00+00:00\",\n      \"acknowledged\": true,\n      \"rule\": {\n        \"id\": 2,\n        \"name\": \"Low Battery\"\n      },\n      \"trigger_telemetry\": {\n        \"id\": 3,\n        \"device_id\": 43,\n        \"metric\": {\n          \"battery\": {\n            \"value\": 5,\n            \"unit\": \"%\"\n          }\n        },\n        \"ts\": \"2024-04-13T18:45:37Z\"\n      }\n    }\n  ]\n}"
                 },
                 {
                   "name": "Invalid request",
@@ -4078,7 +4078,7 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{baseUrl}}/api/events/?rule_id=2933&device_id=2933&acknowledged=true&severity=string&limit=50&offset=0",
+                      "raw": "{{baseUrl}}/api/events/?rule_id=8431&device_id=8431&acknowledged=false&severity=string&limit=50&offset=0",
                       "host": [
                         "{{baseUrl}}"
                       ],
@@ -4091,17 +4091,17 @@
                         {
                           "description": "Filter events by rule ID",
                           "key": "rule_id",
-                          "value": "2933"
+                          "value": "8431"
                         },
                         {
                           "description": "Filter events by trigger device ID",
                           "key": "device_id",
-                          "value": "2933"
+                          "value": "8431"
                         },
                         {
                           "description": "Filter events by acknowledgment status",
                           "key": "acknowledged",
-                          "value": "true"
+                          "value": "false"
                         },
                         {
                           "description": "Filter events by severity (currently reserved, not implemented)",

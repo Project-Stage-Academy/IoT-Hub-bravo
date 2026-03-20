@@ -196,7 +196,7 @@ class RuleAdmin(admin.ModelAdmin):
     def last_triggered_display(self, obj):
         from django.db.models import Max
 
-        latest = Event.objects.filter(rule=obj).aggregate(Max("rule_triggered_at"))[
+        latest = Event.objects.filter(rule=obj.id).aggregate(Max("rule_triggered_at"))[
             "rule_triggered_at__max"
         ]
         if latest:
@@ -211,7 +211,7 @@ class RuleAdmin(admin.ModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_select_related = ("rule__device_metric__device",)
+    list_select_related = ()
 
     list_display = (
         "id",
@@ -227,14 +227,24 @@ class EventAdmin(admin.ModelAdmin):
     list_filter = ("rule_triggered_at", "created_at", "rule", "acknowledged")
     search_fields = (
         "event_uuid",
-        "rule__name",
-        "rule__device_metric__device__name",
+        "rule",
         "trigger_device_serial_id",
     )
     readonly_fields = ("id", "event_uuid", "rule_triggered_at", "created_at", "trigger_context")
     date_hierarchy = "rule_triggered_at"
     ordering = ("-rule_triggered_at",)
     actions = ["mark_acknowledged", "mark_unacknowledged"]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+
+        rule_ids = set(qs.values_list("rule", flat=True))
+        rules_map = {r.id: r for r in Rule.objects.filter(id__in=rule_ids)}
+
+        for obj in qs:
+            obj._rule_obj = rules_map.get(obj.rule)
+
+        return qs
 
     @admin.display(description="Device Serial ID", ordering="trigger_device_serial_id")
     def device_link(self, obj):
@@ -243,11 +253,17 @@ class EventAdmin(admin.ModelAdmin):
             return format_html('<a href="{}">{}</a>', url, obj.trigger_device_serial_id)
         return "-"
 
-    @admin.display(description="Rule", ordering="rule__name")
+    @admin.display(description="Rule")
     def rule_link(self, obj):
+        rule = getattr(obj, "_rule_obj", None)
+
+        if rule:
+            url = reverse("admin:rules_rule_change", args=[rule.id])
+            return format_html('<a href="{}">{}</a>', url, rule.name)
+
         if obj.rule:
-            url = reverse("admin:rules_rule_change", args=[obj.rule.id])
-            return format_html('<a href="{}">{}</a>', url, obj.rule.name)
+            return f"Rule #{obj.rule} (not found)"
+
         return "-"
 
     @admin.action(description="Mark selected events as acknowledged")

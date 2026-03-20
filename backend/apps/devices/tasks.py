@@ -245,3 +245,5 @@ def produce_data(producer_type: str, data: list[dict[str, Any]]) -> None:
     )
     if errors:
         logger.warning("Producer errors: %s", errors)
+
+    producer.flush()

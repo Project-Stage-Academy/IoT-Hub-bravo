@@ -68,7 +68,7 @@ def rule(device_metric):
 
 @pytest.fixture
 def event(rule):
-    return Event.objects.create(rule=rule)
+    return Event.objects.create(rule=rule.pk)
 
 
 @pytest.fixture

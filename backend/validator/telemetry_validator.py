@@ -66,16 +66,6 @@ class TelemetryBatchValidator(BaseValidator):
             len(self._invalid_rows),
         )
 
-        logger.info("Starting duplicate checking using Redis")
-
-        self._validate_duplicates()
-
-        logger.info(
-            "Duplicate checking completed. Valid after deduplication: %d, Invalid due to duplicates: %d",
-            len(self._validated_rows),
-            len(self._invalid_rows),
-        )
-
         logger.info("Starting expired data check")
 
         self._split_expired()
@@ -84,6 +74,16 @@ class TelemetryBatchValidator(BaseValidator):
             "Expired data checking completed. Valid after validation: %d, Expired: %d",
             len(self._validated_rows),
             len(self.expired_rows),
+        )
+
+        logger.info("Starting duplicate checking using Redis")
+
+        self._validate_duplicates()
+
+        logger.info(
+            "Duplicate checking completed. Valid after deduplication: %d, Invalid due to duplicates: %d",
+            len(self._validated_rows),
+            len(self._invalid_rows),
         )
 
     def _collect_devices(self) -> None:
