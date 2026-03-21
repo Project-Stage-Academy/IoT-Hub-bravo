@@ -53,7 +53,7 @@ class RuleCache:
     def get_rules(self) -> list[Rule]:
         cache = caches["rules"]
         cache_key = f"{self.telemetry.device_serial_id}:{self.telemetry.device_metric_id}"
-        
+
         rules = cache.get(cache_key)
         if rules is None:
             rules = list(
@@ -66,47 +66,23 @@ class RuleCache:
         return rules
 
 
-class WindowCache:
-    """Fetches and caches telemetry window data, routing to Redis or PostgreSQL based on duration"""
-    def __init__(self):
-        self._cache = {}
-        self._redis_repo = RedisTelemetryRepository(redis_client)
-        self._pg_repo = PostgresTelemetryRepository()
+class TelemetryWindow:
+    """Telemetry window data, routing to Redis or PostgreSQL based on duration"""
 
-    def choose_repository(self, duration_minutes: int) -> TelemetryRepository:
+    @staticmethod
+    def choose_repository(duration_minutes: int) -> TelemetryRepository:
         if duration_minutes > MAX_REDIS_MINUTES:
-            logger.debug("Using PostgreSQL repository", extra={"duration_minutes": duration_minutes})
-            return self._pg_repo
+            logger.debug(
+                "Using PostgreSQL repository", extra={"duration_minutes": duration_minutes}
+            )
+            return PostgresTelemetryRepository()
         logger.debug("Using Redis repository", extra={"duration_minutes": duration_minutes})
-        return self._redis_repo
+        return RedisTelemetryRepository(redis_client)
 
-    def get(self, telemetry: TelemetryEvent, duration_minutes: int):
-        if duration_minutes not in self._cache:
-            repository = self.choose_repository(duration_minutes)
-            self._cache[duration_minutes] = repository.get_in_window(telemetry, duration_minutes)
-            logger.debug("Window fetched", extra={"duration_minutes": duration_minutes, "records_count": len(self._cache[duration_minutes])})
-        else:
-            logger.debug("Window cache hit", extra={"duration_minutes": duration_minutes})    
-        return self._cache[duration_minutes]
-
-    def get(self, telemetry: TelemetryEvent, duration_minutes: int):
-        if duration_minutes not in self._cache:
-            repository = self.choose_repository(duration_minutes)
-            self._cache[duration_minutes] = repository.get_in_window(
-                telemetry, duration_minutes
-            )
-            logger.debug(
-                "Window fetched",
-                extra={
-                    "duration_minutes": duration_minutes,
-                    "records_count": len(self._cache[duration_minutes]),
-                },
-            )
-        else:
-            logger.debug(
-                "Window cache hit", extra={"duration_minutes": duration_minutes}
-            )
-        return self._cache[duration_minutes]
+    @staticmethod
+    def get_window(telemetry: TelemetryEvent, duration_minutes: int) -> list[TelemetryEvent]:
+        repository = TelemetryWindow.choose_repository(duration_minutes)
+        return repository.get_in_window(telemetry, duration_minutes)
 
 
 class RuleProcessor:
@@ -133,27 +109,19 @@ class RuleProcessor:
             },
         )
 
-        window_cache = WindowCache()
-
-        rules = RuleCache(
-            telemetry=mapped_telemetry
-        ).get_rules()  # get rules from cache
+        rules = RuleCache(telemetry=mapped_telemetry).get_rules()  # get rules from cache
 
         for rule in rules:
             condition = rule.condition
             rule_type = condition.get("type", "unknown")
-            logger.debug(
-                "Evaluating rule", extra={"rule_id": rule.id, "rule_type": rule_type}
-            )
+            logger.debug("Evaluating rule", extra={"rule_id": rule.id, "rule_type": rule_type})
 
             rules_evaluated_total.labels(rule_type=rule_type).inc()
-            duration_minutes = condition.get(
-                "duration_minutes", DEFAULT_DURATION_MINUTES
-            )
+            duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
 
-            cached_window = window_cache.get(mapped_telemetry, duration_minutes)
+            telemetry_window = TelemetryWindow.get_window(mapped_telemetry, duration_minutes)
 
-            if ConditionEvaluator.evaluate(condition, mapped_telemetry, cached_window):
+            if ConditionEvaluator.evaluate(condition, mapped_telemetry, telemetry_window):
                 rules_triggered_total.labels(rule_type=rule_type).inc()
                 logger.debug(
                     "Rule triggered - dispatching action",
