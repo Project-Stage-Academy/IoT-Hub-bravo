@@ -34,6 +34,7 @@ class CeleryMessageHandler:
     def handle(self, message: MQTTJsonMessage) -> None:
         self._task.delay(
             message.payload,
+            source='mqtt',
             topic=message.topic,
             qos=message.qos,
             retain=message.retain,

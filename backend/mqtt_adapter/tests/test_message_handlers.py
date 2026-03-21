@@ -81,6 +81,7 @@ class TestCeleryMessageHandler:
 
         task.delay.assert_called_once_with(
             {'temp': 22.5},
+            source='mqtt',
             topic='sensors/temp',
             qos=2,
             retain=True,
