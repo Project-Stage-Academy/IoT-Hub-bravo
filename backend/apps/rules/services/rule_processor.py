@@ -10,9 +10,12 @@ from apps.rules.services.condition_evaluator import ConditionEvaluator
 from apps.rules.utils.rule_engine_utils import (
     map_telemetry_json_to_event,
     map_telemetry_model_to_event,
-    choose_repository,
     DEFAULT_DURATION_MINUTES,
+    MAX_REDIS_MINUTES,
     TelemetryEvent,
+    RedisTelemetryRepository,
+    PostgresTelemetryRepository,
+    TelemetryRepository,
 )
 from apps.common.redis_client import get_redis_client
 from apps.common.metrics import (
@@ -26,7 +29,8 @@ redis_client = get_redis_client()
 
 
 class TelemetryMapper:
-    """"""
+    """Maps raw telemetry input (Telemetry model, dict, or TelemetryEvent) to TelemetryEvent"""
+
     def __init__(self, telemetry: Telemetry | dict | TelemetryEvent):
         self.telemetry = telemetry
 
@@ -41,7 +45,8 @@ class TelemetryMapper:
 
 
 class RuleCache:
-    """"""
+    """Fetches and caches active rules for a given telemetry device and metric"""
+
     def __init__(self, telemetry: TelemetryEvent):
         self.telemetry = telemetry
 
@@ -62,16 +67,46 @@ class RuleCache:
 
 
 class WindowCache:
-    """"""
+    """Fetches and caches telemetry window data, routing to Redis or PostgreSQL based on duration"""
     def __init__(self):
         self._cache = {}
+        self._redis_repo = RedisTelemetryRepository(redis_client)
+        self._pg_repo = PostgresTelemetryRepository()
+
+    def choose_repository(self, duration_minutes: int) -> TelemetryRepository:
+        if duration_minutes > MAX_REDIS_MINUTES:
+            logger.debug("Using PostgreSQL repository", extra={"duration_minutes": duration_minutes})
+            return self._pg_repo
+        logger.debug("Using Redis repository", extra={"duration_minutes": duration_minutes})
+        return self._redis_repo
 
     def get(self, telemetry: TelemetryEvent, duration_minutes: int):
         if duration_minutes not in self._cache:
-            repository = choose_repository(duration_minutes, redis_client)
+            repository = self.choose_repository(duration_minutes)
             self._cache[duration_minutes] = repository.get_in_window(telemetry, duration_minutes)
+            logger.debug("Window fetched", extra={"duration_minutes": duration_minutes, "records_count": len(self._cache[duration_minutes])})
+        else:
+            logger.debug("Window cache hit", extra={"duration_minutes": duration_minutes})    
         return self._cache[duration_minutes]
 
+    def get(self, telemetry: TelemetryEvent, duration_minutes: int):
+        if duration_minutes not in self._cache:
+            repository = self.choose_repository(duration_minutes)
+            self._cache[duration_minutes] = repository.get_in_window(
+                telemetry, duration_minutes
+            )
+            logger.debug(
+                "Window fetched",
+                extra={
+                    "duration_minutes": duration_minutes,
+                    "records_count": len(self._cache[duration_minutes]),
+                },
+            )
+        else:
+            logger.debug(
+                "Window cache hit", extra={"duration_minutes": duration_minutes}
+            )
+        return self._cache[duration_minutes]
 
 
 class RuleProcessor:
@@ -88,35 +123,61 @@ class RuleProcessor:
         """
         start_time = time.perf_counter()
         results = []
-        window_cache = {}
 
         mapped_telemetry = TelemetryMapper(telemetry=telemetry).map()
+        logger.debug(
+            "Telemetry mapped",
+            extra={
+                "device_serial_id": mapped_telemetry.device_serial_id,
+                "device_metric_id": mapped_telemetry.device_metric_id,
+            },
+        )
 
-        rules = RuleCache(telemetry=mapped_telemetry).get_rules() # get rules from cache
+        window_cache = WindowCache()
+
+        rules = RuleCache(
+            telemetry=mapped_telemetry
+        ).get_rules()  # get rules from cache
 
         for rule in rules:
             condition = rule.condition
-            rule_type = condition.get('type', 'unknown')
+            rule_type = condition.get("type", "unknown")
+            logger.debug(
+                "Evaluating rule", extra={"rule_id": rule.id, "rule_type": rule_type}
+            )
 
             rules_evaluated_total.labels(rule_type=rule_type).inc()
-            duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
+            duration_minutes = condition.get(
+                "duration_minutes", DEFAULT_DURATION_MINUTES
+            )
 
-            if duration_minutes not in window_cache:
-                repository = choose_repository(duration_minutes, redis_client)
-                window_cache[duration_minutes] = repository.get_in_window(
-                    mapped_telemetry, duration_minutes
-                )
-
-            cached_window = window_cache[duration_minutes]
+            cached_window = window_cache.get(mapped_telemetry, duration_minutes)
 
             if ConditionEvaluator.evaluate(condition, mapped_telemetry, cached_window):
                 rules_triggered_total.labels(rule_type=rule_type).inc()
+                logger.debug(
+                    "Rule triggered - dispatching action",
+                    extra={"rule_id": rule.id, "rule_type": rule_type},
+                )
                 Action.dispatch_action(rule, mapped_telemetry)
                 results.append({"rule_id": rule.id, "triggered": True})
             else:
+                logger.debug(
+                    "Rule not triggered",
+                    extra={"rule_id": rule.id, "rule_type": rule_type},
+                )
                 results.append({"rule_id": rule.id, "triggered": False})
 
-        rule_processing_seconds.observe(time.perf_counter() - start_time)
+        duration = time.perf_counter() - start_time
+        rule_processing_seconds.observe(duration)
+        logger.debug(
+            "RuleProcessor finished",
+            extra={
+                "device_serial_id": mapped_telemetry.device_serial_id,
+                "rules_count": len(rules),
+                "duration_seconds": round(duration, 4),
+            },
+        )
 
         return {
             "telemetry": {

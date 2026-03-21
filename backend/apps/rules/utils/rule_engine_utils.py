@@ -169,9 +169,9 @@ class RedisTelemetryRepository(TelemetryRepository):
 
     Assumes telemetry data is stored in Redis Sorted Sets,
     where:
-        - key = telemetry:{device_serial_id}:{device_metric_id}
+        - key = telemetry:{device_serial_id}:{device_metric_id}:{unix_timestamp}
         - score = Unix timestamp
-        - value = metric value (stringified)
+        - member = metric value (stringified float)
     """
 
     def __init__(self, redis_client):
@@ -188,7 +188,7 @@ class RedisTelemetryRepository(TelemetryRepository):
         :param minutes: Window size in minutes.
         :return: List of float metric values within the window.
         """
-        key = f"telemetry:{telemetry.device_serial_id}:{telemetry.device_metric_id}"
+        key = f"telemetry:{telemetry.device_serial_id}:{telemetry.device_metric_id}:{int(telemetry.timestamp.timestamp())}"
 
         end_ts = int(telemetry.timestamp.timestamp())
         start_ts = end_ts - minutes * 60
@@ -198,18 +198,9 @@ class RedisTelemetryRepository(TelemetryRepository):
         return [
             TelemetryEvent(
                 device_serial_id=telemetry.device_serial_id,
-                value=float(
-                    value.split(":", 1)[1]
-                ),  # take second because member = {timestam:value}
+                value=float(value),
                 timestamp=datetime.fromtimestamp(float(score)),
                 device_metric_id=telemetry.device_metric_id,
             )
             for value, score in items
         ]
-
-
-def choose_repository(duration_minutes: int, redis_client) -> TelemetryRepository:
-    """Returns the repository for receiving telemetry: Redis for short intervals, PostgreSQL for long intervals (1hour>)"""
-    if duration_minutes > MAX_REDIS_MINUTES:
-        return PostgresTelemetryRepository()
-    return RedisTelemetryRepository(redis_client)
