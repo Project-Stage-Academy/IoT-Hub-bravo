@@ -86,30 +86,56 @@ def ingest_telemetry_payload(
     retry_kwargs={"max_retries": 10},
 )
 def validate_telemetry_payload(self, payload: dict | list) -> dict:
+    start_time = time.perf_counter()
+    source = 'kafka'
+
     payload = normalize_payload(payload)
 
     if payload is None:
+        ingestion_errors_total.labels(source=source, error_type='invalid_payload').inc()
+        ingestion_messages_total.labels(source=source, status='error').inc()
         return {"valid": 0, "errors": 1, "expired": 0}
 
     serializer = TelemetryBatchCreateSerializer(payload)
     serializer.is_valid()
 
     if not serializer.valid_items:
+        error_count = len(serializer.item_errors) if serializer.item_errors else len(payload)
+        ingestion_errors_total.labels(source=source, error_type='validation_error').inc(
+            error_count
+        )
+        ingestion_messages_total.labels(source=source, status='error').inc(error_count)
         logger.warning("Telemetry validation rejected: no valid items.")
+        latency = time.perf_counter() - start_time
+        ingestion_latency_seconds.labels(source=source).observe(latency)
         return serializer.item_errors
 
     validation_result = telemetry_validate(payload=serializer.valid_items)
 
+    valid_count = len(validation_result.validated_rows)
+    error_count = len(validation_result.errors)
+
+    if valid_count > 0:
+        ingestion_messages_total.labels(source=source, status='success').inc(valid_count)
+    if error_count > 0:
+        ingestion_errors_total.labels(source=source, error_type='validation_error').inc(
+            error_count
+        )
+        ingestion_messages_total.labels(source=source, status='error').inc(error_count)
+
+    latency = time.perf_counter() - start_time
+    ingestion_latency_seconds.labels(source=source).observe(latency)
+
     logger.info(
         "Validation completed: received=%d, valid=%d, invalid=%d",
         len(payload),
-        len(validation_result.validated_rows),
-        len(validation_result.errors),
+        valid_count,
+        error_count,
     )
     produce_validation_results(validation_result)
     return {
-        "valid": len(validation_result.validated_rows),
-        "errors": len(validation_result.errors),
+        "valid": valid_count,
+        "errors": error_count,
         "expired": len(validation_result.expired_rows),
     }
 
@@ -123,6 +149,8 @@ def validate_telemetry_payload(self, payload: dict | list) -> dict:
     retry_kwargs={"max_retries": 10},
 )
 def write_telemetry_payload(self, payload: dict | list) -> dict:
+    start_time = time.perf_counter()
+    source = 'kafka'
 
     payload = normalize_payload(payload)
 
@@ -132,9 +160,20 @@ def write_telemetry_payload(self, payload: dict | list) -> dict:
 
     if not valid_items:
         logger.warning("Write rejected: no valid items.")
+        latency = time.perf_counter() - start_time
+        ingestion_latency_seconds.labels(source=source).observe(latency)
         return item_errors
 
     result = telemetry_create(valid_data=valid_items)
+
+    if result.created_count > 0:
+        ingestion_messages_total.labels(source=source, status='success').inc(result.created_count)
+    write_errors = result.attempted_count - result.created_count
+    if write_errors > 0:
+        ingestion_errors_total.labels(source=source, error_type='db_error').inc(write_errors)
+
+    latency = time.perf_counter() - start_time
+    ingestion_latency_seconds.labels(source=source).observe(latency)
 
     logger.info(
         "Write completed: received=%d, created=%d",
@@ -206,3 +245,5 @@ def produce_data(producer_type: str, data: list[dict[str, Any]]) -> None:
     )
     if errors:
         logger.warning("Producer errors: %s", errors)
+
+    producer.flush()

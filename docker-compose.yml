@@ -251,6 +251,17 @@ services:
       kafka:
         condition: service_healthy
 
+  kafka-telemetry-clean-ws:
+    <<: *django_base
+    image: iot-hub-kafka-telemetry-clean-ws
+    container_name: kafka-telemetry-clean-ws
+    command: [ "python", "-m", "consumers.telemetry_clean_ws" ]
+    environment:
+      KAFKA_GROUP_ID: telemetry-clean-ws
+    depends_on:
+      kafka:
+        condition: service_healthy
+
   kafka-event-db-writer:
     <<: *django_base
     image: iot-hub-kafka-event-db-writer

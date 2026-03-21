@@ -95,7 +95,7 @@ class TestRuleProcessorCeleryIntegration:
 
         EventDBHandler().handle(payload)
 
-        events = Event.objects.filter(rule=rule)
+        events = Event.objects.filter(rule=rule.pk)
         assert events.count() == 1
         assert events.first().trigger_device_serial_id == device.serial_id
 
@@ -118,7 +118,7 @@ class TestRuleProcessorCeleryIntegration:
 
         RuleProcessor.run(telemetry)
 
-        events = Event.objects.filter(rule=rule)
+        events = Event.objects.filter(rule=rule.pk)
         assert events.count() == 0
 
     def test_e2e_inactive_rule_no_event(self):
@@ -140,5 +140,5 @@ class TestRuleProcessorCeleryIntegration:
 
         RuleProcessor.run(telemetry)
 
-        events = Event.objects.filter(rule=rule)
+        events = Event.objects.filter(rule=rule.pk)
         assert events.count() == 0

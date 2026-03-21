@@ -49,7 +49,7 @@ def _event_snapshot(event: Event) -> dict[str, Any]:
     return {
         'event_uuid': str(event.event_uuid),
         'rule_triggered_at': to_iso8601_utc(event.rule_triggered_at),
-        'rule_id': str(event.rule.pk),
+        'rule_id': str(event.rule),
         'acknowledged': event.acknowledged,
         'created_at': to_iso8601_utc(event.created_at),
         'trigger_device_serial_id': str(event.trigger_device_serial_id),

@@ -18,7 +18,7 @@ def event_list(*, query: EventListQuery) -> EventListResult:
     Returns paginated list of events with filters.
 
     Filters supported:
-    - rule_id
+    - rule
     - acknowledged
     - device_serial_id (filter by trigger device serial ID)
     - severity (reserved, ignored for now)
@@ -30,7 +30,7 @@ def event_list(*, query: EventListQuery) -> EventListResult:
     Ordering:
     - newest first (rule_triggered_at desc)
     """
-    qs = Event.objects.select_related("rule").all()
+    qs = Event.objects.all()
 
     qs = _apply_filters(qs, query=query)
 
@@ -48,7 +48,7 @@ def event_get(*, event_uuid: UUID | str) -> Event:
     """
     Get a single event by event_uuid.
     """
-    return Event.objects.select_related("rule").get(event_uuid=event_uuid)
+    return Event.objects.get(event_uuid=event_uuid)
 
 
 def event_ack(*, event_uuid: UUID | str) -> Event:
@@ -59,7 +59,7 @@ def event_ack(*, event_uuid: UUID | str) -> Event:
     - if already acknowledged: keep it true
     - return updated event
     """
-    event = Event.objects.select_related("rule").get(event_uuid=event_uuid)
+    event = Event.objects.get(event_uuid=event_uuid)
 
     if not event.acknowledged:
         event.acknowledged = True
@@ -72,7 +72,7 @@ def _apply_filters(qs: QuerySet[Event], *, query: EventListQuery) -> QuerySet[Ev
     """TODO: severity filter is reserved for future use when severity field is added to Event model"""
 
     if query.rule_id is not None:
-        qs = qs.filter(rule_id=query.rule_id)
+        qs = qs.filter(rule=query.rule_id)
 
     if query.acknowledged is not None:
         qs = qs.filter(acknowledged=query.acknowledged)

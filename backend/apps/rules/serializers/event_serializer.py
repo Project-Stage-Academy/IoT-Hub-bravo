@@ -1,8 +1,11 @@
 from dataclasses import dataclass
-from typing import Any, Optional
+from datetime import datetime
+from typing import Any, Optional, Dict
+import hashlib
+
 
 from apps.common.serializers import BaseSerializer
-
+import uuid
 
 # =========================
 # Input serializer (GET list)
@@ -14,6 +17,7 @@ class EventListQuery:
     rule_id: Optional[int] = None
     device_serial_id: Optional[str] = None
     severity: Optional[str] = None  # reserved for future
+    is_external: Optional[bool] = None
     acknowledged: Optional[bool] = None
     limit: int = 50
     offset: int = 0
@@ -24,7 +28,7 @@ class EventListQuerySerializer(BaseSerializer):
     Validates query params for GET /api/events/
 
     Query params (all optional):
-    - rule_id: int
+    - rule: int
     - device_serial_id: str  (filter by trigger device serial ID)
     - severity: str   (not supported by model yet, reserved)
     - acknowledged: bool
@@ -44,7 +48,7 @@ class EventListQuerySerializer(BaseSerializer):
             self._errors["query"] = "Query params must be an object."
             return None
 
-        rule_id = self._parse_optional_positive_int(data.get("rule_id"), field="rule_id")
+        rule_id = self._parse_optional_positive_int(data.get("rule"), field="rule")
         device_serial_id = self._parse_optional_string(
             data.get("device_serial_id"),
             field="device_serial_id",
@@ -53,6 +57,11 @@ class EventListQuerySerializer(BaseSerializer):
         acknowledged = self._parse_optional_bool(
             data.get("acknowledged"),
             field="acknowledged",
+        )
+
+        is_external = self._parse_optional_bool(
+            data.get("is_external"),
+            field="is_external",
         )
 
         limit = self._parse_optional_positive_int(data.get("limit"), field="limit")
@@ -76,6 +85,7 @@ class EventListQuerySerializer(BaseSerializer):
             device_serial_id=device_serial_id,
             severity=severity,
             acknowledged=acknowledged,
+            is_external=is_external,
             limit=limit,
             offset=offset,
         )
@@ -161,12 +171,10 @@ class EventListItemSerializer:
         return {
             "event_uuid": str(event.event_uuid),
             "rule_triggered_at": event.rule_triggered_at.isoformat(),
+            "is_external": event.is_external,
             "created_at": event.created_at.isoformat(),
             "acknowledged": event.acknowledged,
-            "rule": {
-                "id": event.rule_id,
-                "name": event.rule.name if event.rule else None,
-            },
+            "rule": event.rule,
             "trigger_device_serial_id": event.trigger_device_serial_id,
             "trigger_context": event.trigger_context,
         }
@@ -182,12 +190,147 @@ class EventDetailSerializer:
         return {
             "event_uuid": str(event.event_uuid),
             "rule_triggered_at": event.rule_triggered_at.isoformat(),
+            "is_external": event.is_external,
             "created_at": event.created_at.isoformat(),
             "acknowledged": event.acknowledged,
-            "rule": {
-                "id": event.rule_id,
-                "name": event.rule.name if event.rule else None,
-            },
+            "rule": event.rule,
             "trigger_device_serial_id": event.trigger_device_serial_id,
             "trigger_context": event.trigger_context,
         }
+
+
+@dataclass(slots=True)
+class ExternalEventRequest:
+    source: str
+    external_event_id: str
+    device_external_id: str
+    timestamp: datetime
+    payload: Dict[str, Any]
+
+
+class ExternalEventRequestSerializer(BaseSerializer):
+    """
+    Validates payload for POST /api/events/external/
+
+    Expected JSON format:
+
+    {
+      "source": "softserve-office",
+      "external_event_id": "evt-123",
+      "device_external_id": "SERIAL-123",
+      "timestamp": "2026-03-16T15:06:59Z",
+      "payload": {
+        "rule": 12,
+        "metric": "humidity",
+        "value": 150,
+        "threshold": 50,
+        "telemetry_ts": "2026-03-16T20:55:00Z",
+        "notification": {
+          "channel": "discord",
+          "message": "Critical temperature alert!",
+          "webhook": "https://webhook.site/..."
+        }
+      }
+    }
+    """
+
+    def __init__(self, data: Any):
+        super().__init__(data)
+        self._validated_data: Optional[ExternalEventRequest] = None
+
+    def _validate(self, data: Any) -> Optional[ExternalEventRequest]:
+        if not isinstance(data, dict):
+            self._errors["body"] = "Payload must be a JSON object."
+            return None
+
+        # required top-level fields
+        source = self._parse_required_string(data.get("source"), "source")
+        external_event_id = self._parse_required_string(
+            data.get("external_event_id"), "external_event_id"
+        )
+        device_external_id = self._parse_required_string(
+            data.get("device_external_id"), "device_external_id"
+        )
+        timestamp_str = data.get("timestamp")
+        timestamp = None
+        if timestamp_str:
+            try:
+                timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+            except ValueError:
+                self._errors["timestamp"] = "timestamp must be a valid ISO 8601 string."
+        else:
+            self._errors["timestamp"] = "timestamp is required."
+
+        # payload validation
+        payload = data.get("payload")
+        if not isinstance(payload, dict):
+            self._errors["payload"] = "payload must be a JSON object."
+        else:
+            # rule is required inside payload
+            rule_id = payload.get("rule")
+            if not isinstance(rule_id, int) or rule_id <= 0:
+                self._errors["payload.rule"] = "rule is required and must be a positive integer."
+
+            # optional notification
+            notification = payload.get("notification")
+            if notification is not None and not isinstance(notification, dict):
+                self._errors["payload.notification"] = (
+                    "notification must be an object if provided."
+                )
+
+        if self._errors:
+            return None
+
+        return ExternalEventRequest(
+            source=source,
+            external_event_id=external_event_id,
+            device_external_id=device_external_id,
+            timestamp=timestamp,
+            payload=payload,
+        )
+
+    def _parse_required_string(self, value: Any, field: str) -> Optional[str]:
+        if not value or not isinstance(value, str):
+            self._errors[field] = f"{field} is required and must be a string."
+            return None
+        return value.strip()
+
+
+def map_external_to_internal(validated: ExternalEventRequest) -> dict:
+    payload = validated.payload or {}
+    notification = payload.get("notification") or {}
+
+    key_string = f"{validated.source}:{validated.external_event_id}:{validated.device_external_id}"
+    event_uuid = str(uuid.UUID(hashlib.md5(key_string.encode()).hexdigest()))
+
+    telemetry_ts_raw = payload.get("telemetry_ts")
+    telemetry_ts: datetime | None = None
+    if telemetry_ts_raw:
+        try:
+            telemetry_ts = datetime.fromisoformat(telemetry_ts_raw.replace("Z", "+00:00"))
+        except ValueError:
+            telemetry_ts = None
+
+    return {
+        "event_uuid": event_uuid,
+        "rule_triggered_at": validated.timestamp.isoformat(),
+        "rule": payload.get("rule"),
+        "is_external": True,
+        "trigger_device_serial_id": validated.device_external_id,
+        "trigger_context": {
+            "metric_type": payload.get("metric"),
+            "value": payload.get("value"),
+            "telemetry_timestamp": telemetry_ts.isoformat() if telemetry_ts else None,
+        },
+        "action": {
+            "webhook": {
+                "url": notification.get("webhook"),
+                "enabled": bool(notification.get("webhook")),
+            },
+            "notification": {
+                "channel": notification.get("channel"),
+                "enabled": bool(notification.get("message") or notification.get("channel")),
+                "message": notification.get("message"),
+            },
+        },
+    }

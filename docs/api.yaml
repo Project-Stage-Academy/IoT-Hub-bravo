@@ -1538,26 +1538,33 @@ paths:
               source: "external_iot_platform"
               external_event_id: "evt-884422"
               device_external_id: "device-77"
-              event_type: "temperature_alert"
               timestamp: "2026-03-12T10:15:00Z"
               payload:
-                temperature: 85.2
-                unit: "celsius"
+                rule_id: 12
+                metric: temperature
+                value: 85.2
+                threshold: 50
+                telemetry_ts: "2026-03-12T10:14:00Z"
+                notification:
+                  channel: telegram
+                  message: "Temperature exceeded threshold"
+                  webhook: "https://webhook.site/XXXX"
 
       responses:
         "202":
-          description: Event accepted for processing
+          description: Event accepted for asynchronous processing
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExternalEventAccepted"
               example:
                 status: accepted
-                event_id: 345
-                message: Event successfully received and queued for processing
+                accepted: 1
+                skipped: 0
+                errors: {}
 
         "400":
-          description: Invalid request payload
+          description: Invalid request payload or malformed JSON
           content:
             application/json:
               schema:
@@ -1576,25 +1583,31 @@ paths:
                 code: 401
                 message: Authentication credentials were not provided
 
-        "409":
-          description: Duplicate external event
+        "422":
+          description: Event rejected (duplicate or validation failure)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
-                code: 409
-                message: Event with this external_event_id already processed
+                status: rejected
+                accepted: 0
+                skipped: 1
+                errors:
+                  "0": Duplicate event skipped
 
-        "500":
-          description: Internal processing error
+        "503":
+          description: Kafka producer unavailable
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
-                code: 500
-                message: Unexpected error while processing external event
+                status: unavailable
+                accepted: 0
+                skipped: 0
+                errors:
+                  "0": producer_error
 
 components:
   securitySchemes:
@@ -2565,8 +2578,9 @@ components:
       required:
         - source
         - external_event_id
-        - event_type
+        - device_external_id
         - timestamp
+        - payload
       properties:
 
         source:
@@ -2576,35 +2590,82 @@ components:
 
         external_event_id:
           type: string
-          description: Unique identifier of the event in the external system used for idempotency
+          description: Unique identifier of the event in the external system
           example: evt-884422
 
         device_external_id:
           type: string
-          description: Device identifier used by the external system
-
-        event_type:
-          type: string
-          description: Type of the external event
-          example: temperature_alert
+          description: External device identifier
+          example: thermostat-77
 
         timestamp:
           type: string
           format: date-time
+          description: Time when the event occurred
 
         payload:
           type: object
-          description: Raw payload received from the external system
+          description: Raw event data sent by the external system
+          properties:
+
+            rule_id:
+              type: integer
+              description: ID of the internal rule associated with the event
+              example: 12
+
+            metric:
+              type: string
+              description: Metric type
+              example: temperature
+
+            value:
+              type: number
+              description: Measured metric value
+              example: 85.2
+
+            threshold:
+              type: number
+              description: Threshold value that triggered the event
+
+            telemetry_ts:
+              type: string
+              format: date-time
+              description: Timestamp of the telemetry reading
+
+            notification:
+              type: object
+              description: Optional notification configuration
+              properties:
+
+                channel:
+                  type: string
+                  example: discord
+
+                message:
+                  type: string
+                  example: Temperature exceeded threshold
+
+                webhook:
+                  type: string
+                  format: uri
+                  example: https://discord.com/api/webhooks/XXXXX
+
           additionalProperties: true
+
       example:
         source: external_iot_platform
         external_event_id: evt-884422
         device_external_id: thermostat-77
-        event_type: temperature_alert
         timestamp: "2026-03-12T10:15:00Z"
         payload:
-          temperature: 85.2
-          unit: celsius
+          rule_id: 12
+          metric: temperature
+          value: 85.2
+          telemetry_ts: "2026-03-12T10:14:00Z"
+          notification:
+            channel: telegram
+            message: Temperature exceeded threshold
+            webhook: https://discord.com/api/webhooks/XXXXX
 
 
     ExternalEventAccepted:
@@ -2615,13 +2676,21 @@ components:
           type: string
           example: accepted
 
-        event_id:
+        accepted:
           type: integer
-          description: Internal event ID created by the system
+          description: Number of events accepted for processing
 
-        message:
-          type: string
+        skipped:
+          type: integer
+          description: Number of events skipped
+
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+
       example:
         status: accepted
-        event_id: 345
-        message: Event successfully received and queued for processing
+        accepted: 1
+        skipped: 0
+        errors: {}
