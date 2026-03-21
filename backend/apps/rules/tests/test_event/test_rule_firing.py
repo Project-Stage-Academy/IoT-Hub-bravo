@@ -160,13 +160,6 @@ def test_dispatch_action_calls_kafka_produce(rule, telemetry, mock_kafka_produce
     mock_kafka_producer.produce.assert_called_once()
 
 
-# def test_dispatch_action_calls_kafka_flush(rule, telemetry, mock_kafka_producer):
-#     """dispatch_action must call rule_event_producer.flush() to ensure delivery."""
-#     Action.dispatch_action(rule=rule, telemetry=telemetry)
-
-#     mock_kafka_producer.flush.assert_called_once()
-
-
 def test_dispatch_action_produces_with_rule_id_as_key(rule, telemetry, mock_kafka_producer):
     """Kafka message key should be the rule's primary key (as string)."""
     Action.dispatch_action(rule=rule, telemetry=telemetry)
@@ -266,19 +259,6 @@ def test_dispatch_action_logs_error_on_enqueue_failure(
 
     mock_kafka_producer.flush.assert_not_called()
     assert any("Failed to enqueue event" in r.message for r in caplog.records)
-
-
-# def test_dispatch_action_logs_error_on_flush_timeout(rule, telemetry, caplog, mock_kafka_producer):
-#     """If flush times out (returns >0 unsent messages), it must be logged as an error."""
-#     import logging
-
-#     mock_kafka_producer.produce.return_value = ProduceResult.ENQUEUED
-#     mock_kafka_producer.flush.return_value = 1
-
-#     with caplog.at_level(logging.ERROR):
-#         Action.dispatch_action(rule=rule, telemetry=telemetry)
-
-#     assert any("Flush timed out" in r.message for r in caplog.records)
 
 
 # ============================================================================

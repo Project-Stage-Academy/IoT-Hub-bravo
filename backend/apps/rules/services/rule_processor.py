@@ -25,6 +25,55 @@ logger = logging.getLogger(__name__)
 redis_client = get_redis_client()
 
 
+class TelemetryMapper:
+    """"""
+    def __init__(self, telemetry: Telemetry | dict | TelemetryEvent):
+        self.telemetry = telemetry
+
+    def map(self) -> TelemetryEvent:
+        if isinstance(self.telemetry, Telemetry):
+            return map_telemetry_model_to_event(self.telemetry)
+        elif isinstance(self.telemetry, dict):
+            return map_telemetry_json_to_event(self.telemetry)
+        elif isinstance(self.telemetry, TelemetryEvent):
+            return self.telemetry
+        raise TypeError(f"Unsupported telemetry type: {type(self.telemetry)}")
+
+
+class RuleCache:
+    """"""
+    def __init__(self, telemetry: TelemetryEvent):
+        self.telemetry = telemetry
+
+    def get_rules(self) -> list[Rule]:
+        cache = caches["rules"]
+        cache_key = f"{self.telemetry.device_serial_id}:{self.telemetry.device_metric_id}"
+        
+        rules = cache.get(cache_key)
+        if rules is None:
+            rules = list(
+                Rule.objects.filter(
+                    is_active=True,
+                    device_metric_id=self.telemetry.device_metric_id,
+                )
+            )
+            cache.set(cache_key, rules, timeout=settings.RULES_CACHE_TTL)
+        return rules
+
+
+class WindowCache:
+    """"""
+    def __init__(self):
+        self._cache = {}
+
+    def get(self, telemetry: TelemetryEvent, duration_minutes: int):
+        if duration_minutes not in self._cache:
+            repository = choose_repository(duration_minutes, redis_client)
+            self._cache[duration_minutes] = repository.get_in_window(telemetry, duration_minutes)
+        return self._cache[duration_minutes]
+
+
+
 class RuleProcessor:
     """
     Processes active rules for a given telemetry and triggers actions if conditions match.
@@ -40,28 +89,10 @@ class RuleProcessor:
         start_time = time.perf_counter()
         results = []
         window_cache = {}
-        cache_rule = caches["rules"]
 
-        if isinstance(telemetry, Telemetry):
-            mapped_telemetry = map_telemetry_model_to_event(telemetry)
-        elif isinstance(telemetry, dict):
-            mapped_telemetry = map_telemetry_json_to_event(telemetry)
-        elif isinstance(telemetry, TelemetryEvent):
-            mapped_telemetry = telemetry
-        else:
-            raise TypeError(f"Unsupported telemetry type: {type(telemetry)}")
+        mapped_telemetry = TelemetryMapper(telemetry=telemetry).map()
 
-        cache_key = f"{mapped_telemetry.device_serial_id}:{mapped_telemetry.device_metric_id}"
-
-        rules = cache_rule.get(cache_key)
-        if rules is None:
-            rules = list(
-                Rule.objects.filter(
-                    is_active=True,
-                    device_metric_id=mapped_telemetry.device_metric_id,
-                )
-            )
-            cache_rule.set(cache_key, rules, timeout=settings.RULES_CACHE_TTL)
+        rules = RuleCache(telemetry=mapped_telemetry).get_rules() # get rules from cache
 
         for rule in rules:
             condition = rule.condition

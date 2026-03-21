@@ -29,6 +29,8 @@ DECODE_JSON = config('KAFKA_CONSUMER_DECODE_JSON', default=True, cast=bool)
 CONSUME_BATCH = config('KAFKA_CONSUMER_CONSUME_BATCH', default=True, cast=bool)
 BATCH_MAX_SIZE = config('KAFKA_CONSUMER_BATCH_MAX_SIZE', default=100, cast=int)
 
+# redis conf
+TELEMETRY_KEY_TTL = config('TELEMETRY_KEY_TTL', default=3600, cast=int)
 redis_client = get_redis_client()
 
 
@@ -59,9 +61,12 @@ class RuleEvalHandler:
             ts = validated.get("ts")  # datetime obj
             device_metric_id = validated.get("device_metric_id")
 
-            key = f"telemetry:{device_serial_id}:{device_metric_id}"
-            member = f"{ts.timestamp()}:{value}"
-            redis_client.zadd(key, {member: ts.timestamp()})
+            key = f"telemetry:{device_serial_id}:{device_metric_id}:{int(ts.timestamp())}"
+            member = f"{value}"
+            score = int(ts.timestamp())
+            logger.debug("Adding to Redis: %s -> %s", key, member)
+            redis_client.zadd(key, {member: score})
+            redis_client.expire(key, TELEMETRY_KEY_TTL)
 
             telemetry = {
                 "device_serial_id": device_serial_id,
