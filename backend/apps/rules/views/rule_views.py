@@ -8,7 +8,7 @@ from django.db import IntegrityError
 from apps.rules.serializers.rule_serializers import RuleCreateSerializer, RulePatchSerializer
 from apps.rules.services.rule_service import rule_create, rule_put, rule_patch, rule_delete
 from apps.rules.models.rule import Rule
-from apps.rules.audit.rules_audit import rule_created, rule_updated, rule_deleted
+from apps.rules.audit.rules_audit import rule_created, rule_updated, rule_deleted, rule_evaluated
 from apps.devices.models.telemetry import Telemetry
 from apps.devices.models.device import Device
 from apps.devices.models.device_metric import DeviceMetric
@@ -286,5 +286,12 @@ class RuleEvaluateView(View):
                     "result": evaluation_result,
                 }
             )
+            if evaluation_result["triggered"]:
+                publish_audit_event(
+                    event=rule_evaluated(
+                        rule_id=evaluation_result["rule_id"],
+                        details=evaluation_result["telemetry"],
+                    )
+                )
 
         return JsonResponse({"status": 200, "results": results})
