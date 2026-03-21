@@ -66,23 +66,22 @@ class RuleCache:
         return rules
 
 
-class TelemetryWindow:
-    """Telemetry window data, routing to Redis or PostgreSQL based on duration"""
+def choose_repository(duration_minutes: int) -> TelemetryRepository:
+    """
+    Return the appropriate telemetry repository based on the query duration
+    Uses Redis for short windows (<= MAX_REDIS_MINUTES) and PostgreSQL for longer ones
+    """
+    if duration_minutes > MAX_REDIS_MINUTES:
+        logger.debug("Using PostgreSQL repository", extra={"duration_minutes": duration_minutes})
+        return PostgresTelemetryRepository()
+    logger.debug("Using Redis repository", extra={"duration_minutes": duration_minutes})
+    return RedisTelemetryRepository(redis_client)
 
-    @staticmethod
-    def choose_repository(duration_minutes: int) -> TelemetryRepository:
-        if duration_minutes > MAX_REDIS_MINUTES:
-            logger.debug(
-                "Using PostgreSQL repository", extra={"duration_minutes": duration_minutes}
-            )
-            return PostgresTelemetryRepository()
-        logger.debug("Using Redis repository", extra={"duration_minutes": duration_minutes})
-        return RedisTelemetryRepository(redis_client)
 
-    @staticmethod
-    def get_window(telemetry: TelemetryEvent, duration_minutes: int) -> list[TelemetryEvent]:
-        repository = TelemetryWindow.choose_repository(duration_minutes)
-        return repository.get_in_window(telemetry, duration_minutes)
+def get_window(telemetry: TelemetryEvent, duration_minutes: int) -> list[TelemetryEvent]:
+    """Get list of telemetries for that time window"""
+    repository = choose_repository(duration_minutes)
+    return repository.get_in_window(telemetry, duration_minutes)
 
 
 class RuleProcessor:
@@ -119,7 +118,7 @@ class RuleProcessor:
             rules_evaluated_total.labels(rule_type=rule_type).inc()
             duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
 
-            telemetry_window = TelemetryWindow.get_window(mapped_telemetry, duration_minutes)
+            telemetry_window = get_window(mapped_telemetry, duration_minutes)
 
             if ConditionEvaluator.evaluate(condition, mapped_telemetry, telemetry_window):
                 rules_triggered_total.labels(rule_type=rule_type).inc()
