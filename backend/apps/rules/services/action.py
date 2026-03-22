@@ -1,6 +1,8 @@
 import uuid
 import logging
 from django.utils import timezone
+import numbers
+from decimal import Decimal
 
 from apps.rules.models.rule import Rule
 from apps.rules.utils.rule_engine_utils import TelemetryEvent
@@ -50,7 +52,12 @@ class Action:
             "trigger_device_serial_id": telemetry.device_serial_id,
             "trigger_context": {
                 "device_metric_id": telemetry.device_metric_id,
-                "value": telemetry.value if telemetry.value is not None else None,
+                "value": (
+                    float(telemetry.value)
+                    if isinstance(telemetry.value, (Decimal, numbers.Number))
+                    and not isinstance(telemetry.value, bool)
+                    else telemetry.value
+                ),
                 "telemetry_timestamp": telemetry.timestamp.isoformat(),
             },
             "action": rule.action if isinstance(rule.action, dict) else {},

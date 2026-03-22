@@ -23,7 +23,6 @@ rule_eval_errors_total = Counter(
 
 # kafka conf
 CLEAN_TOPIC = config('KAFKA_TOPIC_TELEMETRY_CLEAN', default='telemetry.clean')
-EXPIRED_TOPIC = config('KAFKA_TOPIC_TELEMETRY_EXPIRED', default='telemetry.expired')
 CONSUME_TIMEOUT = config('KAFKA_CONSUMER_CONSUME_TIMEOUT', default=1.0, cast=float)
 DECODE_JSON = config('KAFKA_CONSUMER_DECODE_JSON', default=True, cast=bool)
 CONSUME_BATCH = config('KAFKA_CONSUMER_CONSUME_BATCH', default=True, cast=bool)
@@ -85,11 +84,11 @@ class RuleEvalHandler:
 
 def main():
     """Starts the Kafka rule evaluation consumer"""
-    logger.error("Kafka consumer starting on topics: %s", [CLEAN_TOPIC, EXPIRED_TOPIC])
+    logger.debug("Kafka consumer starting on topics: %s", [CLEAN_TOPIC])
 
     consumer = KafkaConsumer(
         config=ConsumerConfig(),
-        topics=[CLEAN_TOPIC, EXPIRED_TOPIC],
+        topics=[CLEAN_TOPIC],
         handler=RuleEvalHandler(evaluate_rule),
         consume_timeout=CONSUME_TIMEOUT,
         decode_json=DECODE_JSON,
