@@ -23,6 +23,7 @@ from apps.common.metrics import (
     rules_triggered_total,
     rule_processing_seconds,
 )
+from apps.rules.services.condition_evaluator import EvaluationContext
 
 logger = logging.getLogger(__name__)
 redis_client = get_redis_client()
@@ -120,7 +121,7 @@ class RuleProcessor:
 
             telemetry_window = get_window(mapped_telemetry, duration_minutes)
 
-            if ConditionEvaluator.evaluate(condition, mapped_telemetry, telemetry_window):
+            if ConditionEvaluator.evaluate(condition, context=EvaluationContext(telemetry=mapped_telemetry, telemetries_in_window=telemetry_window)):
                 rules_triggered_total.labels(rule_type=rule_type).inc()
                 logger.debug(
                     "Rule triggered - dispatching action",

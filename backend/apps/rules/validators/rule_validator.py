@@ -2,9 +2,26 @@ from typing import Any
 import json
 from django.core.exceptions import ValidationError
 
-from apps.rules.utils.rule_engine_utils import CONDITION_SCHEMAS
 from apps.rules.utils.rule_engine_utils import NotificationChannels, ActionTypes
+from apps.rules.services.condition_evaluator import (ThresholdEvaluator,
+    RateEvaluator,
+    CompositeEvaluator,
+    BooleanEvaluator,
+    StringMatchEvaluator,
+    )
 
+EVALUATOR_CLASSES = [
+    ThresholdEvaluator,
+    RateEvaluator,
+    CompositeEvaluator,
+    BooleanEvaluator,
+    StringMatchEvaluator,
+]
+
+CONDITION_SCHEMAS = {
+    cls.rule_type: cls.schema
+    for cls in EVALUATOR_CLASSES
+}
 
 def validate_condition(condition: dict[str, Any]) -> None:
     if isinstance(condition, str):
@@ -21,11 +38,11 @@ def validate_condition(condition: dict[str, Any]) -> None:
 
     schema = CONDITION_SCHEMAS[condition_type]
 
-    for field, typ in schema.get("required", {}).items():
+    for field, type in schema.get("required", {}).items():
         if field not in condition:
             raise ValidationError(f"{condition_type} requires field '{field}'")
-        if not isinstance(condition[field], typ):
-            raise ValidationError(f"'{field}' must be {typ}")
+        if not isinstance(condition[field], type):
+            raise ValidationError(f"'{field}' must be {tyep}")
 
     if "operators" in schema:
         if condition.get("operator") not in schema["operators"]:

@@ -54,30 +54,6 @@ class ActionTypes(str, Enum):
     NOTIFICATION = "notification"
 
 
-###=====================
-### Condition schemas
-###=====================
-
-
-CONDITION_SCHEMAS = {
-    "threshold": {
-        "required": {"operator": str, "value": (int, float)},
-        "operators": [">", "<", ">=", "<=", "==", "!="],
-    },
-    "rate": {
-        "required": {"duration_minutes": int, "count": int},
-        "validators": {
-            "duration_minutes": lambda x: x > 0,
-            "count": lambda x: x > 0,
-        },
-    },
-    "composite": {
-        "required": {"conditions": list, "operator": str},
-        "operators": ["AND", "OR"],
-    },
-}
-
-
 ###===========
 ### Mapping
 ###===========
