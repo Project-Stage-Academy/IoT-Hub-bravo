@@ -111,13 +111,12 @@
     "model": "rules.rule",
     "pk": 5,
     "fields": {
-      "name": "Garage Motion Detected at Night",
-      "description": "Trigger on motion detection between 22:00 and 06:00",
+      "name": "Garage Motion Detected",
+      "description": "Trigger on motion detection",
       "condition": {
         "type": "boolean",
         "value": true,
-        "operator": "==",
-        "time_restriction": "22:00-06:00"
+        "operator": "=="
       },
       "action": {
         "webhook": {
@@ -292,5 +291,64 @@
       "is_active": true,
       "device_metric": 12
     }
-  }
+  },
+  {
+    "model": "rules.rule",
+    "pk": 12,
+    "name": "Telemetry arrives 5 times",
+    "description": "Alert when temprature arrives 5 times in 1 minute",
+    "condition": {
+      "type": "rate",
+      "count": 5,
+      "duration_minutes": 1
+    },
+    "action": {
+          "webhook": {
+            "url": "https://webhook.site/a1b2c3d4-0011-4a5b-8c9d-fw-status",
+            "enabled": true
+          },
+          "notification": {
+            "channel": "email,telegram",
+            "enabled": true,
+            "message": "Device status error"
+          }
+        },
+        "is_active": true,
+    "device_metric": 1
+},
+  {
+    "model": "rules.rule",
+    "pk": 13,
+    "name": "Door Sensor Flapping",
+    "description": "Alert when temprature arrives 5 times in 1 minute",
+    "condition": {
+    "type": "composite",
+    "operator": "AND",
+    "conditions": [
+        {
+          "type": "threshold",
+          "operator": "<",
+          "value": 35
+        },
+        {
+          "type": "threshold",
+          "operator": ">",
+          "value": 20
+        }
+      ]
+    },
+    "action": {
+          "webhook": {
+            "url": "https://webhook.site/a1b2c3d4-0011-4a5b-8c9d-fw-status",
+            "enabled": true
+          },
+          "notification": {
+            "channel": "email,telegram",
+            "enabled": true,
+            "message": "Device status error"
+          }
+        },
+    "is_active": true,
+    "device_metric": 1
+}
 ]

@@ -857,24 +857,62 @@ paths:
                       enabled: true
                       message: "High temperature in {device_name}: {value}°C"
                   device_metric_id: 2
+              boolean_rule:
+                summary: Boolean rule
+                value:
+                  schema_version: 1
+                  name: "Garage Motion Detected"
+                  description: "Trigger on motion detection"
+                  is_active: true
+                  condition:
+                    type: "boolean"
+                    value: true
+                    operator: "=="
+                  action:
+                    webhook:
+                      url: "https://webhook.site/a1b2c3d4-0005-4a5b-8c9d-garage-motion"
+                      enabled: true
+                    notification:
+                      channel: "sms"
+                      enabled: true
+                      message: "Motion detected in garage ({device_name}) at {timestamp}! Check security."
+                  device_metric_id: 6
+              string_match_rule:
+                summary: String match rule
+                value:
+                  schema_version: 1
+                  name: "Gateway Status Abnormal"
+                  description: "Trigger when gateway status is not 'OK'"
+                  is_active: true
+                  condition:
+                    type: "string_match"
+                    value: "OK"
+                    operator: "!="
+                  action:
+                    webhook:
+                      url: "https://webhook.site/a1b2c3d4-0006-4a5b-8c9d-gw-status"
+                      enabled: true
+                    notification:
+                      channel: "email"
+                      enabled: true
+                      message: "Gateway status abnormal on {device_name}: current value is '{value}'"
+                  device_metric_id: 8
               composite_rule:
                 summary: Composite AND rule
                 value:
                   schema_version: 1
                   name: "Critical System State"
-                  description: "Alert when temperature high AND humidity low"
+                  description: "Alert when temperature in range temperature"
                   is_active: true
                   condition:
                     type: "composite"
                     operator: "AND"
                     conditions:
                       - type: "threshold"
-                        operator: ">"
-                        value: 35
-                        device_metric_id: 1
-                      - type: "threshold"
-                        device_metric_id: 2
                         operator: "<"
+                        value: 35
+                      - type: "threshold"
+                        operator: ">"
                         value: 20
                   action:
                     webhook:
@@ -2286,7 +2324,6 @@ components:
             message: "High temperature in {device_name}: {value}°C"
         device_metric_id: 1       
 
-
     RulePatch:
       type: object
       description: Partial update of rule fields
@@ -2357,6 +2394,58 @@ components:
         count: 10
         duration_minutes: 300
 
+    RuleConditionBoolean:
+      type: object
+      description: Boolean rule condition (true/false check)
+      properties:
+        type:
+          type: string
+          enum: [boolean]
+          example: "boolean"
+        value:
+          type: boolean
+          description: Expected boolean value
+          example: true
+        operator:
+          type: string
+          enum: ["==", "!="]
+          description: Comparison operator
+          example: "=="
+      required:
+        - type
+        - value
+        - operator
+      example:
+        type: "boolean"
+        value: true
+        operator: "=="
+
+    RuleConditionStringMatch:
+      type: object
+      description: String match rule condition
+      properties:
+        type:
+          type: string
+          enum: [string_match]
+          example: "string_match"
+        value:
+          type: string
+          description: Expected string to compare
+          example: "OK"
+        operator:
+          type: string
+          enum: ["==", "!=", "in"]
+          description: Comparison operator
+          example: "!="
+      required:
+        - type
+        - value
+        - operator
+      example:
+        type: "string_match"
+        value: "OK"
+        operator: "!="
+
     RuleConditionComposite:
       type: object
       description: Composite rule combining multiple conditions
@@ -2376,6 +2465,8 @@ components:
             oneOf:
               - $ref: '#/components/schemas/RuleConditionThreshold'
               - $ref: '#/components/schemas/RuleConditionRate'
+              - $ref: '#/components/schemas/RuleConditionStringMatch'
+              - $ref: '#/components/schemas/RuleConditionBoolean'
           minItems: 2
       required:
         - type
