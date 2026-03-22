@@ -23,7 +23,7 @@ DEFAULT_TELEMETRY_WINDOW_MINUTES = 5
 @dataclass
 class TelemetryEvent:
     device_serial_id: str
-    value: float
+    value: float | bool | str
     timestamp: datetime
     device_metric_id: int
 
@@ -156,6 +156,17 @@ class RedisTelemetryRepository(TelemetryRepository):
         """
         self.redis = redis_client
 
+    def _parse_value(self, raw: str) -> float | bool | str:
+        """Try to parse Redis value to the most appropriate type."""
+        if raw.lower() == 'true':
+            return True
+        if raw.lower() == 'false':
+            return False
+        try:
+            return float(raw)
+        except ValueError:
+            return raw
+
     def get_in_window(self, telemetry: TelemetryEvent, minutes: int):
         """
         Retrieve metric values from Redis within the specified time window
@@ -174,7 +185,7 @@ class RedisTelemetryRepository(TelemetryRepository):
         return [
             TelemetryEvent(
                 device_serial_id=telemetry.device_serial_id,
-                value=float(value),
+                value=self._parse_value(value),
                 timestamp=datetime.fromtimestamp(float(score)),
                 device_metric_id=telemetry.device_metric_id,
             )

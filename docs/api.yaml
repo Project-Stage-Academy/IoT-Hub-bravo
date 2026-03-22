@@ -2202,7 +2202,9 @@ components:
           oneOf:
             - $ref: '#/components/schemas/RuleConditionThreshold'
             - $ref: '#/components/schemas/RuleConditionRate'
-            - $ref: '#/components/schemas/RuleConditionComposite'  
+            - $ref: '#/components/schemas/RuleConditionStringMatch'
+            - $ref: '#/components/schemas/RuleConditionBoolean'
+            - $ref: '#/components/schemas/RuleConditionComposite'
           example:
             type: "threshold"
             operator: ">"
@@ -2278,7 +2280,9 @@ components:
           oneOf:
             - $ref: '#/components/schemas/RuleConditionThreshold'
             - $ref: '#/components/schemas/RuleConditionRate'
-            - $ref: '#/components/schemas/RuleConditionComposite'  
+            - $ref: '#/components/schemas/RuleConditionStringMatch'
+            - $ref: '#/components/schemas/RuleConditionBoolean'
+            - $ref: '#/components/schemas/RuleConditionComposite'
           example:
             type: "threshold"
             operator: ">"

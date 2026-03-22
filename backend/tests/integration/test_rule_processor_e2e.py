@@ -40,6 +40,13 @@ def use_locmem_rules_cache(settings):
     }
 
 
+@pytest.fixture(autouse=True)
+def clean_telemetry():
+    Telemetry.objects.all().delete()
+    yield
+    Telemetry.objects.all().delete()
+
+
 class TestRuleProcessorCeleryIntegration:
     """Integration tests for Rule Processor with Celery."""
 
@@ -54,8 +61,8 @@ class TestRuleProcessorCeleryIntegration:
         E2E: Telemetry → RuleProcessor → Action.dispatch_action → Kafka payload
              → EventDBHandler → Event saved to DB.
         """
-        device = DeviceFactory(serial_id="E2E-001")
-        metric = MetricFactory(metric_type="temperature", data_type="numeric")
+        device = DeviceFactory()
+        metric = MetricFactory(data_type="numeric")
         device_metric = DeviceMetricFactory(device=device, metric=metric)
 
         rule = RuleFactory(

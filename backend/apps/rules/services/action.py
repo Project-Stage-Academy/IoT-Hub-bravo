@@ -50,7 +50,7 @@ class Action:
             "trigger_device_serial_id": telemetry.device_serial_id,
             "trigger_context": {
                 "device_metric_id": telemetry.device_metric_id,
-                "value": float(telemetry.value) if telemetry.value is not None else None,
+                "value": telemetry.value if telemetry.value is not None else None,
                 "telemetry_timestamp": telemetry.timestamp.isoformat(),
             },
             "action": rule.action if isinstance(rule.action, dict) else {},
