@@ -3,12 +3,13 @@ import json
 from django.core.exceptions import ValidationError
 
 from apps.rules.utils.rule_engine_utils import NotificationChannels, ActionTypes
-from apps.rules.services.condition_evaluator import (ThresholdEvaluator,
+from apps.rules.services.condition_evaluator import (
+    ThresholdEvaluator,
     RateEvaluator,
     CompositeEvaluator,
     BooleanEvaluator,
     StringMatchEvaluator,
-    )
+)
 
 EVALUATOR_CLASSES = [
     ThresholdEvaluator,
@@ -18,10 +19,8 @@ EVALUATOR_CLASSES = [
     StringMatchEvaluator,
 ]
 
-CONDITION_SCHEMAS = {
-    cls.rule_type: cls.schema
-    for cls in EVALUATOR_CLASSES
-}
+CONDITION_SCHEMAS = {cls.rule_type: cls.schema for cls in EVALUATOR_CLASSES}
+
 
 def validate_condition(condition: dict[str, Any]) -> None:
     if isinstance(condition, str):

@@ -121,7 +121,12 @@ class RuleProcessor:
 
             telemetry_window = get_window(mapped_telemetry, duration_minutes)
 
-            if ConditionEvaluator.evaluate(condition, context=EvaluationContext(telemetry=mapped_telemetry, telemetries_in_window=telemetry_window)):
+            if ConditionEvaluator.evaluate(
+                condition,
+                context=EvaluationContext(
+                    telemetry=mapped_telemetry, telemetries_in_window=telemetry_window
+                ),
+            ):
                 rules_triggered_total.labels(rule_type=rule_type).inc()
                 logger.debug(
                     "Rule triggered - dispatching action",

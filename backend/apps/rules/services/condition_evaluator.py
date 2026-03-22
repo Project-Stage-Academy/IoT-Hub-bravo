@@ -89,13 +89,13 @@ class ThresholdEvaluator:
 
 class RateEvaluator:
     rule_type = "rate"
-    schema = { 
+    schema = {
         "required": {"count": int},
         "validators": {
             "count": lambda x: x > 0,
-        }
-    }    
-    
+        },
+    }
+
     @staticmethod
     def evaluate(condition: dict, context, **kwargs) -> bool:
         """
@@ -103,11 +103,11 @@ class RateEvaluator:
         Checks if the count of Telemetry events
         in the past `duration_minutes` meets or exceeds `count`.
         """
-        try: 
+        try:
             count_required = _validate_count(condition.get("count"))
-        except ValueError as e:
+        except ValueError:
             return False
-        
+
         telemetries_in_window = context.telemetries_in_window
         event_count = len(telemetries_in_window)
         logger.debug(f"Rate rule check: {event_count} events, need {count_required}")
@@ -121,20 +121,20 @@ class BooleanEvaluator:
         "required": {"value": bool},
         "operators": ["==", "!="],
     }
-    
+
     @staticmethod
     def evaluate(condition: dict, context: EvaluationContext, **kwargs) -> bool:
         try:
             expected = _get_value(condition)
         except ValueError:
             return False
- 
+
         op = condition.get("operator", "==")
         compare_func = PYTHON_OPERATOR_MAP.get(op)
         if compare_func is None:
             logger.warning(f"BooleanEvaluator: unsupported operator '{op}'")
             return False
- 
+
         actual = context.telemetry.value if context.telemetry else None
         return compare_func(actual, expected)
 
@@ -145,17 +145,17 @@ class StringMatchEvaluator:
         "required": {"value": str},
         "operators": ["==", "!=", "in"],
     }
-    
+
     @staticmethod
     def evaluate(condition: dict, context: EvaluationContext, **kwargs) -> bool:
         try:
             expected = _get_value(condition)
         except ValueError:
             return False
- 
+
         op = condition.get("operator", "==")
         actual = context.telemetry.value if context.telemetry else None
- 
+
         if op == "in":
             return str(actual) in str(expected)
         compare_func = PYTHON_OPERATOR_MAP.get(op)
@@ -173,11 +173,7 @@ class CompositeEvaluator:
     }
 
     @staticmethod
-    def evaluate(
-        condition: dict,
-        context: EvaluationContext,
-        **kwargs
-    ) -> bool:
+    def evaluate(condition: dict, context: EvaluationContext, **kwargs) -> bool:
         """
         Evaluate composite rules combining multiple subconditions with AND/OR.
         """
@@ -206,13 +202,14 @@ class CompositeEvaluator:
             logger.warning(f"Unknown operator in composite rule: {operator_type}")
             return False
 
+
 class ConditionEvaluator:
     _evaluators = {
         "threshold": ThresholdEvaluator.evaluate,
         "rate": RateEvaluator.evaluate,
         "composite": CompositeEvaluator.evaluate,
         "boolean": BooleanEvaluator.evaluate,
-        "string_match": StringMatchEvaluator.evaluate
+        "string_match": StringMatchEvaluator.evaluate,
     }
 
     @staticmethod
@@ -221,10 +218,7 @@ class ConditionEvaluator:
         ConditionEvaluator._evaluators[rule_type] = evaluator_callable
 
     @staticmethod
-    def evaluate(
-        condition: dict,
-        context: EvaluationContext
-    ) -> bool:
+    def evaluate(condition: dict, context: EvaluationContext) -> bool:
         """Evaluate rule"""
 
         rule_type = condition.get("type")
@@ -236,7 +230,4 @@ class ConditionEvaluator:
             logger.warning(f"Unknown condition type: {rule_type}")
             return False
 
-        return evaluator(
-            condition=condition,
-            context=context
-        )
+        return evaluator(condition=condition, context=context)
