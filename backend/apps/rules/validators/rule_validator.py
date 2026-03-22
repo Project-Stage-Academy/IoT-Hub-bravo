@@ -38,18 +38,18 @@ def validate_condition(condition: dict[str, Any]) -> None:
 
     schema = CONDITION_SCHEMAS[condition_type]
 
-    for field, type in schema.get("required", {}).items():
+    for field, expected_type in schema.get("required", {}).items():
         if field not in condition:
             raise ValidationError(f"{condition_type} requires field '{field}'")
-        if not isinstance(condition[field], type):
-            raise ValidationError(f"'{field}' must be {type}")
+        if not isinstance(condition[field], expected_type):
+            raise ValidationError(f"'{field}' must be {expected_type}")
 
     if "operators" in schema:
         if condition.get("operator") not in schema["operators"]:
             raise ValidationError(f"Invalid operator for {condition_type}")
 
     for field, validator in schema.get("validators", {}).items():
-        if not validator(condition[field]):
+        if field in condition and not validator(condition[field]):
             raise ValidationError(f"Invalid value for {field}")
 
     if condition_type == "composite":

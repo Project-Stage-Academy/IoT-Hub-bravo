@@ -11,12 +11,12 @@ from apps.devices.models.device_metric import DeviceMetric
 logger = logging.getLogger(__name__)
 
 
-MAX_REDIS_MINUTES = 60
+REDIS_WINDOW_MAX_MINUTES = 60
 # Threshold (in minutes) to decide whether to fetch telemetry from:
 # - Redis (short-term)
 # - PostgreSQL (long-term)
 
-DEFAULT_DURATION_MINUTES = 5
+DEFAULT_TELEMETRY_WINDOW_MINUTES = 5
 # Default time window (in minutes) for telemetry queries in the rule engine
 
 

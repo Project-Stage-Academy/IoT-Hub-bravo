@@ -10,8 +10,8 @@ from apps.rules.services.condition_evaluator import ConditionEvaluator
 from apps.rules.utils.rule_engine_utils import (
     map_telemetry_json_to_event,
     map_telemetry_model_to_event,
-    DEFAULT_DURATION_MINUTES,
-    MAX_REDIS_MINUTES,
+    DEFAULT_TELEMETRY_WINDOW_MINUTES,
+    REDIS_WINDOW_MAX_MINUTES,
     TelemetryEvent,
     RedisTelemetryRepository,
     PostgresTelemetryRepository,
@@ -70,9 +70,9 @@ class RuleCache:
 def choose_repository(duration_minutes: int) -> TelemetryRepository:
     """
     Return the appropriate telemetry repository based on the query duration
-    Uses Redis for short windows (<= MAX_REDIS_MINUTES) and PostgreSQL for longer ones
+    Uses Redis for short windows (<= REDIS_WINDOW_MAX_MINUTES) and PostgreSQL for longer ones
     """
-    if duration_minutes > MAX_REDIS_MINUTES:
+    if duration_minutes > REDIS_WINDOW_MAX_MINUTES:
         logger.debug("Using PostgreSQL repository", extra={"duration_minutes": duration_minutes})
         return PostgresTelemetryRepository()
     logger.debug("Using Redis repository", extra={"duration_minutes": duration_minutes})
@@ -117,7 +117,7 @@ class RuleProcessor:
             logger.debug("Evaluating rule", extra={"rule_id": rule.id, "rule_type": rule_type})
 
             rules_evaluated_total.labels(rule_type=rule_type).inc()
-            duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
+            duration_minutes = condition.get("duration_minutes", DEFAULT_TELEMETRY_WINDOW_MINUTES)
 
             telemetry_window = get_window(mapped_telemetry, duration_minutes)
 
@@ -138,14 +138,6 @@ class RuleProcessor:
 
         duration = time.perf_counter() - start_time
         rule_processing_seconds.observe(duration)
-        logger.debug(
-            "RuleProcessor finished",
-            extra={
-                "device_serial_id": mapped_telemetry.device_serial_id,
-                "rules_count": len(rules),
-                "duration_seconds": round(duration, 4),
-            },
-        )
 
         return {
             "telemetry": {

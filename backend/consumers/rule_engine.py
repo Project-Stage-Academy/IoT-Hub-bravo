@@ -5,7 +5,7 @@ from decouple import config
 from prometheus_client import Counter
 import django
 
-from apps.common.serializers.rule_engine_serializer import RuleEngineSerializer
+from apps.rules.serializers.rule_engine_serializer import RuleEngineSerializer
 from consumers.kafka_consumer import KafkaConsumer
 from consumers.config import ConsumerConfig
 

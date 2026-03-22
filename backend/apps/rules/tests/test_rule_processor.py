@@ -676,24 +676,3 @@ def test_composite_rule_with_empty_conditions_does_not_trigger(
     rule_processor.run(high_temperature_telemetry)
 
     mock_action.assert_not_called()
-
-
-from concurrent.futures import ThreadPoolExecutor
-from apps.rules.services.condition_evaluator import ConditionEvaluator, EvaluationContext
-
-def test_race_condition():
-    def task(i):
-        condition = {"type": "threshold"}  # немає 'value' → record_error
-        context = EvaluationContext(telemetry=None, telemetries_in_window=[])
-        ConditionEvaluator.evaluate(condition, context)
-        return ConditionEvaluator.pop_errors()
-
-    with ThreadPoolExecutor(max_workers=20) as executor:
-        all_results = list(executor.map(task, range(100)))
-
-    for i, errors in enumerate(all_results):
-        if len(errors) != 1:
-            print(f"Task {i}: expected 1 error, got {len(errors)} ← RACE CONDITION")
-
-    counts = [len(e) for e in all_results]
-    print(f"Min: {min(counts)}, Max: {max(counts)}, Total recorded: {sum(counts)}")
