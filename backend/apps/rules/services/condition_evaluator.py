@@ -90,9 +90,8 @@ class ThresholdEvaluator:
 class RateEvaluator:
     rule_type = "rate"
     schema = { 
-        "required": {"duration_minutes": int, "count": int},
+        "required": {"count": int},
         "validators": {
-            "duration_minutes": lambda x: x > 0,
             "count": lambda x: x > 0,
         }
     }    
@@ -124,7 +123,7 @@ class BooleanEvaluator:
     }
     
     @staticmethod
-    def evaluate(condition: dict, context: EvaluationContext) -> bool:
+    def evaluate(condition: dict, context: EvaluationContext, **kwargs) -> bool:
         try:
             expected = _get_value(condition)
         except ValueError:
@@ -148,7 +147,7 @@ class StringMatchEvaluator:
     }
     
     @staticmethod
-    def evaluate(condition: dict, context: EvaluationContext) -> bool:
+    def evaluate(condition: dict, context: EvaluationContext, **kwargs) -> bool:
         try:
             expected = _get_value(condition)
         except ValueError:
@@ -169,7 +168,7 @@ class StringMatchEvaluator:
 class CompositeEvaluator:
     rule_type = "composite"
     schema = {
-        "required": {"condition": list, "operator": str},
+        "required": {"conditions": list, "operator": str},
         "operators": ["AND", "OR"],
     }
 
@@ -177,6 +176,7 @@ class CompositeEvaluator:
     def evaluate(
         condition: dict,
         context: EvaluationContext,
+        **kwargs
     ) -> bool:
         """
         Evaluate composite rules combining multiple subconditions with AND/OR.

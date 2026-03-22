@@ -42,7 +42,7 @@ def validate_condition(condition: dict[str, Any]) -> None:
         if field not in condition:
             raise ValidationError(f"{condition_type} requires field '{field}'")
         if not isinstance(condition[field], type):
-            raise ValidationError(f"'{field}' must be {tyep}")
+            raise ValidationError(f"'{field}' must be {type}")
 
     if "operators" in schema:
         if condition.get("operator") not in schema["operators"]:
