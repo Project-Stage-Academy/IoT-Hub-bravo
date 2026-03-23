@@ -1,5 +1,8 @@
 from typing import Union
 import logging
+
+from apps.audit.publisher import publish_audit_event
+from apps.rules.audit.events_audit import event_created
 from apps.rules.models.event import Event
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError
@@ -9,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class EventDBHandler:
     """
-    Class resonsible for parsing JSON payloads from rule engine and creating Event objects in the database.
+    Class responsible for parsing JSON payloads from rule engine and creating Event objects in the database.
     """
 
     def handle(self, payload: Union[dict, list[dict]]) -> None:
@@ -21,7 +24,7 @@ class EventDBHandler:
 
     def _process_single(self, data: dict) -> None:
         """Processes a single event payload, creating an Event record in the database."""
-        """NOTE: Unvalid messages should not olny be logged but also sent to a dead-letter queue for later analysis. This is a TODO for future improvement."""
+        """NOTE: Unvalid messages should not only be logged but also sent to a dead-letter queue for later analysis. This is a TODO for future improvement."""
 
         try:
             event_uuid = data['event_uuid']
@@ -37,6 +40,7 @@ class EventDBHandler:
                 },
             )
             if created:
+                publish_audit_event(event=event_created(event))
                 logger.info('Successfully created Event with UUID %s', event_uuid)
             else:
                 logger.debug('Event with UUID %s already exists. Skipping creation.', event_uuid)

@@ -1,6 +1,9 @@
 import logging
 from typing import Union
 from django.db import transaction
+
+from apps.audit.publisher import publish_audit_event
+from apps.rules.audit.actions_audit import action_started
 from apps.rules.models.event_delivery import EventDelivery, DeliveryType
 from apps.rules.tasks import process_delivery_task
 from django.core.exceptions import ValidationError
@@ -80,6 +83,7 @@ class EventNotificationHandler:
             )
 
             transaction.on_commit(lambda: process_delivery_task.delay(delivery.id))
+            publish_audit_event(event=action_started(delivery))
         else:
             logger.debug(
                 f"{delivery_type} delivery for Event {event_uuid} already exists. "

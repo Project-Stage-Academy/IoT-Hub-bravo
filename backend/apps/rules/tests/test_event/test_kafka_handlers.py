@@ -20,6 +20,15 @@ from apps.rules.models import Rule
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def _disable_audit_publish():
+    with (
+        patch("apps.rules.consumers.event_notification_handler.publish_audit_event"),
+        patch("apps.rules.consumers.event_db_handler.publish_audit_event"),
+    ):
+        yield
+
+
 # ============================================================================
 # Shared fixtures
 # ============================================================================

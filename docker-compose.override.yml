@@ -10,11 +10,35 @@ services:
     volumes:
       - ./backend:/app
 
+  celery_beat:
+    volumes:
+      - ./backend:/app
+
   mqtt-adapter:
     volumes:
       - ./backend:/app
 
   kafka-telemetry-writer:
+    volumes:
+      - ./backend:/app
+
+  kafka-event-db-writer:
+    volumes:
+      - ./backend:/app
+
+  kafka-event-notification-consumer:
+    volumes:
+      - ./backend:/app
+
+  kafka-telemetry-validator:
+    volumes:
+      - ./backend:/app
+
+  kafka-rule-engine:
+    volumes:
+      - ./backend:/app
+
+  kafka-audit-writer:
     volumes:
       - ./backend:/app
 

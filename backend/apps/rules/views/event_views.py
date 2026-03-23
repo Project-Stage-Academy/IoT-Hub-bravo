@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 from typing import Any, Optional
 from uuid import UUID
@@ -9,6 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from apps.rules.models.event import Event
+from apps.rules.audit.events_audit import event_acknowledged
 from apps.rules.serializers.event_serializer import (
     EventListQuerySerializer,
     EventListItemSerializer,
@@ -25,6 +24,7 @@ from apps.rules.services.event_service import (
 )
 from apps.users.decorators import jwt_required, role_required
 from apps.rules.producers import get_external_events_producer
+from apps.audit.publisher import publish_audit_event
 
 
 @csrf_exempt
@@ -92,6 +92,7 @@ def ack_event(request, event_uuid: UUID):
     except Event.DoesNotExist:
         return JsonResponse({"detail": "Event not found."}, status=404)
 
+    publish_audit_event(event=event_acknowledged(request.user.pk, event))
     return JsonResponse(EventDetailSerializer.to_dict(event), status=200)
 
 
