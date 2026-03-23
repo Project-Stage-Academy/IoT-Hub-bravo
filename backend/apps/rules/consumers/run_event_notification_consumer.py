@@ -13,7 +13,9 @@ from consumers.config import ConsumerConfig  # noqa: E402
 
 from apps.rules.consumers.event_notification_handler import EventNotificationHandler  # noqa: E402
 
-TOPIC = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
+INTERNAL_EVENTS = config('KAFKA_TOPIC_RULE_EVENTS', default='rules.events.triggered')
+EXTERNAL_EVENTS = config('KAFKA_TOPIC_RULE_EXTERNAL_EVENTS', default='rules.events.external')
+
 GROUP_ID = config('KAFKA_GROUP_EVENT_NOTIFICATION', default='event-notification-group')
 
 
@@ -29,11 +31,13 @@ def main():
 
     consumer_config = ConsumerConfig(group_id=GROUP_ID, enable_auto_commit=False)
 
-    logger.info(f"Starting Notification Consumer... Group: {GROUP_ID}, Topic: {TOPIC}")
+    logger.info(
+        f"Starting Notification Consumer... Group: {GROUP_ID}, Topic: {INTERNAL_EVENTS}, {EXTERNAL_EVENTS}"
+    )
 
     consumer = KafkaConsumer(
         config=consumer_config,
-        topics=[TOPIC],
+        topics=[INTERNAL_EVENTS, EXTERNAL_EVENTS],
         handler=EventNotificationHandler(),
         decode_json=True,
         consume_batch=True,
