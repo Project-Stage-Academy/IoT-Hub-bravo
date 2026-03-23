@@ -9,9 +9,12 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.db import transaction
 
-from conf.utils.logging_context import task_id_var, task_name_var
+from apps.audit.publisher import publish_audit_event
+from apps.rules.audit.actions_audit import action_rejected, action_succeeded
+from apps.rules.audit.rules_audit import rule_evaluated
 from apps.rules.services.rule_processor import RuleProcessor
 from apps.rules.models.event_delivery import EventDelivery, Status, DeliveryType
+from conf.utils.logging_context import task_id_var, task_name_var
 
 logger_celery = get_task_logger(__name__)
 
@@ -23,6 +26,7 @@ def evaluate_rule(telemetry: dict):
     task_name_var.set(current_task.name)
 
     start_time = time.perf_counter()
+
     logger_celery.debug(
         "Task started",
         extra={
@@ -32,7 +36,17 @@ def evaluate_rule(telemetry: dict):
     )
 
     try:
-        RuleProcessor.run(telemetry)
+        res = RuleProcessor.run(telemetry)
+
+        for eval_res in res.get("results", []):
+            if eval_res.get("triggered"):
+                publish_audit_event(
+                    event=rule_evaluated(
+                        rule_id=eval_res.get("rule_id"),
+                        details=res.get("telemetry"),
+                    )
+                )
+
     except Exception as e:
         logger_celery.error(
             "Task failed",
@@ -69,6 +83,7 @@ def process_delivery_task(self, delivery_id: int):
                 logger_celery.warning("Delivery %s reached max attempts. Skipping.", delivery_id)
                 delivery.status = Status.REJECTED
                 delivery.save(update_fields=['status', 'updated_at'])
+                publish_audit_event(event=action_rejected(delivery))
                 return
 
             if delivery.status == Status.PROCESSING:
@@ -106,6 +121,7 @@ def process_delivery_task(self, delivery_id: int):
         delivery.status = Status.SUCCESS
         delivery.error_message = None
         delivery.save(update_fields=['status', 'response_status', 'error_message', 'updated_at'])
+        publish_audit_event(event=action_succeeded(delivery))
 
         logger_celery.info("Delivery %s completed successfully.", delivery_id)
 
@@ -119,6 +135,7 @@ def process_delivery_task(self, delivery_id: int):
         if delivery.attempts >= delivery.max_attempts:
             delivery.status = Status.REJECTED
             delivery.save(update_fields=['status', 'error_message', 'updated_at'])
+            publish_audit_event(event=action_rejected(delivery))
             logger_celery.error(
                 "Delivery %s REJECTED after %s attempts.", delivery_id, delivery.max_attempts
             )
