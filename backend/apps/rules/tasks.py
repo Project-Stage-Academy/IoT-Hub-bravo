@@ -1,65 +1,69 @@
 import requests
+import time
 from datetime import timedelta
-
+from celery import shared_task, current_task
+from celery.utils.log import get_task_logger
 from django.utils import timezone
 from django.db.models import Q
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db import transaction
-from celery import shared_task
-from celery.utils.log import get_task_logger
 
 from apps.audit.publisher import publish_audit_event
-from apps.devices.models.telemetry import Telemetry
 from apps.rules.audit.actions_audit import action_rejected, action_succeeded
 from apps.rules.audit.rules_audit import rule_evaluated
 from apps.rules.services.rule_processor import RuleProcessor
 from apps.rules.models.event_delivery import EventDelivery, Status, DeliveryType
+from conf.utils.logging_context import task_id_var, task_name_var
 
 logger_celery = get_task_logger(__name__)
 
 
-@shared_task(name="check_system_status")
-def check_system_status():
-    """Test example"""
-    logger_celery.info("--- CELERY BEAT IS WORKING: System status checked! ---")
-    return "Success"
-
-
-@shared_task(name="run_rule_processor")
-def run_rule_processor(telemetry_id: int):
-    """
-    Celery task to run RuleProcessor asynchronously on the given telemetry
-    """
-    try:
-        telemetry = Telemetry.objects.get(id=telemetry_id)
-    except Telemetry.DoesNotExist:
-        logger_celery.warning("Telemetry not found", extra={"telemetry_id": telemetry_id})
-
-    RuleProcessor.run(telemetry)
-
-
 @shared_task
 def evaluate_rule(telemetry: dict):
-    import time
+    """Celery task to run RuleProcessor asynchronously on the given telemetry"""
+    task_id_var.set(current_task.request.id)
+    task_name_var.set(current_task.name)
 
-    t = time.perf_counter()
-    logger_celery.warning(
-        f"[TASK START] {telemetry['device_serial_id']} {telemetry['metric_type']}"
+    start_time = time.perf_counter()
+
+    logger_celery.debug(
+        "Task started",
+        extra={
+            "device_serial_id": telemetry.get("device_serial_id"),
+            "device_metric_id": telemetry.get("device_metric_id"),
+        },
     )
 
-    res = RuleProcessor.run(telemetry)
+    try:
+        res = RuleProcessor.run(telemetry)
 
-    for eval_res in res["results"]:
-        if eval_res["triggered"]:
-            publish_audit_event(
-                event=rule_evaluated(
-                    rule_id=eval_res["rule_id"],
-                    details=res["telemetry"],
+        for eval_res in res.get("results", []):
+            if eval_res.get("triggered"):
+                publish_audit_event(
+                    event=rule_evaluated(
+                        rule_id=eval_res.get("rule_id"),
+                        details=res.get("telemetry"),
+                    )
                 )
-            )
 
-    logger_celery.warning(f"[TASK DONE] runtime={time.perf_counter() - t:.4f}s")
+    except Exception as e:
+        logger_celery.error(
+            "Task failed",
+            extra={
+                "device_serial_id": telemetry.get("device_serial_id"),
+                "error": str(e),
+            },
+        )
+        raise
+
+    logger_celery.debug(
+        "Task finished",
+        extra={
+            "device_serial_id": telemetry.get("device_serial_id"),
+            "duration_seconds": round(time.perf_counter() - start_time, 4),
+        },
+    )
 
 
 @shared_task(bind=True, max_retries=None)

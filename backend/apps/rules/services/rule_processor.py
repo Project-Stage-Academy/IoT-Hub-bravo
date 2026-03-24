@@ -5,15 +5,17 @@ from django.conf import settings
 
 from apps.rules.models.rule import Rule
 from apps.devices.models.telemetry import Telemetry
-from apps.devices.models.device_metric import DeviceMetric
 from apps.rules.services.action import Action
 from apps.rules.services.condition_evaluator import ConditionEvaluator
 from apps.rules.utils.rule_engine_utils import (
     map_telemetry_json_to_event,
     map_telemetry_model_to_event,
-    choose_repository,
-    DEFAULT_DURATION_MINUTES,
+    DEFAULT_TELEMETRY_WINDOW_MINUTES,
+    REDIS_WINDOW_MAX_MINUTES,
     TelemetryEvent,
+    RedisTelemetryRepository,
+    PostgresTelemetryRepository,
+    TelemetryRepository,
 )
 from apps.common.redis_client import get_redis_client
 from apps.common.metrics import (
@@ -21,9 +23,66 @@ from apps.common.metrics import (
     rules_triggered_total,
     rule_processing_seconds,
 )
+from apps.rules.services.condition_evaluator import EvaluationContext
 
 logger = logging.getLogger(__name__)
 redis_client = get_redis_client()
+
+
+class TelemetryMapper:
+    """Maps raw telemetry input (Telemetry model, dict, or TelemetryEvent) to TelemetryEvent"""
+
+    def __init__(self, telemetry: Telemetry | dict | TelemetryEvent):
+        self.telemetry = telemetry
+
+    def map(self) -> TelemetryEvent:
+        if isinstance(self.telemetry, Telemetry):
+            return map_telemetry_model_to_event(self.telemetry)
+        elif isinstance(self.telemetry, dict):
+            return map_telemetry_json_to_event(self.telemetry)
+        elif isinstance(self.telemetry, TelemetryEvent):
+            return self.telemetry
+        raise TypeError(f"Unsupported telemetry type: {type(self.telemetry)}")
+
+
+class RuleCache:
+    """Fetches and caches active rules for a given telemetry device and metric"""
+
+    def __init__(self, telemetry: TelemetryEvent):
+        self.telemetry = telemetry
+
+    def get_rules(self) -> list[Rule]:
+        cache = caches["rules"]
+        cache_key = f"{self.telemetry.device_serial_id}:{self.telemetry.device_metric_id}"
+
+        rules = cache.get(cache_key)
+        if rules is None:
+            rules = list(
+                Rule.objects.filter(
+                    is_active=True,
+                    device_metric_id=self.telemetry.device_metric_id,
+                )
+            )
+            cache.set(cache_key, rules, timeout=settings.RULES_CACHE_TTL)
+        return rules
+
+
+def choose_repository(duration_minutes: int) -> TelemetryRepository:
+    """
+    Return the appropriate telemetry repository based on the query duration
+    Uses Redis for short windows (<= REDIS_WINDOW_MAX_MINUTES) and PostgreSQL for longer ones
+    """
+    if duration_minutes > REDIS_WINDOW_MAX_MINUTES:
+        logger.debug("Using PostgreSQL repository", extra={"duration_minutes": duration_minutes})
+        return PostgresTelemetryRepository()
+    logger.debug("Using Redis repository", extra={"duration_minutes": duration_minutes})
+    return RedisTelemetryRepository(redis_client)
+
+
+def get_window(telemetry: TelemetryEvent, duration_minutes: int) -> list[TelemetryEvent]:
+    """Get list of telemetries for that time window"""
+    repository = choose_repository(duration_minutes)
+    return repository.get_in_window(telemetry, duration_minutes)
 
 
 class RuleProcessor:
@@ -40,58 +99,50 @@ class RuleProcessor:
         """
         start_time = time.perf_counter()
         results = []
-        window_cache = {}
-        cache_rule = caches["rules"]
 
-        if isinstance(telemetry, Telemetry):
-            mapped_telemetry = map_telemetry_model_to_event(telemetry)
-        elif isinstance(telemetry, dict):
-            mapped_telemetry = map_telemetry_json_to_event(telemetry)
-        elif isinstance(telemetry, TelemetryEvent):
-            mapped_telemetry = telemetry
+        mapped_telemetry = TelemetryMapper(telemetry=telemetry).map()
+        logger.debug(
+            "Telemetry mapped",
+            extra={
+                "device_serial_id": mapped_telemetry.device_serial_id,
+                "device_metric_id": mapped_telemetry.device_metric_id,
+            },
+        )
 
-        cache_key = f"{mapped_telemetry.device_serial_id}:{mapped_telemetry.metric_type}"
-
-        rules = cache_rule.get(cache_key)
-        if rules is None:
-            device_metrics = DeviceMetric.objects.filter(
-                device__serial_id=mapped_telemetry.device_serial_id,
-                metric__metric_type=mapped_telemetry.metric_type,
-            )
-            rules = list(
-                Rule.objects.filter(
-                    is_active=True, device_metric__in=device_metrics
-                ).select_related('device_metric__metric')
-            )
-
-            cache_rule.set(cache_key, rules, timeout=settings.RULES_CACHE_TTL)
+        rules = RuleCache(telemetry=mapped_telemetry).get_rules()  # get rules from cache
 
         for rule in rules:
             condition = rule.condition
-            device_metric = rule.device_metric
-            rule_type = condition.get('type', 'unknown')
+            rule_type = condition.get("type", "unknown")
+            logger.debug("Evaluating rule", extra={"rule_id": rule.id, "rule_type": rule_type})
 
             rules_evaluated_total.labels(rule_type=rule_type).inc()
-            duration_minutes = condition.get("duration_minutes", DEFAULT_DURATION_MINUTES)
+            duration_minutes = condition.get("duration_minutes", DEFAULT_TELEMETRY_WINDOW_MINUTES)
 
-            if duration_minutes not in window_cache:
-                repository = choose_repository(duration_minutes, redis_client)
-                window_cache[duration_minutes] = repository.get_in_window(
-                    mapped_telemetry, duration_minutes
-                )
-
-            cached_window = window_cache[duration_minutes]
+            telemetry_window = get_window(mapped_telemetry, duration_minutes)
 
             if ConditionEvaluator.evaluate(
-                condition, device_metric, mapped_telemetry, cached_window
+                condition,
+                context=EvaluationContext(
+                    telemetry=mapped_telemetry, telemetries_in_window=telemetry_window
+                ),
             ):
                 rules_triggered_total.labels(rule_type=rule_type).inc()
+                logger.debug(
+                    "Rule triggered - dispatching action",
+                    extra={"rule_id": rule.id, "rule_type": rule_type},
+                )
                 Action.dispatch_action(rule, mapped_telemetry)
                 results.append({"rule_id": rule.id, "triggered": True})
             else:
+                logger.debug(
+                    "Rule not triggered",
+                    extra={"rule_id": rule.id, "rule_type": rule_type},
+                )
                 results.append({"rule_id": rule.id, "triggered": False})
 
-        rule_processing_seconds.observe(time.perf_counter() - start_time)
+        duration = time.perf_counter() - start_time
+        rule_processing_seconds.observe(duration)
 
         return {
             "telemetry": {

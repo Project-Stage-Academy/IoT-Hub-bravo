@@ -1,6 +1,8 @@
 import uuid
 import logging
 from django.utils import timezone
+import numbers
+from decimal import Decimal
 
 from apps.rules.models.rule import Rule
 from apps.rules.utils.rule_engine_utils import TelemetryEvent
@@ -49,8 +51,13 @@ class Action:
             "rule_id": rule.id,
             "trigger_device_serial_id": telemetry.device_serial_id,
             "trigger_context": {
-                "metric_type": telemetry.metric_type,
-                "value": float(telemetry.value) if telemetry.value is not None else None,
+                "device_metric_id": telemetry.device_metric_id,
+                "value": (
+                    float(telemetry.value)
+                    if isinstance(telemetry.value, (Decimal, numbers.Number))
+                    and not isinstance(telemetry.value, bool)
+                    else telemetry.value
+                ),
                 "telemetry_timestamp": telemetry.timestamp.isoformat(),
             },
             "action": rule.action if isinstance(rule.action, dict) else {},
@@ -71,14 +78,6 @@ class Action:
         result = producer.produce(payload=payload, key=str(rule.id))
 
         if result == ProduceResult.ENQUEUED:
-            unsent_messages = producer.flush(timeout=10.0)
-
-            if unsent_messages > 0:
-                logger.error(
-                    f"Flush timed out! {unsent_messages} messages failed to reach Kafka "
-                    f"for Rule {rule.id}."
-                )
-            else:
-                logger.info(f"Event for Rule {rule.id} successfully delivered to Kafka.")
+            logger.info(f"Event for Rule {rule.id} successfully delivered to Kafka.")
         else:
             logger.error(f"Failed to enqueue event for Rule {rule.id}. Reason: {result.name}")

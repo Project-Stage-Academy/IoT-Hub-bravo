@@ -4,6 +4,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.core.cache import caches
 import uuid
+from unittest.mock import MagicMock
 
 from apps.users.models import User
 from apps.devices.models import Device, Metric, DeviceMetric, Telemetry
@@ -12,6 +13,31 @@ from apps.rules.services.rule_processor import RuleProcessor
 from apps.rules.services.condition_evaluator import ConditionEvaluator
 from apps.rules.services.action import Action
 from apps.rules.utils.rule_engine_utils import PostgresTelemetryRepository
+from apps.rules.services.condition_evaluator import (
+    BooleanEvaluator,
+    StringMatchEvaluator,
+    EvaluationContext,
+)
+
+
+# ============================================================================
+# Helpers
+# ============================================================================
+
+
+def make_context(value, telemetries_in_window=None):
+    """Build a minimal EvaluationContext with the given telemetry value."""
+    telemetry = MagicMock()
+    telemetry.value = value
+    return EvaluationContext(
+        telemetry=telemetry,
+        telemetries_in_window=telemetries_in_window or [],
+    )
+
+
+def none_context():
+    """Build an EvaluationContext where telemetry is None."""
+    return EvaluationContext(telemetry=None, telemetries_in_window=[])
 
 
 # ============================================================================
@@ -676,3 +702,184 @@ def test_composite_rule_with_empty_conditions_does_not_trigger(
     rule_processor.run(high_temperature_telemetry)
 
     mock_action.assert_not_called()
+
+
+# ============================================================================
+# Tests — BooleanEvaluator
+# ============================================================================
+
+
+class TestBooleanEvaluator:
+
+    # operator "=="
+
+    def test_equal_true_matches_true(self):
+        condition = {"value": True, "operator": "=="}
+        assert BooleanEvaluator.evaluate(condition, make_context(True)) is True
+
+    def test_equal_false_matches_false(self):
+        condition = {"value": False, "operator": "=="}
+        assert BooleanEvaluator.evaluate(condition, make_context(False)) is True
+
+    def test_equal_true_does_not_match_false(self):
+        condition = {"value": True, "operator": "=="}
+        assert BooleanEvaluator.evaluate(condition, make_context(False)) is False
+
+    def test_equal_false_does_not_match_true(self):
+        condition = {"value": False, "operator": "=="}
+        assert BooleanEvaluator.evaluate(condition, make_context(True)) is False
+
+    # operator "!="
+
+    def test_not_equal_true_vs_false(self):
+        condition = {"value": True, "operator": "!="}
+        assert BooleanEvaluator.evaluate(condition, make_context(False)) is True
+
+    def test_not_equal_false_vs_true(self):
+        condition = {"value": False, "operator": "!="}
+        assert BooleanEvaluator.evaluate(condition, make_context(True)) is True
+
+    def test_not_equal_same_value_does_not_trigger(self):
+        condition = {"value": True, "operator": "!="}
+        assert BooleanEvaluator.evaluate(condition, make_context(True)) is False
+
+    # default operator (no "operator" key)
+
+    def test_default_operator_is_equal(self):
+        condition = {"value": True}  # no "operator" key
+        assert BooleanEvaluator.evaluate(condition, make_context(True)) is True
+
+    def test_default_operator_does_not_match_opposite(self):
+        condition = {"value": True}
+        assert BooleanEvaluator.evaluate(condition, make_context(False)) is False
+
+    # unsupported operator
+
+    def test_unsupported_operator_returns_false(self):
+        condition = {"value": True, "operator": ">"}
+        assert BooleanEvaluator.evaluate(condition, make_context(True)) is False
+
+    def test_invalid_operator_string_returns_false(self):
+        condition = {"value": True, "operator": "INVALID"}
+        assert BooleanEvaluator.evaluate(condition, make_context(True)) is False
+
+    # missing / bad value
+
+    def test_missing_value_key_returns_false(self):
+        condition = {"operator": "=="}  # no "value"
+        assert BooleanEvaluator.evaluate(condition, make_context(True)) is False
+
+    def test_none_telemetry_returns_false(self):
+        condition = {"value": True, "operator": "=="}
+        assert BooleanEvaluator.evaluate(condition, none_context()) is False
+
+    def test_none_telemetry_not_equal_true_returns_true(self):
+        """None != True should be truthy when operator is !=."""
+        condition = {"value": True, "operator": "!="}
+        assert BooleanEvaluator.evaluate(condition, none_context()) is True
+
+
+# ============================================================================
+# Tests — StringMatchEvaluator
+# ============================================================================
+
+
+class TestStringMatchEvaluator:
+
+    # operator "=="
+
+    def test_equal_matching_strings(self):
+        condition = {"value": "active", "operator": "=="}
+        assert StringMatchEvaluator.evaluate(condition, make_context("active")) is True
+
+    def test_equal_non_matching_strings(self):
+        condition = {"value": "active", "operator": "=="}
+        assert StringMatchEvaluator.evaluate(condition, make_context("inactive")) is False
+
+    def test_equal_is_case_sensitive(self):
+        condition = {"value": "Active", "operator": "=="}
+        assert StringMatchEvaluator.evaluate(condition, make_context("active")) is False
+
+    # operator "!="
+
+    def test_not_equal_different_strings(self):
+        condition = {"value": "active", "operator": "!="}
+        assert StringMatchEvaluator.evaluate(condition, make_context("inactive")) is True
+
+    def test_not_equal_same_string_does_not_trigger(self):
+        condition = {"value": "active", "operator": "!="}
+        assert StringMatchEvaluator.evaluate(condition, make_context("active")) is False
+
+    # operator "in"
+
+    def test_in_operator_substring_found(self):
+        condition = {"value": "error in stream", "operator": "in"}
+        assert StringMatchEvaluator.evaluate(condition, make_context("error")) is True
+
+    def test_in_operator_substring_not_found(self):
+        condition = {"value": "all systems go", "operator": "in"}
+        assert StringMatchEvaluator.evaluate(condition, make_context("error")) is False
+
+    def test_in_operator_full_match_works(self):
+        condition = {"value": "critical", "operator": "in"}
+        assert StringMatchEvaluator.evaluate(condition, make_context("critical")) is True
+
+    def test_in_operator_empty_actual_matches_any_expected(self):
+        """Empty string is a substring of any string (Python built-in behaviour).
+        This may be unexpected business logic - consider validating actual before eval"""
+        condition = {"value": "something", "operator": "in"}
+        assert StringMatchEvaluator.evaluate(condition, make_context("")) is True
+
+    def test_in_operator_actual_in_empty_string_expected(self):
+        """Empty expected string contains empty string, but not non-empty actual."""
+        condition = {"value": "", "operator": "in"}
+        assert StringMatchEvaluator.evaluate(condition, make_context("anything")) is False
+
+    # default operator (no "operator" key)
+
+    def test_default_operator_is_equal(self):
+        condition = {"value": "ok"}  # no "operator" key
+        assert StringMatchEvaluator.evaluate(condition, make_context("ok")) is True
+
+    def test_default_operator_does_not_match_different_value(self):
+        condition = {"value": "ok"}
+        assert StringMatchEvaluator.evaluate(condition, make_context("fail")) is False
+
+    # coercion to string
+
+    def test_numeric_actual_coerced_to_string_for_equal(self):
+        condition = {"value": "42", "operator": "=="}
+        assert StringMatchEvaluator.evaluate(condition, make_context(42)) is True
+
+    def test_bool_actual_coerced_to_string_for_equal(self):
+        condition = {"value": "True", "operator": "=="}
+        assert StringMatchEvaluator.evaluate(condition, make_context(True)) is True
+
+    def test_numeric_actual_coerced_for_in_operator(self):
+        condition = {"value": "reading 42 sensors", "operator": "in"}
+        assert StringMatchEvaluator.evaluate(condition, make_context(42)) is True
+
+    # unsupported operator
+
+    def test_unsupported_operator_returns_false(self):
+        condition = {"value": "ok", "operator": ">"}
+        assert StringMatchEvaluator.evaluate(condition, make_context("ok")) is False
+
+    def test_invalid_operator_string_returns_false(self):
+        condition = {"value": "ok", "operator": "INVALID"}
+        assert StringMatchEvaluator.evaluate(condition, make_context("ok")) is False
+
+    # missing / bad value
+
+    def test_missing_value_key_returns_false(self):
+        condition = {"operator": "=="}
+        assert StringMatchEvaluator.evaluate(condition, make_context("ok")) is False
+
+    def test_none_telemetry_equal_none_string(self):
+        """str(None) == 'None' — equality against literal 'None' should pass."""
+        condition = {"value": "None", "operator": "=="}
+        assert StringMatchEvaluator.evaluate(condition, none_context()) is True
+
+    def test_none_telemetry_not_equal_real_string(self):
+        condition = {"value": "active", "operator": "=="}
+        assert StringMatchEvaluator.evaluate(condition, none_context()) is False

@@ -4,6 +4,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db import IntegrityError
+from django.core.exceptions import ValidationError
 
 from apps.rules.serializers.rule_serializers import RuleCreateSerializer, RulePatchSerializer
 from apps.rules.services.rule_service import rule_create, rule_put, rule_patch, rule_delete
@@ -125,11 +126,26 @@ class RuleView(View):
                 return JsonResponse(
                     {
                         "code": 400,
-                        "message": "Rule with this name already exists for this device_metric.",
+                        "message": "Rule with this name already exists for this device_metric",
                     },
                     status=400,
                 )
-            raise
+            else:
+                return JsonResponse(
+                    {
+                        "code": 400,
+                        "message": str(e),
+                    },
+                    status=400,
+                )
+        except ValidationError as e:
+            return JsonResponse(
+                {
+                    "code": 400,
+                    "message": str(e),
+                },
+                status=400,
+            )
 
         publish_audit_event(event=rule_created(user.pk, rule))
         data = {
@@ -165,7 +181,16 @@ class RuleView(View):
         if not serializer.is_valid():
             return JsonResponse({"code": 400, "message": serializer.errors}, status=400)
 
-        rule_new = rule_put(rule_id=rule_id, rule_data=serializer.validated_data)
+        try:
+            rule_new = rule_put(rule_id=rule_id, rule_data=serializer.validated_data)
+        except ValidationError as e:
+            return JsonResponse(
+                {
+                    "code": 400,
+                    "message": str(e),
+                },
+                status=400,
+            )
 
         publish_audit_event(event=rule_updated(user.pk, rule_old, rule_new))
         data = {
@@ -201,7 +226,17 @@ class RuleView(View):
         if not serializer.is_valid():
             return JsonResponse({"code": 400, "message": serializer.errors}, status=400)
 
-        rule_new = rule_patch(rule_id=rule_id, rule_data=serializer.validated_data)
+        try:
+            rule_new = rule_patch(rule_id=rule_id, rule_data=serializer.validated_data)
+        except ValidationError as e:
+            return JsonResponse(
+                {
+                    "code": 400,
+                    "message": str(e),
+                },
+                status=400,
+            )
+
         publish_audit_event(event=rule_updated(user.pk, rule_old, rule_new))
 
         return JsonResponse({"status": 200, "rule_id": rule_new.id}, status=200)

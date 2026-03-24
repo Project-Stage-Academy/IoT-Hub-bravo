@@ -3,6 +3,7 @@ from datetime import timedelta, datetime
 from abc import ABC, abstractmethod
 from typing import Tuple, List
 import logging
+from enum import Enum
 
 from apps.devices.models.telemetry import Telemetry
 from apps.devices.models.device_metric import DeviceMetric
@@ -10,21 +11,21 @@ from apps.devices.models.device_metric import DeviceMetric
 logger = logging.getLogger(__name__)
 
 
-MAX_REDIS_MINUTES = 60
+REDIS_WINDOW_MAX_MINUTES = 60
 # Threshold (in minutes) to decide whether to fetch telemetry from:
 # - Redis (short-term)
 # - PostgreSQL (long-term)
 
-DEFAULT_DURATION_MINUTES = 5
+DEFAULT_TELEMETRY_WINDOW_MINUTES = 5
 # Default time window (in minutes) for telemetry queries in the rule engine
 
 
 @dataclass
 class TelemetryEvent:
     device_serial_id: str
-    value: float
+    value: float | bool | str
     timestamp: datetime
-    metric_type: str
+    device_metric_id: int
 
 
 def _get_value_field(telemetry: Telemetry) -> str:
@@ -37,6 +38,20 @@ def _get_value_field(telemetry: Telemetry) -> str:
         return "value_str"
 
     raise ValueError("Telemetry has no value set")
+
+
+class NotificationChannels(str, Enum):
+    """Enumeration of available notification delivery channels"""
+
+    EMAIL = "email"
+    SMS = "sms"
+
+
+class ActionTypes(str, Enum):
+    """Enumeration of available action types"""
+
+    WEBHOOK = "webhook"
+    NOTIFICATION = "notification"
 
 
 ###===========
@@ -56,7 +71,7 @@ def map_telemetry_model_to_event(telemetry: Telemetry) -> TelemetryEvent:
         device_serial_id=telemetry.device_metric.device.serial_id,
         value=value,
         timestamp=telemetry.ts,
-        metric_type=telemetry.device_metric.metric.metric_type,
+        device_metric_id=telemetry.device_metric.id,
     )
 
 
@@ -65,7 +80,7 @@ def map_telemetry_json_to_event(telemetry: dict) -> TelemetryEvent:
         device_serial_id=telemetry.get("device_serial_id"),
         value=telemetry.get("value"),
         timestamp=datetime.fromisoformat(telemetry.get("ts")),
-        metric_type=telemetry.get("metric_type"),
+        device_metric_id=telemetry.get("device_metric_id"),
     )
 
 
@@ -130,9 +145,9 @@ class RedisTelemetryRepository(TelemetryRepository):
 
     Assumes telemetry data is stored in Redis Sorted Sets,
     where:
-        - key = telemetry:{device_serial_id}:{metric_type}
+        - key = telemetry:{device_serial_id}:{device_metric_id}:{unix_timestamp}
         - score = Unix timestamp
-        - value = metric value (stringified)
+        - member = metric value (stringified float)
     """
 
     def __init__(self, redis_client):
@@ -140,6 +155,17 @@ class RedisTelemetryRepository(TelemetryRepository):
         :param redis_client: Initialized Redis client instance
         """
         self.redis = redis_client
+
+    def _parse_value(self, raw: str) -> float | bool | str:
+        """Try to parse Redis value to the most appropriate type."""
+        if raw.lower() == 'true':
+            return True
+        if raw.lower() == 'false':
+            return False
+        try:
+            return float(raw)
+        except ValueError:
+            return raw
 
     def get_in_window(self, telemetry: TelemetryEvent, minutes: int):
         """
@@ -149,7 +175,7 @@ class RedisTelemetryRepository(TelemetryRepository):
         :param minutes: Window size in minutes.
         :return: List of float metric values within the window.
         """
-        key = f"telemetry:{telemetry.device_serial_id}:{telemetry.metric_type}"
+        key = f"telemetry:{telemetry.device_serial_id}:{telemetry.device_metric_id}:{int(telemetry.timestamp.timestamp())}"
 
         end_ts = int(telemetry.timestamp.timestamp())
         start_ts = end_ts - minutes * 60
@@ -159,18 +185,9 @@ class RedisTelemetryRepository(TelemetryRepository):
         return [
             TelemetryEvent(
                 device_serial_id=telemetry.device_serial_id,
-                value=float(
-                    value.split(":", 1)[1]
-                ),  # take second because member = {timestam:value}
+                value=self._parse_value(value),
                 timestamp=datetime.fromtimestamp(float(score)),
-                metric_type=telemetry.metric_type,
+                device_metric_id=telemetry.device_metric_id,
             )
             for value, score in items
         ]
-
-
-def choose_repository(duration_minutes: int, redis_client) -> TelemetryRepository:
-    """Returns the repository for receiving telemetry: Redis for short intervals, PostgreSQL for long intervals"""
-    if duration_minutes > MAX_REDIS_MINUTES:
-        return PostgresTelemetryRepository()
-    return RedisTelemetryRepository(redis_client)

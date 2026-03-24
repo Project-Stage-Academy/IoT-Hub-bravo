@@ -33,7 +33,7 @@ INSTALLED_APPS += [
     'apps.common',
     'apps.devices',
     'apps.users',
-    'apps.rules',
+    'apps.rules.apps.RulesConfig',
     'apps.audit',
 ]
 
@@ -279,8 +279,10 @@ RULES_ALLOW_WEBHOOKS = config('RULES_ALLOW_WEBHOOKS', default=False, cast=bool)
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # LOGGING configuration for django and celery
+DJANGO_ROOT_LOG_LEVEL = config('DJANGO_ROOT_LOG_LEVEL', default='INFO')
 DJANGO_LOG_LEVEL = config('DJANGO_LOG_LEVEL', default='INFO')
-CELERY_LOG_LEVEL = config('CELERY_LOG_LEVEL', default='ERROR')
+CELERY_LOG_LEVEL = config('CELERY_LOG_LEVEL', default='INFO')
+RULE_PROCESSOR_LOG_LEVEL = config('RULE_PROCESSOR_LOG_LEVEL', default='INFO')
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -306,6 +308,18 @@ LOGGING = {
                 "name": "logger_name",
             },
         },
+
+        "rule_processor_json": {
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+            "rename_fields": {
+                "asctime": "timestamp",
+                "levelname": "level",
+                "name": "logger_name",
+            },
+        },
+
     },
 
     "filters": {
@@ -329,12 +343,17 @@ LOGGING = {
             "filters": ["celery_context"],
             "formatter": "celery_json",
         },
+
+        "rule_processor_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "rule_processor_json",
+        },
     },
 
     "loggers": {
         "": {
             "handlers": ["console"],
-            "level": DJANGO_LOG_LEVEL,
+            "level": DJANGO_ROOT_LOG_LEVEL,
         },
 
         "django": {  # Django logger is declared (propagate = False by default)
@@ -348,17 +367,18 @@ LOGGING = {
             "level": CELERY_LOG_LEVEL,
             "propagate": False,
         },
+
+        "apps.rules.services.rule_processor": {
+            "handlers": ["rule_processor_console"],
+            "level": RULE_PROCESSOR_LOG_LEVEL,
+            "propagate": False,
+        },
     },
 }
 
+# ???
 TELEMETRY_SYNC_HEADER = 'Ingest-Sync'
 TELEMETRY_MAX_AGE_SECONDS = config('TELEMETRY_MAX_AGE_SECONDS', default=3600, cast=int)
-
-# Redis configuration
-
-REDIS_HOST = config('REDIS_HOST', default='redis')
-REDIS_PORT = config('REDIS_PORT', default='6379')
-
 
 # For development/testing, use console email backend to avoid sending real emails
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
