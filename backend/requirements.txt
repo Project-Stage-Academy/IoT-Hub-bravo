@@ -41,7 +41,7 @@ paho-mqtt==2.1.0
 pluggy==1.6.0
 prometheus_client==0.24.1
 prompt_toolkit==3.0.52
-psycopg==3.3.2
+psycopg==3.3.3
 psycopg-binary==3.3.2
 py-ubjson==0.16.1
 pyasn1==0.6.2
