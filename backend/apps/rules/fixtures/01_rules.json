@@ -295,7 +295,8 @@
   {
     "model": "rules.rule",
     "pk": 12,
-    "name": "Telemetry arrives 5 times",
+    "fields":{
+      "name": "Telemetry arrives 5 times",
     "description": "Alert when temprature arrives 5 times in 1 minute",
     "condition": {
       "type": "rate",
@@ -315,11 +316,13 @@
         },
         "is_active": true,
     "device_metric": 1
+    }
 },
   {
     "model": "rules.rule",
     "pk": 13,
-    "name": "Door Sensor Flapping",
+    "fields":{
+      "name": "Door Sensor Flapping",
     "description": "Alert when temprature arrives 5 times in 1 minute",
     "condition": {
     "type": "composite",
@@ -351,4 +354,5 @@
     "is_active": true,
     "device_metric": 1
 }
+  }
 ]
